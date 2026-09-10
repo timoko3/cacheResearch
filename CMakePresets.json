@@ -6,26 +6,52 @@
       "name": "base",
       "hidden": true,
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/${presetName}",
+      "binaryDir": "${sourceDir}/build/${hostSystemName}/${presetName}",
       "cacheVariables": { "CMAKE_EXPORT_COMPILE_COMMANDS": true }
     },
     {
       "name": "debug",
-      "displayName": "Debug",
+      "displayName": "Debug (Ninja)",
       "description": "Debug symbols for development and debugging",
       "inherits": "base",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
     },
     {
       "name": "release",
-      "displayName": "Release",
+      "displayName": "Release (Ninja)",
       "description": "Optimized build for performance measurements",
       "inherits": "base",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
+    },
+    {
+      "name": "debug-make",
+      "displayName": "Linux Debug (Make)",
+      "description": "Linux debug build using GNU Make; Ninja is not required",
+      "inherits": "debug",
+      "generator": "Unix Makefiles",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
+    },
+    {
+      "name": "release-make",
+      "displayName": "Linux Release (Make)",
+      "description": "Linux optimized build using GNU Make; Ninja is not required",
+      "inherits": "release",
+      "generator": "Unix Makefiles",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      }
     }
   ],
   "buildPresets": [
     { "name": "debug", "configurePreset": "debug" },
-    { "name": "release", "configurePreset": "release" }
+    { "name": "release", "configurePreset": "release" },
+    { "name": "debug-make", "configurePreset": "debug-make" },
+    { "name": "release-make", "configurePreset": "release-make" }
   ]
 }

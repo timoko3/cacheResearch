@@ -8,7 +8,7 @@
 - CMake 3.24 или новее.
 - Компилятор с поддержкой C++17 и `std::filesystem` (например, GCC 9+,
   современный Clang со стандартной библиотекой C++17 или MSVC из VS 2022).
-- Ninja для готовых presets. Вручную можно выбрать другой генератор.
+- Ninja для presets `debug`/`release` либо GNU Make на Linux для `debug-make`/`release-make`.
 - Заполненный подмодуль `generalFunctions`.
 
 После клонирования инициализируйте подмодуль:
@@ -29,6 +29,9 @@ SSH-доступ. CMake сам ничего не скачивает и сооб�
 
 Все команды выполняются из корня проекта.
 
+### Сборка с Ninja
+
+
 ```sh
 cmake --preset debug
 cmake --build --preset debug --parallel
@@ -36,7 +39,8 @@ cmake --build --preset debug --target run
 ```
 
 Первая команда проверяет компилятор и генерирует правила для Ninja в
-`build/debug`. Вторая компилирует `.cpp` в объектные файлы, собирает статическую
+`build/Linux/debug` на Linux или `build/Windows/debug` на Windows. Вторая
+компилирует `.cpp` в объектные файлы, собирает статическую
 библиотеку и линкует приложение. `--parallel` разрешает параллельную сборку.
 Третья сначала проверяет актуальность сборки, затем запускает приложение
 из каталога с исполняемым файлом и `config.txt`.
@@ -60,9 +64,9 @@ cmake --build --preset release --target run
 
 Debug предназначен для отладки, Release включает оптимизации компилятора.
 Их промежуточные файлы лежат в разных каталогах, поэтому режимы не мешают
-друг другу. Исполняемый файл будет в `build/debug/bin/Debug/` либо
-`build/release/bin/Release/`; на Windows его имя — `cache_research.exe`,
-на Linux — `cache_research`.
+друг другу. Исполняемый файл будет в `build/<OS>/debug/bin/Debug/` либо
+`build/<OS>/release/bin/Release/`; на Windows его имя — `cache_research.exe`,
+на Linux — `cache_research`. Здесь `<OS>` — `Linux` или `Windows`.
 
 `config.txt` копируется рядом с программой при сборке цели приложения.
 Редактируйте исходный файл в корне: следующая сборка обновит копию,
@@ -70,6 +74,62 @@ Debug предназначен для отладки, Release включает �
 закомментировано; копирование лишь готовит файл для будущего использования.
 При ручном запуске относительные пути считаются от рабочего каталога процесса,
 поэтому удобнее использовать цель `run`.
+
+### Linux с GNU Make (если Ninja не установлен)
+
+Установка Ninja не нужна. Для настройки и сборки Debug:
+
+```sh
+cmake --preset debug-make
+cmake --build --preset debug-make --parallel
+```
+
+Для Release замените `debug-make` на `release-make` в обеих командах.
+Каталоги сборки: `build/Linux/debug-make` и `build/Linux/release-make`.
+После устранения ошибок C++ приложение можно запустить через
+`cmake --build --preset debug-make --target run`; оно будет находиться в
+`build/Linux/debug-make/bin/Debug/cache_research`.
+
+Make-presets наследуют режим и остальные настройки Ninja-presets, меняя
+генератор на `Unix Makefiles`. Условие `hostSystemName == Linux` делает их
+доступными только на Linux. Имена presets отличаются, поэтому промежуточные
+файлы Make и Ninja также не смешиваются.
+
+## Общая папка для Linux и Windows
+
+В базовом preset каталог сборки задан так:
+
+```json
+"binaryDir": "${sourceDir}/build/${hostSystemName}/${presetName}"
+```
+
+`${sourceDir}` — текущий корень проекта, `${hostSystemName}` — система,
+в которой запущен CMake, `${presetName}` — выбранный preset (`debug`, `release`,
+`debug-make` или `release-make`). Например, на Linux Debug создаётся в `build/Linux/debug`,
+а на Windows — в `build/Windows/debug`. Build presets используют тот же
+configure preset, поэтому настройка, сборка и цель `run` выбирают один каталог.
+
+Это разделяет CMakeCache.txt, параметры компилятора и объектные файлы двух
+систем даже при работе в общей папке. Старые `build/debug` и `build/release`
+новые presets не используют; удалять или редактировать их кэш для перехода
+не требуется. При установленном Ninja выполните на Linux:
+
+```sh
+cmake --preset debug
+cmake --build --preset debug --parallel
+```
+
+Для Ninja-presets нужны CMake 3.24+, Ninja и C++17-компилятор именно внутри Linux.
+Проверить доступные инструменты можно командами `cmake --version`,
+`ninja --version` и `c++ --version`. Если Ninja нет, используйте
+`debug-make`/`release-make` с установленным Make (`make --version`).
+
+Разделение по ОС не делает кэш переносимым: после переноса проекта в другой
+абсолютный путь, смены компилятора или архитектуры нужен новый каталог сборки.
+Его можно задать через `cmake --preset debug -B build/Linux/debug-new`,
+а затем собирать командой `cmake --build build/Linux/debug-new --parallel`.
+В этом случае `cmake --build --preset debug` продолжит выбирать стандартный
+каталог, поскольку параметр `-B` не изменяет файл presets.
 
 ## Как устроен CMakeLists.txt
 
@@ -126,19 +186,19 @@ Presets дополнительно создают `compile_commands.json` в к�
 Он содержит реальные команды компиляции и помогает clangd и другим
 инструментам понимать пути заголовков и параметры языка.
 
-Без presets можно настроить сборку вручную:
+На Linux без presets можно настроить сборку вручную:
 
 ```sh
-cmake -S . -B build/manual -G Ninja -DCMAKE_BUILD_TYPE=Debug
-cmake --build build/manual --parallel
+cmake -S . -B build/Linux/manual -G Ninja -DCMAKE_BUILD_TYPE=Debug
+cmake --build build/Linux/manual --parallel
 ```
 
 Для Visual Studio 2022 конфигурация выбирается при сборке:
 
 ```sh
-cmake -S . -B build/vs -G "Visual Studio 17 2022" -A x64
-cmake --build build/vs --config Debug --parallel
-cmake --build build/vs --config Debug --target run
+cmake -S . -B build/Windows/vs -G "Visual Studio 17 2022" -A x64
+cmake --build build/Windows/vs --config Debug --parallel
+cmake --build build/Windows/vs --config Debug --target run
 ```
 
 При смене компилятора или генератора используйте новый каталог сборки.
@@ -152,7 +212,6 @@ cmake --build build/vs --config Debug --target run
 - Определения шаблонного `cache_t::lookupUpdate` находятся в `cache.cpp`
   и не видны в `main.cpp` при инстанцировании. Для такого использования
   реализация должна быть доступна из заголовка, например через `.tpp`.
-- `cache_t::full()` объявлен, но не определён.
 - `nothing()` не принимает аргументов и возвращает `void`, а реализация кэша
   вызывает загрузчик с ключом и ожидает значение типа `T`.
 - `cache_` объявлен как `std::list<T>`, но реализация обращается к элементу
@@ -181,7 +240,20 @@ cmake --build build/vs --config Debug --target run
   `undefined reference` к `cache_t::lookupUpdate`. GCC также сообщает
   о некорректном преобразовании строкового литерала в `char*` в `main.cpp`.
 
-MSVC и Linux в этой среде не проверялись. Запуск приложения и корректность
+На Linux по SSH на `timVmWare` (Ubuntu, CMake 3.28.3, GCC 13.3.0,
+GNU Make 4.3) проверены `debug-make` и `release-make`: конфигурация,
+сборка `general_functions` и копирование `config.txt` проходят успешно.
+Полная Debug-сборка останавливается на той же ошибке линковки `lookupUpdate`.
+Обновлённый Ninja-preset Debug также проверен на Windows: библиотека и
+конфигурация собираются в `build/Windows/debug` независимо от Linux-сборок.
+
+На `timVmWare` также установлен Ninja 1.11.1 из официального пакета Ubuntu.
+Presets `debug` и `release` успешно настраиваются и собирают библиотеку в
+`build/Linux/debug` и `build/Linux/release`; копии `config.txt` совпадают
+с исходным файлом. Полная Ninja Debug-сборка достигает линковки и
+останавливается на той же ошибке `lookupUpdate` в исходниках.
+
+MSVC в этой среде не проверялся. Запуск приложения и корректность
 алгоритма не проверены, поскольку исполняемый файл пока не линкуется.
 
 Справочник: [CMake Presets](https://cmake.org/cmake/help/v3.24/manual/cmake-presets.7.html),

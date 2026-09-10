@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.24)
 # Keep generated files out of the source tree.
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
     message(FATAL_ERROR
-        "In-source builds are not supported. Use cmake --preset debug "
-        "or cmake -S . -B build/debug.")
+        "In-source builds are not supported. "
+        "Use cmake --preset debug to create a build directory for this OS.")
 endif()
 
 project(CacheResearch LANGUAGES CXX)
