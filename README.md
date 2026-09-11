@@ -209,7 +209,7 @@ cmake --build build/Windows/vs --config Debug --target run
 
 Исходники сохранены без изменений. В текущей реализации обнаружены:
 
-- Определения шаблонного `cache_t::lookupUpdate` находятся в `cache.cpp`
+- Определения шаблонного `CacheLRU::lookupUpdate` находятся в `cache.cpp`
   и не видны в `main.cpp` при инстанцировании. Для такого использования
   реализация должна быть доступна из заголовка, например через `.tpp`.
 - `nothing()` не принимает аргументов и возвращает `void`, а реализация кэша
@@ -237,7 +237,7 @@ cmake --build build/Windows/vs --config Debug --target run
 - Ninja Multi-Config собирает библиотеку и копирует конфигурацию для Debug
   и Release, в том числе в каталоге сборки с пробелом в пути.
 - Полная Debug-сборка компилирует исходники, но завершается ошибкой линковки
-  `undefined reference` к `cache_t::lookupUpdate`. GCC также сообщает
+  `undefined reference` к `CacheLRU::lookupUpdate`. GCC также сообщает
   о некорректном преобразовании строкового литерала в `char*` в `main.cpp`.
 
 На Linux по SSH на `timVmWare` (Ubuntu, CMake 3.28.3, GCC 13.3.0,

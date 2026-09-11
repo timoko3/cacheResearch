@@ -19,7 +19,7 @@ int main()
 {
     // std::string cacheConfig = readFile( CONFIG_FILE_NAME);
 
-    cache_t<int> LRUcache(4);
+    CacheLRU<int> LRUcache(4);
     
     std::array<int, 12> requests = {1, 2, 3, 4, 1, 2, 5, 1, 2, 4, 3, 4};
 
