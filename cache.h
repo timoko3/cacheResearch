@@ -137,7 +137,7 @@ private:
     List Am_;
     List A1in_;
 
-    std::list<keyT> A1out_;
+    List A1out_;
 
     std::unordered_map<keyT, elemLoc> hash_;
 
@@ -157,7 +157,7 @@ public:
         AmSize_ = size - KIn;
     }
     
-    const std::unordered_map<keyT, ListIt>& getHash() const {
+    const std::unordered_map<keyT, elemLoc>& getHash() const {
         return hash_;
     }
 
@@ -169,7 +169,7 @@ public:
         return A1in_;
     }
 
-    const std::list<keyT>& getA1out() const {
+    const List& getA1out() const {
         return A1out_;
     }
 
@@ -178,7 +178,7 @@ public:
     }
 
     bool isFullAOut() const {
-        return A1out_.size() >= KOut_;
+        return A1out_.size() > KOut_;
     }
 
     bool isFullAm() const {
@@ -193,7 +193,10 @@ protected:
             return false;
         }
 
-        switch(hit->second->second){
+        auto reqType = hit->second.second; 
+        auto curIt   = hit->second.first; 
+
+        switch(reqType){
             case A1_IN:
                 return true; 
                 break;
@@ -203,16 +206,23 @@ protected:
                 return false;
                 break;
             case AM:
-                Am_.splice(Am_.begin(), Am_, hit->second->first);
+                Am_.splice(Am_.begin(), Am_, curIt);
+
                 return true;
                 break;
         }
+
+        return false;
     }
 
     void insert(const keyT& key, T page) override {
         if(!isGhostHit_){
             if(isFullAIn()){
-                A1out_.splice(A1out_.begin(), A1in_, A1in_.back());
+                auto victim = std::prev(A1in_.end());
+
+
+                A1out_.splice(A1out_.begin(), A1in_, victim);
+                hash_.at(victim->first).second = A1_OUT;
             }
 
             if(isFullAOut()){
@@ -221,16 +231,17 @@ protected:
             }
 
             A1in_.emplace_front(key, std::move(page));
-            hash_.emplace(key, A1in_.begin());
+            hash_.emplace(key,  elemLoc{A1in_.begin(), A1_IN});
         }
         else{
             if(isFullAm()){
                 hash_.erase(Am_.back().first);
                 Am_.pop_back();
             }
+            hash_.at(key).first->second = std::move(page);
 
-            Am_.emplace_front(key, std::move(page));
-            hash_.emplace(key, Am_.begin()); 
+            Am_.splice(Am_.begin(), A1out_, hash_.find(key)->second.first);
+            hash_.at(key).second = AM;
 
             isGhostHit_ = false;
         }
