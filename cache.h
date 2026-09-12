@@ -4,6 +4,7 @@
 #include <list>
 #include <unordered_map>
 #include <utility>
+#include <iostream>
 
 namespace cache{
 
@@ -131,6 +132,8 @@ private:
     using ListIt  = typename List::iterator;
     using elemLoc = std::pair<ListIt, queueType>;
 
+    size_t KIn_, KOut_, AmSize_;
+
     List Am_;
     List A1in_;
 
@@ -138,12 +141,21 @@ private:
 
     std::unordered_map<keyT, elemLoc> hash_;
 
-    queueType curRequestType_;
-
-    
+    bool isGhostHit_ = false;
 public:
-    explicit Cache2Q(size_t size, cacheLevel level = L1)
-        : Base(size, level) {}
+    explicit Cache2Q(size_t KIn, size_t KOut, 
+                     size_t size, cacheLevel level = L1)
+        : Base(size, level) 
+    {
+        if( KIn >= size)
+        {
+            std::cout << "invalid KIn parameter\n";
+        }
+
+        KIn_ = KIn;
+        KOut_ = KOut;
+        AmSize_ = size - KIn;
+    }
     
     const std::unordered_map<keyT, ListIt>& getHash() const {
         return hash_;
@@ -161,33 +173,67 @@ public:
         return A1out_;
     }
 
-    bool is
+    bool isFullAIn() const {
+        return A1in_.size() >= KIn_;
+    }
+
+    bool isFullAOut() const {
+        return A1out_.size() >= KOut_;
+    }
+
+    bool isFullAm() const {
+        return Am_.size() >= AmSize_;
+    }
+
 protected: 
     bool findAndTouch(const keyT& key) override {
         auto hit = hash_.find(key);
-
-        curRequestType_ = hit->second->second; 
 
         if (hit == hash_.end()){
             return false;
         }
 
-        switch(curRequestType_){
+        switch(hit->second->second){
             case A1_IN:
                 return true; 
                 break;
             case A1_OUT:
+                isGhostHit_ = true;
+
                 return false;
                 break;
             case AM:
-                cache_.splice(Am_.begin(), Am_, hit->second->first);
+                Am_.splice(Am_.begin(), Am_, hit->second->first);
                 return true;
                 break;
         }
     }
 
     void insert(const keyT& key, T page) override {
+        if(!isGhostHit_){
+            if(isFullAIn()){
+                A1out_.splice(A1out_.begin(), A1in_, A1in_.back());
+            }
 
+            if(isFullAOut()){
+                hash_.erase(A1out_.back().first);
+                A1out_.pop_back();
+            }
+
+            A1in_.emplace_front(key, std::move(page));
+            hash_.emplace(key, A1in_.begin());
+        }
+        else{
+            if(isFullAm()){
+                hash_.erase(Am_.back().first);
+                Am_.pop_back();
+            }
+
+            Am_.emplace_front(key, std::move(page));
+            hash_.emplace(key, Am_.begin()); 
+
+            isGhostHit_ = false;
+        }
     }
 };
 
