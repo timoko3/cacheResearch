@@ -89,10 +89,9 @@ public:
         return hash_;
     }
 
-    bool full() const {
+    bool isFull() const {
         return cache_.size() >= this->getSize();
     }
-
 protected:
     bool findAndTouch(const keyT& key) override {
         auto hit = hash_.find(key);
@@ -106,13 +105,89 @@ protected:
     }
 
     void insert(const keyT& key, T page) override {
-        if (full()) {
+        if (isFull()) {
             hash_.erase(cache_.back().first);
             cache_.pop_back();
         }
 
         cache_.emplace_front(key, std::move(page));
         hash_.emplace(key, cache_.begin());
+    }
+};
+
+template <typename T, typename keyT = int>
+class Cache2Q : public Cache<T, keyT>
+{
+private:
+    enum queueType {
+        A1_IN,
+        A1_OUT,
+        AM    
+    };
+
+    using Base    = Cache<T, keyT>;
+    using Entry   = std::pair<keyT, T>;
+    using List    = std::list<Entry>;
+    using ListIt  = typename List::iterator;
+    using elemLoc = std::pair<ListIt, queueType>;
+
+    List Am_;
+    List A1in_;
+
+    std::list<keyT> A1out_;
+
+    std::unordered_map<keyT, elemLoc> hash_;
+
+    queueType curRequestType_;
+
+    
+public:
+    explicit Cache2Q(size_t size, cacheLevel level = L1)
+        : Base(size, level) {}
+    
+    const std::unordered_map<keyT, ListIt>& getHash() const {
+        return hash_;
+    }
+
+    const List& getAm() const {
+        return Am_;
+    }
+
+    const List& getA1in() const {
+        return A1in_;
+    }
+
+    const std::list<keyT>& getA1out() const {
+        return A1out_;
+    }
+
+    bool is
+protected: 
+    bool findAndTouch(const keyT& key) override {
+        auto hit = hash_.find(key);
+
+        curRequestType_ = hit->second->second; 
+
+        if (hit == hash_.end()){
+            return false;
+        }
+
+        switch(curRequestType_){
+            case A1_IN:
+                return true; 
+                break;
+            case A1_OUT:
+                return false;
+                break;
+            case AM:
+                cache_.splice(Am_.begin(), Am_, hit->second->first);
+                return true;
+                break;
+        }
+    }
+
+    void insert(const keyT& key, T page) override {
+
     }
 };
 
