@@ -19,17 +19,17 @@ int main()
 {
     // std::string cacheConfig = readFile( CONFIG_FILE_NAME);
 
-    CacheLRU<int> LRUcache(4);
+    CacheLFU<int> LFUcache(3);
     
-    std::array<int, 12> requests = {1, 2, 3, 4, 1, 2, 5, 1, 2, 4, 3, 4};
+    std::array<int, 8> requests = {1, 2, 3, 3, 1, 2, 4, 2};
 
     for( auto& req : requests)
     {
-        LRUcache.lookupUpdate(req, loadPage);
+        LFUcache.lookupUpdate(req, loadPage);
     }
 
-    std::cout << LRUcache.getStats().amountHits << " кол-во хитов\n";
-    std::cout << LRUcache.getStats().amountRequests << " кол-во запросов\n";
+    std::cout << LFUcache.getStats().amountHits << " кол-во хитов\n";
+    std::cout << LFUcache.getStats().amountRequests << " кол-во запросов\n";
 }
 
 int loadPage(int key)
