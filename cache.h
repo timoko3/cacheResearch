@@ -609,4 +609,84 @@ protected:
 
 };
 
+template <typename T, typename keyT = int>
+class CacheREF : public Cache
+{
+private:
+    struct Entry_t
+    {
+        keyT key;
+        T page;
+    };
+
+    using Base_t      = Cache<T, keyT>;
+    using CacheList_t = std::list<Entry_T>;
+    using ReqList_t   = std::list<keyT>;
+    using HashTable_t = std::unordered_map<keyT, T>;
+    using ListIt_t    = List_t::iterator;
+
+    HashTable_t hash_;
+    CacheList_t cache_;
+    ReqList_t requests_;
+    ListIt_t pos_;
+
+    bool isFull () { return cache_.size() >= this->getSize() };
+
+    ListIt_t findVictim ()
+    {
+        keyT victim;
+
+        for (auto cache_it = cache_.begin(); cache_it < cache_.end(); ++cache_it)
+        {
+            decltype(std::distance(pos_, pos_)) dis_to_next;
+
+            for (auto req_it = pos_; req_it != requests_.end(); ++req_it)
+            {
+                if (*req_it == *cache_it || *req_it == std::prev(requests_.end()))
+                    dis_to_next = std::distance(pos_, req_it);
+            } 
+        }
+
+    };
+
+public:
+    explicit CacheLFU(size_t size, std::list<keyT> reqs, cacheLevel level = L1) 
+                     : Base_t(size, level), requests_(reqs), pos_(requests_.begin())
+    {
+        if (requests_.empty())
+        {
+            throw std::invalid_argument("Array with requests are empty");
+        }
+    };
+
+    ~CacheLFU() = default;
+
+protected:
+    bool findAndTouch(const keyT &key) override
+    {
+        pos_++;
+
+        auto hit = hash_.find(key);
+
+        if (hit == hash_end())
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    void insert(const keyT &key, T page) override
+    {
+        if (isFull)
+        {
+            auto victim = findVictim();
+        }
+    }
+
+    
+
+};
+
+
 } // namespace cache
