@@ -621,15 +621,16 @@ private:
     };
 
     using Base_t      = Cache<T, keyT>;
-    using CacheVec_t  = std::vector<Entry_t>;
-    using ReqVec_t    = std::vector<keyT>;
-    using CacheIt_t   = CacheVec_t::iterator;
-    using ReqIt_t     = ReqVec_t::iterator;
+    using CacheList_t = std::list<Entry_t>;
+    using ReqList_t   = std::list<keyT>;
+    using CacheIt_t   = CacheList_t::iterator;
+    using ReqIt_t     = ReqList_t::iterator;
     using HashTable_t = std::unordered_map<keyT, CacheIt_t>;
+    using Dist_t      = ReqList_t::difference_type;
     
     HashTable_t hash_;
-    CacheVec_t cache_;
-    ReqVec_t requests_;
+    CacheList_t cache_;
+    ReqList_t requests_;
     ReqIt_t pos_;
 
     bool isFull () { return cache_.size() >= this->getSize(); };
@@ -637,22 +638,22 @@ private:
     CacheIt_t findVictim ()
     {
         CacheIt_t victim_it = cache_.begin();
-        size_t max_dist = 0;
+        Dist_t max_dist = 0;
 
         for (auto cache_it = cache_.begin(); cache_it != cache_.end(); ++cache_it)
         {
-            size_t dist_to_next = requests_.size();
+            Dist_t dist_to_next = requests_.size();
 
             for (auto req_it = pos_; req_it != requests_.end(); ++req_it)
             {
                 if (*req_it == cache_it->key)
                 {
-                    dist_to_next = req_it - pos_;
+                    dist_to_next = std::distance(pos_, req_it);
                     break;
                 } 
             } 
             
-            if (dist_to_next > max_dist)
+            if (dist_to_next >= max_dist)
             {
                 max_dist = dist_to_next;
                 victim_it = cache_it;
@@ -663,7 +664,7 @@ private:
     };
 
 public:
-    explicit CacheREF(size_t size, ReqVec_t reqs, cacheLevel level = L1) 
+    explicit CacheREF(size_t size, ReqList_t reqs, cacheLevel level = L1) 
                      : Base_t(size, level), requests_(reqs), pos_(requests_.begin())
     {
         if (requests_.empty())
@@ -677,7 +678,7 @@ public:
 protected:
     bool findAndTouch(const keyT &key) override
     {
-        pos_++;
+        ++pos_;
 
         auto hit = hash_.find(key);
 
@@ -698,8 +699,8 @@ protected:
             cache_.erase(victim_it);
         }
 
-        cache_.push_back({key, page});
-        hash_.emplace(key, std::prev(cache_.end()));
+        cache_.push_front({key, page});
+        hash_.emplace(key, cache_.begin());
     }
 };
 
