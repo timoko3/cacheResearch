@@ -10,6 +10,7 @@
 #include <unordered_map>
 #include <utility>
 #include <algorithm>
+#include <vector>
 
 namespace cache {
 
@@ -610,7 +611,7 @@ protected:
 };
 
 template <typename T, typename keyT = int>
-class CacheREF : public Cache
+class CacheREF : public Cache<keyT, T>
 {
 private:
     struct Entry_t
@@ -620,30 +621,31 @@ private:
     };
 
     using Base_t      = Cache<T, keyT>;
-    using CacheVec_t = std::vector<Entry_T>;
-    using ReqVec_t   = std::vector<keyT>;
-    using HashTable_t = std::unordered_map<keyT, T>;
-    using VecIt_t    = std::vector::iterator;
-
+    using CacheVec_t  = std::vector<Entry_t>;
+    using ReqVec_t    = std::vector<keyT>;
+    using CacheIt_t   = CacheVec_t::iterator;
+    using ReqIt_t     = ReqVec_t::iterator;
+    using HashTable_t = std::unordered_map<keyT, CacheIt_t>;
+    
     HashTable_t hash_;
     CacheVec_t cache_;
     ReqVec_t requests_;
-    VecIt_t pos_;
+    ReqIt_t pos_;
 
-    bool isFull () { return cache_.size() >= this->getSize() };
+    bool isFull () { return cache_.size() >= this->getSize(); };
 
-    VecIt_t findVictim ()
+    CacheIt_t findVictim ()
     {
-        VecIt_t victim_it = cache_.begin();
+        CacheIt_t victim_it = cache_.begin();
         size_t max_dist = 0;
 
         for (auto cache_it = cache_.begin(); cache_it != cache_.end(); ++cache_it)
         {
-            size_t dis_to_next;
+            size_t dist_to_next = requests_.size();
 
             for (auto req_it = pos_; req_it != requests_.end(); ++req_it)
             {
-                if (*req_it == *cache_it || req_it == std::prev(requests_.end()))
+                if (*req_it == cache_it->key)
                 {
                     dist_to_next = req_it - pos_;
                     break;
@@ -661,7 +663,7 @@ private:
     };
 
 public:
-    explicit CacheLFU(size_t size, ReqVec_t reqs, cacheLevel level = L1) 
+    explicit CacheREF(size_t size, ReqVec_t reqs, cacheLevel level = L1) 
                      : Base_t(size, level), requests_(reqs), pos_(requests_.begin())
     {
         if (requests_.empty())
@@ -670,7 +672,7 @@ public:
         }
     };
 
-    ~CacheLFU() = default;
+    ~CacheREF() = default;
 
 protected:
     bool findAndTouch(const keyT &key) override
@@ -679,7 +681,7 @@ protected:
 
         auto hit = hash_.find(key);
 
-        if (hit == hash_end())
+        if (hit == hash_.end())
         {
             return false;
         }
@@ -689,14 +691,16 @@ protected:
 
     void insert(const keyT &key, T page) override
     {
-        if (isFull)
+        if (isFull())
         {
-            auto victim = findVictim();
+            auto victim_it = findVictim();
+            hash_.erase(victim_it->key);
+            cache_.erase(victim_it);
         }
+
+        cache_.push_back({key, page});
+        hash_.emplace(key, std::prev(cache_.end()));
     }
-
-    
-
 };
 
 

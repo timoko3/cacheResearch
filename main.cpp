@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 #include <array>
+#include <vector>
 
 #include "generalFunctions/file.h"
 
@@ -19,17 +20,23 @@ int main()
 {
     // std::string cacheConfig = readFile( CONFIG_FILE_NAME);
 
-    CacheLFU<int> LFUcache(3);
-    
-    std::array<int, 8> requests = {1, 2, 3, 3, 1, 2, 4, 2};
+std::vector<int> requests = {
+    1, 2, 3,
+    1, 2,
+    4,
+    1, 2,
+    3, 4
+};
+// hits = 5
+    CacheREF<int> REFcache(3, requests);
 
     for( auto& req : requests)
     {
-        LFUcache.lookupUpdate(req, loadPage);
+        REFcache.lookupUpdate(req, loadPage);
     }
 
-    std::cout << LFUcache.getStats().amountHits << " кол-во хитов\n";
-    std::cout << LFUcache.getStats().amountRequests << " кол-во запросов\n";
+    std::cout << REFcache.getStats().amountHits << " кол-во хитов\n";
+    std::cout << REFcache.getStats().amountRequests << " кол-во запросов\n";
 }
 
 int loadPage(int key)
