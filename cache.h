@@ -34,6 +34,7 @@ struct cacheDescription{
 struct CacheStats {
   size_t amountRequests = 0;
   size_t amountHits = 0;
+  size_t amountMisses = 0;
 };
 
 template <typename T, typename keyT = int> class Cache {
@@ -52,7 +53,6 @@ public:
   size_t getSize() const { return size_; }
   const CacheStats &getStats() const { return stats_; }
 
-  // T must be copyable: the cache retains a copy of the returned page.
   template <typename F> T lookupUpdate(keyT key, F slow_get_page) {
     ++stats_.amountRequests;
 
@@ -61,6 +61,7 @@ public:
       return *page;
     }
 
+    ++stats_.amountMisses;
     T page = slow_get_page(key);
 
     if (size_ != 0) {

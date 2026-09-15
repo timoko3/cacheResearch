@@ -14,6 +14,16 @@ struct cacheSystemParams {
     std::vector<cacheDescription> levels;
 };
 
+struct CacheLevelStats {
+    cacheLevel level;
+    CacheStats stats;
+};
+
+struct CacheSystemStats {
+    CacheStats total;
+    std::vector<CacheLevelStats> levels;
+};
+
 template <typename T, typename keyT = int>
 class CacheSystem {
     std::vector<std::unique_ptr<Cache<T, keyT>>> cacheSys_;
@@ -41,13 +51,35 @@ public:
                         description.size, description.level));
                     break;
                 case C_2Q:
-                    throw std::invalid_argument("2Q requires KIn and KOut parameters");
+                    cacheSys_.push_back(std::make_unique<Cache2Q<T, keyT>>(
+                        description.size, description.level));
+                    break;
                 case C_LIRS:
-                    throw std::invalid_argument("LIRS requires a hirSize parameter");
+                    cacheSys_.push_back(std::make_unique<CacheLIRS<T, keyT>>(
+                        description.size, description.level));
+                    break;
                 default:
                     throw std::invalid_argument("Unsupported cache strategy");
             }
         }
+    }
+
+    CacheSystemStats getStats() const {
+        CacheSystemStats result;
+        result.levels.reserve(cacheSys_.size());
+
+        for (const auto& level : cacheSys_) {
+            const auto& stats = level->getStats();
+            result.levels.push_back({level->getLevel(), stats});
+            result.total.amountHits += stats.amountHits;
+        }
+
+        if (!cacheSys_.empty()) {
+            result.total.amountRequests = cacheSys_.front()->getStats().amountRequests;
+            result.total.amountMisses = cacheSys_.back()->getStats().amountMisses;
+        }
+
+        return result;
     }
 };
 
