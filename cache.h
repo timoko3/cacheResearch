@@ -620,37 +620,48 @@ private:
     };
 
     using Base_t      = Cache<T, keyT>;
-    using CacheList_t = std::list<Entry_T>;
-    using ReqList_t   = std::list<keyT>;
+    using CacheVec_t = std::vector<Entry_T>;
+    using ReqVec_t   = std::vector<keyT>;
     using HashTable_t = std::unordered_map<keyT, T>;
-    using ListIt_t    = List_t::iterator;
+    using VecIt_t    = std::vector::iterator;
 
     HashTable_t hash_;
-    CacheList_t cache_;
-    ReqList_t requests_;
-    ListIt_t pos_;
+    CacheVec_t cache_;
+    ReqVec_t requests_;
+    VecIt_t pos_;
 
     bool isFull () { return cache_.size() >= this->getSize() };
 
-    ListIt_t findVictim ()
+    VecIt_t findVictim ()
     {
-        keyT victim;
+        VecIt_t victim_it = cache_.begin();
+        size_t max_dist = 0;
 
-        for (auto cache_it = cache_.begin(); cache_it < cache_.end(); ++cache_it)
+        for (auto cache_it = cache_.begin(); cache_it != cache_.end(); ++cache_it)
         {
-            decltype(std::distance(pos_, pos_)) dis_to_next;
+            size_t dis_to_next;
 
             for (auto req_it = pos_; req_it != requests_.end(); ++req_it)
             {
-                if (*req_it == *cache_it || *req_it == std::prev(requests_.end()))
-                    dis_to_next = std::distance(pos_, req_it);
+                if (*req_it == *cache_it || req_it == std::prev(requests_.end()))
+                {
+                    dist_to_next = req_it - pos_;
+                    break;
+                } 
             } 
+            
+            if (dist_to_next > max_dist)
+            {
+                max_dist = dist_to_next;
+                victim_it = cache_it;
+            }
         }
 
+        return victim_it;
     };
 
 public:
-    explicit CacheLFU(size_t size, std::list<keyT> reqs, cacheLevel level = L1) 
+    explicit CacheLFU(size_t size, ReqVec_t reqs, cacheLevel level = L1) 
                      : Base_t(size, level), requests_(reqs), pos_(requests_.begin())
     {
         if (requests_.empty())
