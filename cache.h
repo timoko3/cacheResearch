@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iterator>
 #include <list>
+#include <memory>
 #include <optional>
 #include <stddef.h>
 #include <stdexcept>
@@ -16,9 +17,25 @@ namespace cache {
 
 enum cacheLevel { L1, L2 };
 
+enum cacheEvictionType{
+    C_LRU,
+    C_LFU,
+    C_ARC,
+    C_LIRS,
+    C_2Q,
+    C_REF
+};
+
+struct cacheDescription{
+    size_t size;
+    cacheLevel level;
+    cacheEvictionType strategy;
+};
+
 struct CacheStats {
   size_t amountRequests = 0;
   size_t amountHits = 0;
+  size_t amountMisses = 0;
 };
 
 template <typename T, typename keyT = int> class Cache {
@@ -37,25 +54,27 @@ public:
   size_t getSize() const { return size_; }
   const CacheStats &getStats() const { return stats_; }
 
-  template <typename F> bool lookupUpdate(keyT key, F slow_get_page) {
+  template <typename F> T lookupUpdate(keyT key, F slow_get_page) {
     ++stats_.amountRequests;
 
-    if (findAndTouch(key)) {
+    if (const T* page = findAndTouch(key)) {
       ++stats_.amountHits;
-      return true;
+      return *page;
     }
 
+    ++stats_.amountMisses;
     T page = slow_get_page(key);
 
     if (size_ != 0) {
-      insert(key, std::move(page));
+      insert(key, page);
     }
 
-    return false;
+    return page;
   }
 
 protected:
-  virtual bool findAndTouch(const keyT &key) = 0;
+  // Returns a resident page, or nullptr on a miss (including ghost entries).
+  virtual const T* findAndTouch(const keyT &key) = 0;
 
   virtual void insert(const keyT &key, T page) = 0;
 };
@@ -81,15 +100,15 @@ public:
   bool isFull() const { return cache_.size() >= this->getSize(); }
 
 protected:
-  bool findAndTouch(const keyT &key) override {
+  const T* findAndTouch(const keyT &key) override {
     auto hit = hash_.find(key);
 
     if (hit == hash_.end()) {
-      return false;
+      return nullptr;
     }
 
     cache_.splice(cache_.begin(), cache_, hit->second);
-    return true;
+    return std::addressof(hit->second->second);
   }
 
   void insert(const keyT &key, T page) override {
@@ -126,15 +145,18 @@ private:
   bool isGhostHit_ = false;
 
 public:
-  explicit Cache2Q(size_t KIn, size_t KOut, size_t size, cacheLevel level = L1)
-      : Base(size, level) {
-    if (KIn >= size) {
-      std::cout << "invalid KIn parameter\n";
+  // Johnson/Shasha: A1in = 25%, A1out = 50% of cache capacity.
+  // https://www.openu.ac.il/home/wiseman/2os/lru/2q.pdf
+  explicit Cache2Q(size_t size, cacheLevel level = L1)
+      : Base(size, level),
+        KIn_(std::max<size_t>(1, size / 4)),
+        KOut_(std::max<size_t>(1, size / 2)),
+        AmSize_(0) {
+    if (size < 2) {
+      throw std::invalid_argument("2Q requires at least 2 cache slots");
     }
 
-    KIn_ = KIn;
-    KOut_ = KOut;
-    AmSize_ = size - KIn;
+    AmSize_ = size - KIn_;
   }
 
   const std::unordered_map<keyT, elemLoc> &getHash() const { return hash_; }
@@ -152,11 +174,11 @@ public:
   bool isFullAm() const { return Am_.size() >= AmSize_; }
 
 protected:
-  bool findAndTouch(const keyT &key) override {
+  const T* findAndTouch(const keyT &key) override {
     auto hit = hash_.find(key);
 
     if (hit == hash_.end()) {
-      return false;
+      return nullptr;
     }
 
     auto reqType = hit->second.second;
@@ -164,21 +186,21 @@ protected:
 
     switch (reqType) {
     case A1_IN:
-      return true;
+      return std::addressof(curIt->second);
       break;
     case A1_OUT:
       isGhostHit_ = true;
 
-      return false;
+      return nullptr;
       break;
     case AM:
       Am_.splice(Am_.begin(), Am_, curIt);
 
-      return true;
+      return std::addressof(curIt->second);
       break;
     }
 
-    return false;
+    return nullptr;
   }
 
   void insert(const keyT &key, T page) override {
@@ -303,26 +325,24 @@ class CacheLIRS : public Cache<T, keyT> {
   }
 
 public:
-  explicit CacheLIRS(size_t size, size_t hirSize, cacheLevel level = L1)
-      : Base(size, level), sizeLIR_(0), sizeHIR_(hirSize) {
+  // Jiang/Zhang: resident HIR = 1%, LIR gets the remaining capacity.
+  // https://xiaodongzhang1911.github.io/Zhang-papers/TR-05-11.pdf
+  explicit CacheLIRS(size_t size, cacheLevel level = L1)
+      : Base(size, level), sizeLIR_(0),
+        sizeHIR_(std::max<size_t>(1, size / 100)) {
     if (size < 2) {
       throw std::invalid_argument("LIRS requires at least 2 cache slots");
-    }
-
-    if (hirSize == 0 || hirSize >= size) {
-      throw std::invalid_argument(
-          "HIR capacity must be between 1 and size - 1");
     }
 
     sizeLIR_ = size - sizeHIR_;
   }
 
 protected:
-  bool findAndTouch(const keyT &key) override {
+  const T* findAndTouch(const keyT &key) override {
     auto hit = hash_.find(key);
 
     if (hit == hash_.end() || !hit->second.value.has_value()) {
-      return false;
+      return nullptr;
     }
 
     auto &entry = hit->second;
@@ -337,7 +357,7 @@ protected:
       moveToQueueFront(key, entry);
     }
 
-    return true;
+    return std::addressof(*entry.value);
   }
 
   void insert(const keyT &key, T page) override {
@@ -468,11 +488,11 @@ public:
     }
 
 protected:
-    bool findAndTouch(const keyT &key) override {
+    const T* findAndTouch(const keyT &key) override {
         auto hit = hash_.find(key);
 
         if (hit == hash_.end()) {
-            return false;
+            return nullptr;
         }
 
         auto &location = hit->second;
@@ -483,30 +503,30 @@ protected:
                 T2_.splice(T2_.begin(), T1_, current);
                 location.listIt = current;
                 location.listName = T2;
-                return true;
+                return std::addressof(*current->value);
 
             case T2:
                 T2_.splice(T2_.begin(), T2_, current);
                 location.listIt = current;
-                return true;
+                return std::addressof(*current->value);
 
             case B1: {
                 const size_t addition = std::max<size_t>(1, B2_.size() / B1_.size());
                 targetT1size_ = std::min(capacity_, targetT1size_ + addition);
-                return false;
+                return nullptr;
             }
 
             case B2: {
                 const size_t subtrahend = std::max<size_t>(1, B1_.size() / B2_.size());
                 targetT1size_ = (subtrahend >= targetT1size_) ? 0 : targetT1size_ - subtrahend;
-                return false;
+                return nullptr;
             }
 
             case NO_LIST:
-                return false;
+                return nullptr;
         }
 
-        return false;
+        return nullptr;
     }
 
     void insert(const keyT &key, T page) override {
@@ -558,7 +578,7 @@ private:
 
     using Base_t   = Cache<T, keyT>;
     using List_t   = std::list<Entry_t>;
-    using ListIt_t = List_t::iterator;
+    using ListIt_t = typename List_t::iterator;
 
     std::unordered_map<keyT, ListIt_t> hash_;
     List_t cache_;
@@ -579,19 +599,19 @@ public:
     ~CacheLFU() = default;
 
 protected:
-    bool findAndTouch(const keyT &key) override
+    const T* findAndTouch(const keyT &key) override
     {
         auto hit = hash_.find(key);
 
         if (hit == hash_.end())
         {
-            return false;
+            return nullptr;
         }
 
         auto entryIt = hit->second;
         entryIt->frequency++;
         cache_.splice(cache_.end(), cache_, entryIt);
-        return true;
+        return std::addressof(entryIt->page);
     }
 
     void insert(const keyT &key, T page) override
