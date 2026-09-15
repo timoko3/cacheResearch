@@ -20,7 +20,7 @@ int main()
 {
     // std::string cacheConfig = readFile( CONFIG_FILE_NAME);
 
-std::vector<int> requests = {
+std::list<int> requests = {
     1, 2, 3,
     1, 2,
     4,
