@@ -143,15 +143,18 @@ private:
   bool isGhostHit_ = false;
 
 public:
-  explicit Cache2Q(size_t KIn, size_t KOut, size_t size, cacheLevel level = L1)
-      : Base(size, level) {
-    if (KIn >= size) {
-      std::cout << "invalid KIn parameter\n";
+  // Johnson/Shasha: A1in = 25%, A1out = 50% of cache capacity.
+  // https://www.openu.ac.il/home/wiseman/2os/lru/2q.pdf
+  explicit Cache2Q(size_t size, cacheLevel level = L1)
+      : Base(size, level),
+        KIn_(std::max<size_t>(1, size / 4)),
+        KOut_(std::max<size_t>(1, size / 2)),
+        AmSize_(0) {
+    if (size < 2) {
+      throw std::invalid_argument("2Q requires at least 2 cache slots");
     }
 
-    KIn_ = KIn;
-    KOut_ = KOut;
-    AmSize_ = size - KIn;
+    AmSize_ = size - KIn_;
   }
 
   const std::unordered_map<keyT, elemLoc> &getHash() const { return hash_; }
@@ -320,15 +323,13 @@ class CacheLIRS : public Cache<T, keyT> {
   }
 
 public:
-  explicit CacheLIRS(size_t size, size_t hirSize, cacheLevel level = L1)
-      : Base(size, level), sizeLIR_(0), sizeHIR_(hirSize) {
+  // Jiang/Zhang: resident HIR = 1%, LIR gets the remaining capacity.
+  // https://xiaodongzhang1911.github.io/Zhang-papers/TR-05-11.pdf
+  explicit CacheLIRS(size_t size, cacheLevel level = L1)
+      : Base(size, level), sizeLIR_(0),
+        sizeHIR_(std::max<size_t>(1, size / 100)) {
     if (size < 2) {
       throw std::invalid_argument("LIRS requires at least 2 cache slots");
-    }
-
-    if (hirSize == 0 || hirSize >= size) {
-      throw std::invalid_argument(
-          "HIR capacity must be between 1 and size - 1");
     }
 
     sizeLIR_ = size - sizeHIR_;
