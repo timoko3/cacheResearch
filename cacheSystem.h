@@ -28,6 +28,19 @@ template <typename T, typename keyT = int>
 class CacheSystem {
     std::vector<std::unique_ptr<Cache<T, keyT>>> cacheSys_;
 
+    template <typename F>
+    T lookupAt(size_t index, keyT key, F& slow_get_page){
+        if(index == cacheSys_.size()){
+            return slow_get_page(key);
+        }
+
+        return cacheSys_[index]->lookupUpdate(
+            key, 
+            [this, index, &slow_get_page](keyT requestedKey)->T{
+                return lookupAt(index + 1, requestedKey, slow_get_page);
+            }
+        );
+    }
 public:
     explicit CacheSystem(const cacheSystemParams& params) {
         if (params.levels.empty()) {
@@ -62,6 +75,11 @@ public:
                     throw std::invalid_argument("Unsupported cache strategy");
             }
         }
+    }
+
+    template <typename F>
+    T lookupUpdate(keyT key, F slow_get_page){
+        return lookupAt(0, key, slow_get_page);
     }
 
     CacheSystemStats getStats() const {

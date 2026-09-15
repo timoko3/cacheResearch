@@ -36,10 +36,8 @@ target_include_directories(general_functions PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}
 
 add_executable(cache_research
     main.cpp
-    cache.cpp
     cache.h
-    parser.cpp
-    parser.h
+    cacheSystem.h
 )
 target_compile_features(cache_research PRIVATE cxx_std_17)
 target_link_libraries(cache_research PRIVATE CacheResearch::general_functions)
