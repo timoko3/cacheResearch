@@ -1,45 +1,133 @@
-#include <fstream>
 #include <iostream>
-#include <sstream>
 #include <string>
-#include <array>
 #include <vector>
+#include <variant>
 
-#include "generalFunctions/file.h"
-
+#include "lexer.h"
+#include "cacheConfigParser.h"
 #include "cache.h"
+#include "cacheSystem.h"
 
-using namespace generalFunctions;
-using namespace cache;
+const char* strategyName(cache::cacheEvictionType type);
 
-constexpr char CONFIG_FILE_NAME[] = "config.txt";
-
-int loadPage(int key);
-
-int main()
+int main(const int argc, const char** argv)
 {
-    // std::string cacheConfig = readFile( CONFIG_FILE_NAME);
+    std::vector<std::string> args(argv + 1, argv + argc);
 
-std::list<int> requests = {
-    1, 2, 3,
-    1, 2,
-    4,
-    1, 2,
-    3, 4
-};
-// hits = 5
-    CacheREF<int> REFcache(3, requests);
 
-    for( auto& req : requests)
+    const std::string configFile = argv[1];
+
+    try
     {
-        REFcache.lookupUpdate(req, loadPage);
+        std::cout << "===== LEXER TEST =====\n";
+
+        Lexer lexer(configFile);
+
+        while (true)
+        {
+            Token token = lexer.getNextToken();
+
+            std::cout
+                << token.line
+                << ":"
+                << token.column
+                << "  ";
+
+            switch (token.type)
+            {
+                case INT:
+                    std::cout
+                        << "INT          "
+                        << std::get<int>(token.value);
+                    break;
+
+                case IDENTIFIER:
+                    std::cout
+                        << "IDENTIFIER   "
+                        << std::get<std::string>(token.value);
+                    break;
+
+                case END:
+                    std::cout << "END";
+                    break;
+
+                case ERROR:
+                    std::cout << "ERROR";
+                    break;
+            }
+
+            std::cout << '\n';
+
+            if (token.type == END)
+            {
+                break;
+            }
+        }
+
+
+        std::cout << "\n===== PARSER TEST =====\n";
+
+
+        Lexer parserLexer(configFile);
+
+        CacheConfigParser parser(parserLexer);
+
+        cache::cacheSystemParams params =
+            parser.parseConfig();
+
+        std::cout
+            << "Levels count: "
+            << params.levels.size()
+            << '\n';
+
+        for (std::size_t i = 0; i < params.levels.size(); ++i)
+        {
+            const auto& [size, level, strategy] =
+                params.levels[i];
+
+            std::cout
+                << "L" << (i + 1)
+                << ": "
+                << strategyName(strategy)
+                << '\n';
+        }
+    }
+    catch (const std::exception& error)
+    {
+        std::cerr
+            << "ERROR: "
+            << error.what()
+            << '\n';
+
+        return 1;
     }
 
-    std::cout << REFcache.getStats().amountHits << " кол-во хитов\n";
-    std::cout << REFcache.getStats().amountRequests << " кол-во запросов\n";
+    return 0;
 }
 
-int loadPage(int key)
+const char* strategyName(cache::cacheEvictionType type)
 {
-    return key; 
+    switch (type)
+    {
+        case cache::C_LFU:
+            return "LFU";
+
+        case cache::C_LRU:
+            return "LRU";
+
+        case cache::C_LIRS:
+            return "LIRS";
+
+        case cache::C_2Q:
+            return "2Q";
+
+        case cache::C_ARC:
+            return "ARC";
+
+        case cache::C_REF:
+            return "REF";
+
+        default:
+            return "UNKNOWN";
+    }
 }

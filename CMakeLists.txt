@@ -36,8 +36,13 @@ target_include_directories(general_functions PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}
 
 add_executable(cache_research
     main.cpp
+    lexer.cpp
+    cacheConfigParser.cpp
+
     cache.h
     cacheSystem.h
+    lexer.h
+    cacheConfigParser.h
 )
 target_compile_features(cache_research PRIVATE cxx_std_17)
 target_link_libraries(cache_research PRIVATE CacheResearch::general_functions)
@@ -62,15 +67,18 @@ set_target_properties(cache_research PROPERTIES
 )
 
 # Refresh the runtime file even when only config.txt changed, without relinking.
-add_custom_target(cache_research_config
-    COMMAND "${CMAKE_COMMAND}" -E make_directory "${cache_research_runtime_dir}"
-    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/config.txt"
-        "${cache_research_runtime_dir}/config.txt"
-    COMMENT "Updating runtime config.txt"
+add_custom_target(cache_research_configs
+    COMMAND "${CMAKE_COMMAND}" -E make_directory
+        "${cache_research_runtime_dir}/configs"
+
+    COMMAND "${CMAKE_COMMAND}" -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/configs"
+        "${cache_research_runtime_dir}/configs"
+
+    COMMENT "Updating runtime configs"
     VERBATIM
 )
-add_dependencies(cache_research cache_research_config)
+add_dependencies(cache_research cache_research_configs)
 
 # Relative paths inside the application resolve from its runtime directory.
 add_custom_target(run
