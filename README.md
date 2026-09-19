@@ -9,6 +9,20 @@ cmake --preset debug
 cmake --build --preset debug --parallel
 ```
 
+#### Сборка тестов:
+```
+cmake --preset debug
+cmake --build --preset debug
+```
+#### Запуск тестов:
+```
+ctest --test-dir build/Linux/debug --output-on-failure
+```
+Для запуска конкретной группы (к примеру, CacheREF):
+```
+./build/Linux/debug/cache_tests --gtest_filter='CacheREF*'
+```
+
 ## Формат входных файлов
 
 Программа принимает два файла: конфигурацию кеш-системы и входные данные теста.
@@ -23,7 +37,7 @@ cmake --build --preset debug --parallel
 4
 LFU
 LRU
-LIRS 
+LIRS
 2Q
 ```
 
