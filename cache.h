@@ -644,10 +644,10 @@ private:
     using Base_t      = Cache<T, keyT>;
     using CacheList_t = std::list<Entry_t>;
     using ReqList_t   = std::list<keyT>;
-    using CacheIt_t   = CacheList_t::iterator;
-    using ReqIt_t     = ReqList_t::iterator;
+    using CacheIt_t   = typename CacheList_t::iterator;
+    using ReqIt_t     = typename ReqList_t::iterator;
     using HashTable_t = std::unordered_map<keyT, CacheIt_t>;
-    using Dist_t      = ReqList_t::difference_type;
+    using Dist_t      = typename ReqList_t::difference_type;
     
     HashTable_t hash_;
     CacheList_t cache_;
