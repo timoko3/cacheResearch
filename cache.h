@@ -654,8 +654,8 @@ private:
     ReqList_t requests_;
     ReqIt_t pos_;
 
+    
     bool isFull () { return cache_.size() >= this->getSize(); };
-
     CacheIt_t findVictim ()
     {
         CacheIt_t victim_it = cache_.begin();

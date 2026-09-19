@@ -1,3 +1,5 @@
 /build/
+/build-tests/
+*.json
 /cmake-build-*/
 /CMakeUserPresets.json
