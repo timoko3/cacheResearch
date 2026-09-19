@@ -3,131 +3,46 @@
 #include <vector>
 #include <variant>
 
-#include "lexer.h"
-#include "cacheConfigParser.h"
+#include "./generalFunctions/lexer.h"
+#include "cacheParser.h"
 #include "cache.h"
 #include "cacheSystem.h"
 
-const char* strategyName(cache::cacheEvictionType type);
+int slowGetPage(int key);
 
 int main(const int argc, const char** argv)
 {
     std::vector<std::string> args(argv + 1, argv + argc);
-
-
     const std::string configFile = argv[1];
+    const std::string inputFile = argv[2];
 
-    try
+    Lexer configLexer(configFile);
+    Lexer inputLexer (inputFile);
+
+    CacheParser<int> Parser;
+
+    Parser.parseAll(configLexer, inputLexer);
+
+    cache::cacheSystemParams cacheSysParams = Parser.getCacheSysParams();
+    std::vector<int> requests = Parser.getReqList();
+
+    cache::CacheSystem<int> cacheSystem(cacheSysParams);
+
+    for (int request : requests)
     {
-        std::cout << "===== LEXER TEST =====\n";
-
-        Lexer lexer(configFile);
-
-        while (true)
-        {
-            Token token = lexer.getNextToken();
-
-            std::cout
-                << token.line
-                << ":"
-                << token.column
-                << "  ";
-
-            switch (token.type)
-            {
-                case INT:
-                    std::cout
-                        << "INT          "
-                        << std::get<int>(token.value);
-                    break;
-
-                case IDENTIFIER:
-                    std::cout
-                        << "IDENTIFIER   "
-                        << std::get<std::string>(token.value);
-                    break;
-
-                case END:
-                    std::cout << "END";
-                    break;
-
-                case ERROR:
-                    std::cout << "ERROR";
-                    break;
-            }
-
-            std::cout << '\n';
-
-            if (token.type == END)
-            {
-                break;
-            }
-        }
-
-
-        std::cout << "\n===== PARSER TEST =====\n";
-
-
-        Lexer parserLexer(configFile);
-
-        CacheConfigParser parser(parserLexer);
-
-        cache::cacheSystemParams params =
-            parser.parseConfig();
-
-        std::cout
-            << "Levels count: "
-            << params.levels.size()
-            << '\n';
-
-        for (std::size_t i = 0; i < params.levels.size(); ++i)
-        {
-            const auto& [size, level, strategy] =
-                params.levels[i];
-
-            std::cout
-                << "L" << (i + 1)
-                << ": "
-                << strategyName(strategy)
-                << '\n';
-        }
+        cacheSystem.lookupUpdate(request, slowGetPage);
     }
-    catch (const std::exception& error)
-    {
-        std::cerr
-            << "ERROR: "
-            << error.what()
-            << '\n';
 
-        return 1;
-    }
+    auto stats = cacheSystem.getStats();
+
+    std::cout << "Requests: " << stats.total.amountRequests << '\n';
+    std::cout << "Hits:     " << stats.total.amountHits << '\n';
+    std::cout << "Misses:   " << stats.total.amountMisses << '\n';
 
     return 0;
 }
 
-const char* strategyName(cache::cacheEvictionType type)
+int slowGetPage(int key)
 {
-    switch (type)
-    {
-        case cache::C_LFU:
-            return "LFU";
-
-        case cache::C_LRU:
-            return "LRU";
-
-        case cache::C_LIRS:
-            return "LIRS";
-
-        case cache::C_2Q:
-            return "2Q";
-
-        case cache::C_ARC:
-            return "ARC";
-
-        case cache::C_REF:
-            return "REF";
-
-        default:
-            return "UNKNOWN";
-    }
+    return key;
 }

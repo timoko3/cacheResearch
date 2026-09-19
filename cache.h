@@ -15,7 +15,7 @@
 
 namespace cache {
 
-enum cacheLevel { L1, L2 };
+enum cacheLevel { L1, L2, L3, L4, L5};
 
 enum cacheEvictionType{
     C_LRU,
@@ -23,7 +23,8 @@ enum cacheEvictionType{
     C_ARC,
     C_LIRS,
     C_2Q,
-    C_REF
+    C_REF,
+    C_UNKNOWN
 };
 
 struct cacheDescription{

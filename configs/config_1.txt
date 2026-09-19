@@ -1,5 +1,5 @@
-5
-REF
+4
+LFU
 LRU
 LIRS 
 2Q
