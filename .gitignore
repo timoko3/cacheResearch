@@ -3,3 +3,4 @@
 *.json
 /cmake-build-*/
 /CMakeUserPresets.json
+*.csv
