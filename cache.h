@@ -632,7 +632,7 @@ protected:
 };
 
 template <typename T, typename keyT = int>
-class CacheREF : public Cache<keyT, T>
+class CacheREF : public Cache<T, keyT>
 {
 private:
     struct Entry_t
@@ -697,7 +697,7 @@ public:
     ~CacheREF() = default;
 
 protected:
-    bool findAndTouch(const keyT &key) override
+    virtual const T* findAndTouch(const keyT &key) override
     {
         ++pos_;
 
@@ -705,10 +705,10 @@ protected:
 
         if (hit == hash_.end())
         {
-            return false;
+            return nullptr;
         }
 
-        return true;
+        return std::addressof(hit->second->page);
     }
 
     void insert(const keyT &key, T page) override
