@@ -99,6 +99,12 @@ add_custom_target(run
 
 enable_testing()
 
+add_executable(cache_benchmark
+    cache_benchmark.cpp
+)
+
+target_compile_features(cache_benchmark PRIVATE cxx_std_17)
+
 add_subdirectory(third_party/googletest)
 
 file(GLOB cache_test_sources CONFIGURE_DEPENDS

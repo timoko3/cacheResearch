@@ -23,6 +23,16 @@ ctest --test-dir build/Linux/debug --output-on-failure
 ./build/Linux/debug/cache_tests --gtest_filter='CacheREF*'
 ```
 
+#### Сборка бенчмарков кешей:
+```
+cmake --preset debug
+cmake --build --preset debug --target cache_benchmark
+```
+#### Запуск бенчмарков:
+```
+./build/Linux/debug/cache_benchmark
+```
+
 ## Формат входных файлов
 
 Программа принимает два файла: конфигурацию кеш-системы и входные данные теста.
