@@ -3,6 +3,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <list>
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -13,14 +14,14 @@
 namespace benchmark {
 
 const std::size_t kRequestsPerTrace = 20000;
+const std::size_t kTotalCacheCapacity = 64;
 const std::vector<unsigned> kRandomSeeds{1, 2, 3};
 
-const std::vector<cache::cacheLevel> kCacheLevels{cache::L1, cache::L2, cache::L3};
 const std::vector<double> kLevelAccessCosts{1.0, 5.0, 20.0};
-
 const double kMemoryAccessCost = 100.0;
 
-const std::size_t kTotalCacheCapacity = 64;
+const std::vector<cache::cacheLevel> kCacheLevels{cache::L1, cache::L2, cache::L3};
+
 const std::vector<std::vector<std::size_t>> kPageCacheDistribution{
     {64},
     {8, 56},
@@ -102,8 +103,7 @@ int generateRequestKey(RequestPattern patternType,
 
         case ChangingHotPages:
             return generateHotColdKey(
-                randomGenerator, static_cast<int>((requestIndex / 2000) % 4) *
-                                 static_cast<int>(kTotalCacheCapacity));
+                randomGenerator, static_cast<int>((requestIndex / 2000) % 4) * 64);
 
         case RepeatedPageBursts:
             if (requestIndex % 16 == 0) {
@@ -193,7 +193,8 @@ void checkLevelCapacities(const std::vector<std::size_t>& levelCapacities) {
     }
 
     if (totalCapacity != kTotalCacheCapacity) {
-        throw std::invalid_argument("The total cache capacity must be 64");
+        throw std::invalid_argument("The total cache capacity must be " +
+                                    std::to_string(kTotalCacheCapacity));
     }
 }
 
@@ -324,6 +325,35 @@ cache::CacheSystemStats runCacheExperiment(const cache::cacheSystemParams& confi
     return systemStatistics;
 }
 
+cache::CacheSystemStats runIdealCacheExperiment(const std::vector<int>& requestSequence) {
+    if (requestSequence.empty()) {
+        throw std::invalid_argument("Empty request list");
+    }
+
+    std::list<int> futureRequests(requestSequence.begin(), requestSequence.end());
+    cache::CacheREF<uint32_t, int> idealCache(kTotalCacheCapacity, futureRequests);
+    std::size_t memoryLoadCount = 0;
+
+    auto slowGetPage = [&](int requestedKey) {
+        ++memoryLoadCount;
+        return generatePageValue(requestedKey);
+    };
+
+    for (const int requestedKey : requestSequence) {
+        if (idealCache.lookupUpdate(requestedKey, slowGetPage) != generatePageValue(requestedKey)) {
+            throw std::runtime_error("Incorrect page from ideal cache");
+        }
+    }
+
+    cache::CacheSystemStats idealStatistics{};
+    idealStatistics.total = idealCache.getStats();
+    idealStatistics.levels.push_back({cache::L1, idealStatistics.total});
+
+    checkSystemStatistics(idealStatistics, requestSequence.size(), memoryLoadCount, 1);
+
+    return idealStatistics;
+}
+
 double calculateAverageAccessCost(const cache::CacheSystemStats& systemStatistics) {
     double totalAccessCost = systemStatistics.total.amountMisses * kMemoryAccessCost;
 
@@ -340,22 +370,29 @@ double calculateHitRate(const cache::CacheSystemStats& systemStatistics) {
            systemStatistics.total.amountRequests;
 }
 
+double calculateSlowdownPercent(double accessCost, double referenceCost) {
+    return 100 * (accessCost / referenceCost - 1);
+}
+
 
 void writeCsvHeader(std::ostream& csvOutput) {
     csvOutput << std::setprecision(12)
               << "pattern,seed,configuration,requests,"
                  "l1_requests,l1_hits,l1_misses,l2_requests,l2_hits,l2_misses,"
-                 "l3_requests,l3_hits,l3_misses,memory_misses,hit_rate,amat\n";
+                 "l3_requests,l3_hits,l3_misses,memory_misses,hit_rate,amat,"
+                 "ideal_memory_misses,ideal_hit_rate,ideal_amat,"
+                 "extra_memory_misses,slowdown_vs_ideal_pct\n";
 }
 
 void writeCsvResult(std::ostream& csvOutput,
                     const std::string& patternName,
                     unsigned randomSeed,
-                    const cache::cacheSystemParams& configuration,
-                    const cache::CacheSystemStats& systemStatistics) {
+                    const std::string& configurationName,
+                    const cache::CacheSystemStats& systemStatistics,
+                    const cache::CacheSystemStats& idealStatistics) {
 
     csvOutput << patternName << ',' << randomSeed << ','
-              << getConfigurationName(configuration) << ','
+              << configurationName << ','
               << systemStatistics.total.amountRequests;
 
     for (std::size_t levelIndex = 0; levelIndex < kCacheLevels.size(); ++levelIndex) {
@@ -372,7 +409,15 @@ void writeCsvResult(std::ostream& csvOutput,
 
     csvOutput << ',' << systemStatistics.total.amountMisses
               << ',' << calculateHitRate(systemStatistics)
-              << ',' << calculateAverageAccessCost(systemStatistics) << '\n';
+              << ',' << calculateAverageAccessCost(systemStatistics)
+              << ',' << idealStatistics.total.amountMisses
+              << ',' << calculateHitRate(idealStatistics)
+              << ',' << calculateAverageAccessCost(idealStatistics)
+              << ',' << static_cast<double>(systemStatistics.total.amountMisses) -
+                        static_cast<double>(idealStatistics.total.amountMisses)
+              << ',' << calculateSlowdownPercent(calculateAverageAccessCost(systemStatistics),
+                                                calculateAverageAccessCost(idealStatistics))
+              << '\n';
 }
 
 
@@ -405,7 +450,8 @@ void printBestConfigurations(const std::vector<cache::cacheSystemParams>& cacheC
                              const std::vector<double>& configurationScores,
                              const std::string& metricName,
                              std::size_t resultCount,
-                             const std::vector<double>& meanHitRates) {
+                             const std::vector<double>& meanHitRates,
+                             double meanIdealAccessCost = 0.0) {
 
     const auto rankedIndices = rankConfigurationScores(configurationScores);
 
@@ -423,6 +469,12 @@ void printBestConfigurations(const std::vector<cache::cacheSystemParams>& cacheC
             std::cout << " hit=" << 100 * meanHitRates[configurationIndex] << '%';
         }
 
+        if (meanIdealAccessCost > 0) {
+            std::cout << " vs REF="
+                      << calculateSlowdownPercent(configurationScores[configurationIndex],
+                                                  meanIdealAccessCost) << '%';
+        }
+
         std::cout << '\n';
     }
 
@@ -430,7 +482,15 @@ void printBestConfigurations(const std::vector<cache::cacheSystemParams>& cacheC
         if (cacheConfigurations[configurationIndex].levels.size() > 1) {
             std::cout << "  Best multi-level: "
                       << getConfigurationName(cacheConfigurations[configurationIndex])
-                      << ' ' << metricName << '=' << configurationScores[configurationIndex] << '\n';
+                      << ' ' << metricName << '=' << configurationScores[configurationIndex];
+
+            if (meanIdealAccessCost > 0) {
+                std::cout << " vs REF="
+                          << calculateSlowdownPercent(configurationScores[configurationIndex],
+                                                      meanIdealAccessCost) << '%';
+            }
+
+            std::cout << '\n';
             break;
         }
     }
@@ -446,9 +506,29 @@ std::vector<double> evaluateRequestPattern(
 
     std::vector<double> meanAccessCosts(cacheConfigurations.size(), 0.0);
     std::vector<double> meanHitRates(cacheConfigurations.size(), 0.0);
+    double meanIdealAccessCost = 0.0;
+    double meanIdealHitRate = 0.0;
+    double meanIdealMissCount = 0.0;
 
     for (const auto randomSeed : kRandomSeeds) {
         const auto requestSequence = generateRequestSequence(requestPattern.patternType, randomSeed);
+        cache::CacheSystemStats idealStatistics{};
+
+        try {
+            idealStatistics = runIdealCacheExperiment(requestSequence);
+        } catch (const std::exception& experimentError) {
+            throw std::runtime_error(
+                requestPattern.patternName + ", seed=" + std::to_string(randomSeed) +
+                ", REF: " + experimentError.what());
+        }
+
+        meanIdealAccessCost += calculateAverageAccessCost(idealStatistics) / kRandomSeeds.size();
+        meanIdealHitRate += calculateHitRate(idealStatistics) / kRandomSeeds.size();
+        meanIdealMissCount += static_cast<double>(idealStatistics.total.amountMisses) /
+                              kRandomSeeds.size();
+
+        writeCsvResult(csvOutput, requestPattern.patternName, randomSeed,
+                       "REF" + std::to_string(kTotalCacheCapacity), idealStatistics, idealStatistics);
 
         for (std::size_t configurationIndex = 0;
              configurationIndex < cacheConfigurations.size();
@@ -465,7 +545,8 @@ std::vector<double> evaluateRequestPattern(
                     calculateHitRate(systemStatistics) / kRandomSeeds.size();
 
                 writeCsvResult(csvOutput, requestPattern.patternName, randomSeed,
-                               cacheConfigurations[configurationIndex], systemStatistics);
+                               getConfigurationName(cacheConfigurations[configurationIndex]),
+                               systemStatistics, idealStatistics);
             } catch (const std::exception& experimentError) {
                 throw std::runtime_error(
                     requestPattern.patternName + ", seed=" + std::to_string(randomSeed) +
@@ -475,7 +556,13 @@ std::vector<double> evaluateRequestPattern(
         }
     }
 
-    printBestConfigurations(cacheConfigurations, meanAccessCosts, "AMAT", 3, meanHitRates);
+    std::cout << "  Ideal REF" << kTotalCacheCapacity
+              << " AMAT=" << meanIdealAccessCost
+              << " hit=" << 100 * meanIdealHitRate << '%'
+              << " mean misses=" << meanIdealMissCount << '\n';
+
+    printBestConfigurations(cacheConfigurations, meanAccessCosts, "AMAT", 3,
+                            meanHitRates, meanIdealAccessCost);
 
     return meanAccessCosts;
 }
@@ -516,7 +603,9 @@ void runCacheBenchmark(const std::string& outputFilePath) {
     std::cout << std::fixed << std::setprecision(3)
               << cacheConfigurations.size() << " configurations, "
               << kRequestsPerTrace << " requests, "
-              << kRandomSeeds.size() << " seeds; cold start included.\n";
+              << kRandomSeeds.size() << " seeds; cold start included.\n"
+              << "Reference: offline REF" << kTotalCacheCapacity
+              << ", one level; same requests and total capacity.\n";
 
     for (const auto& requestPattern : kRequestPatterns) {
         const auto meanAccessCosts = evaluateRequestPattern(
