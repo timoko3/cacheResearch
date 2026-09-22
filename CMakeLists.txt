@@ -99,11 +99,16 @@ add_custom_target(run
 
 enable_testing()
 
-add_executable(cache_benchmark
-    cache_benchmark.cpp
+add_executable(cache_benchmark_runner
+    cacheBenchmarks/cache_benchmark_runner.cpp
+    generalFunctions/lexer.cpp
 )
 
-target_compile_features(cache_benchmark PRIVATE cxx_std_17)
+target_compile_features(cache_benchmark_runner PRIVATE cxx_std_17)
+
+target_link_libraries(cache_benchmark_runner PRIVATE
+    CacheResearch::general_functions
+)
 
 add_subdirectory(third_party/googletest)
 

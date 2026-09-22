@@ -1,5 +1,0 @@
-4
-LFU
-LRU
-LIRS 
-2Q

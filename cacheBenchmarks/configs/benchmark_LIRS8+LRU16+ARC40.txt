@@ -1,0 +1,4 @@
+3
+LIRS
+LRU
+ARC
