@@ -1,4 +1,0 @@
-3
-LRU
-LFU
-LIRS
