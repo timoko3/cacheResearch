@@ -152,4 +152,54 @@ TEST(Cache2QFocused, ImmediateA1inReuseIsAHit) {
     lookupUpdateTest(c, {9, 9, 9, 10, 10}, "MHHMH");
 }
 
+TEST(Cache2Q, ReloadedPageHasNewValue) {
+    cache::Cache2Q<int, int> c(2);
+    int loads = 0;
+    auto slow = [&](int) { return ++loads; };
+
+    EXPECT_EQ(c.lookupUpdate(1, slow), 1);
+    EXPECT_EQ(c.lookupUpdate(2, slow), 2);
+    EXPECT_EQ(c.lookupUpdate(1, slow), 3);
+    EXPECT_EQ(c.lookupUpdate(1, slow), 3);
+    EXPECT_EQ(loads, 3);
+}
+
+TEST(Cache2Q, RetryFailedLoad) {
+    cache::Cache2Q<int, int> c(3);
+    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int {
+        throw std::runtime_error("load failed");
+    }), std::runtime_error);
+
+    int loads = 0;
+    auto slow = [&](int) { ++loads; return 420; };
+    EXPECT_EQ(c.lookupUpdate(42, slow), 420);
+    EXPECT_EQ(c.lookupUpdate(42, slow), 420);
+    EXPECT_EQ(loads, 1);
+}
+
+TEST(Cache2Q, VectorPage) {
+    cache::Cache2Q<std::vector<int>, int> c(3);
+    int loads = 0;
+    auto slow = [&](int key) { ++loads; return std::vector<int>{key, key + 1}; };
+
+    auto page = c.lookupUpdate(7, slow);
+    ASSERT_EQ(page.size(), 2);
+    page[0] = -1;
+    page[1] = -2;
+    EXPECT_EQ(page, (std::vector<int>{-1, -2}));
+    EXPECT_EQ(c.lookupUpdate(7, slow), (std::vector<int>{7, 8}));
+    EXPECT_EQ(loads, 1);
+}
+
+TEST(Cache2Q, StringKeys) {
+    cache::Cache2Q<int, std::string> c(3);
+    int loads = 0;
+    auto slow = [&](const std::string& key) { ++loads; return static_cast<int>(key.size()); };
+
+    EXPECT_EQ(c.lookupUpdate("alpha", slow), 5);
+    EXPECT_EQ(c.lookupUpdate("alpha", slow), 5);
+    EXPECT_EQ(c.lookupUpdate("beta", slow), 4);
+    EXPECT_EQ(loads, 2);
+}
+
 } // namespace tests

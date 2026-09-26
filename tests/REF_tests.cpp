@@ -140,4 +140,56 @@ TEST(CacheREFFocused, MixedOptimalTraceHasExpectedStatistics) {
     lookupUpdateTest(c, requests, "MMMHMHHMH");
 }
 
+TEST(CacheREF, ReloadedPageHasNewValue) {
+    cache::CacheREF<int, int> c(1, std::list<int>{1, 2, 1, 1});
+    int loads = 0;
+    auto slow = [&](int) { return ++loads; };
+
+    EXPECT_EQ(c.lookupUpdate(1, slow), 1);
+    EXPECT_EQ(c.lookupUpdate(2, slow), 2);
+    EXPECT_EQ(c.lookupUpdate(1, slow), 3);
+    EXPECT_EQ(c.lookupUpdate(1, slow), 3);
+    EXPECT_EQ(loads, 3);
+}
+
+TEST(CacheREF, RetryFailedLoad) {
+    cache::CacheREF<int, int> c(3, std::list<int>{42, 42, 42});
+    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int {
+        throw std::runtime_error("load failed");
+    }), std::runtime_error);
+
+    int loads = 0;
+    auto slow = [&](int) { ++loads; return 420; };
+    EXPECT_EQ(c.lookupUpdate(42, slow), 420);
+    EXPECT_EQ(c.lookupUpdate(42, slow), 420);
+    EXPECT_EQ(loads, 1);
+}
+
+TEST(CacheREF, VectorPage) {
+    cache::CacheREF<std::vector<int>, int> c(3, std::list<int>{7, 7});
+    int loads = 0;
+    auto slow = [&](int key) { ++loads; return std::vector<int>{key, key + 1}; };
+
+    auto page = c.lookupUpdate(7, slow);
+    ASSERT_EQ(page.size(), 2);
+    page[0] = -1;
+    page[1] = -2;
+    EXPECT_EQ(page, (std::vector<int>{-1, -2}));
+    EXPECT_EQ(c.lookupUpdate(7, slow), (std::vector<int>{7, 8}));
+    EXPECT_EQ(loads, 1);
+}
+
+TEST(CacheREF, StringKeys) {
+    cache::CacheREF<int, std::string> c(
+        3, std::list<std::string>{"alpha", "alpha", "beta"});
+    int loads = 0;
+    auto slow = [&](const std::string& key) { ++loads; return static_cast<int>(key.size()); };
+
+    EXPECT_EQ(c.lookupUpdate("alpha", slow), 5);
+    EXPECT_EQ(c.lookupUpdate("alpha", slow), 5);
+    EXPECT_EQ(c.lookupUpdate("beta", slow), 4);
+    EXPECT_EQ(loads, 2);
+}
+
+
 } // namespace tests
