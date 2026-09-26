@@ -5,3 +5,5 @@
 /cmake-build-*/
 /CMakeUserPresets.json
 *.csv
+**/configs/
+**/inputs/
