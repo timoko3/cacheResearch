@@ -191,5 +191,17 @@ TEST(CacheREF, StringKeys) {
     EXPECT_EQ(loads, 2);
 }
 
+TEST(CacheREF, GetOutOfRangeThrow) {
+    cache::CacheREF<int, int> c(3, std::list<int>{1, 2, 3});
+
+    auto slow = [](int key) { return key; };
+
+    EXPECT_EQ(c.lookupUpdate(1, slow), 1);
+    EXPECT_EQ(c.lookupUpdate(2, slow), 2);
+    EXPECT_EQ(c.lookupUpdate(3, slow), 3);
+
+    EXPECT_THROW(c.lookupUpdate(4, slow), std::out_of_range);
+    EXPECT_THROW(c.lookupUpdate(5, slow), std::out_of_range);
+}
 
 } // namespace tests
