@@ -1,0 +1,98 @@
+{
+  "requests": 6000,
+  "seeds": [
+    1
+  ],
+  "workload_scale": 290,
+  "max_levels": 3,
+  "totals": [
+    8,
+    16,
+    36,
+    64,
+    145,
+    290
+  ],
+  "patterns": [
+    "small_cycle",
+    "boundary_cycle",
+    "scan",
+    "hot_cold",
+    "hot_scan",
+    "phase_change",
+    "bursts",
+    "uniform",
+    "popular",
+    "navigation"
+  ],
+  "objective": "external_loads",
+  "level_lookup_cost": 0,
+  "capacity_limits": null,
+  "input_sha256": {
+    "small_cycle": "340ce2474e9ed2b139d10fab333f5f3209495a014947ec91f82daaacb71aa90d",
+    "boundary_cycle": "6d30028a795c1e111bfffa723c2e014ba8f9b2b137aaf711a32a0a7450b3da07",
+    "scan": "98deca2136d3774598f8611dff21ffff0bbbb3b043e7e6bce07878cc4b33e0ae",
+    "hot_cold": "31631c1f7dded2247b20eb6807902362cb60bcf417eb8c27ff239165af1279dd",
+    "hot_scan": "5e67c431c6878c990c793bfa931ea323418473df0756cd37939b7b759f24bc9e",
+    "phase_change": "54a764e187eb0eb8e779e23db4a0d04cc66c8311749131f473b98c338c3410a3",
+    "bursts": "098cea39ea60395bf2875e92bb1360bb67d3ee3c148683cc7c22c31eb6b341fa",
+    "uniform": "243955acc440af9099ee0204bf8bb4d713a36e1af292607f3b7d5885bc4261f1",
+    "popular": "abf372e384a524033456a452a2cf83acb0de8796e4b989d9e20067a352e44475",
+    "navigation": "2cb8f860701ca6c1354b41f631271139ebb2096582f0190ef94e6d37166620a1"
+  },
+  "source_sha256": {
+    "C:\\MIPT\\proga\\vlados\\cacheResearch\\cacheBenchmarks\\cache_unrestricted.py": "9f5905912c4320d55e86bc2c30d433684eb309aa4cbab704b254381e68faa390",
+    "C:\\MIPT\\proga\\vlados\\cacheResearch\\cacheBenchmarks\\cache_exact_search.cpp": "c98e257f1a90e358de4a730186bcfdd2212314bc79d376fbac56ac801d6dac99",
+    "C:\\MIPT\\proga\\vlados\\cacheResearch\\cacheBenchmarks\\research_workloads.py": "bc718b0f797d3afa9ccab1f93332290d1e2a17f0425466c3d4205dfb75500afe",
+    "C:\\MIPT\\proga\\vlados\\cacheResearch\\cacheBenchmarks\\research_report.py": "2527b7312621fe9c84f5fc418afed195ee65ee6a4ea39681e7734b0c016f88df",
+    "cache.h": "06bfca17d566b46467cc75418fe908931950bea3f9f52c3c61ea93055589c34d"
+  },
+  "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc",
+  "input_hash_format": "UTF-8 with LF line endings",
+  "tie_break": "fewest_levels",
+  "status": "complete_with_omissions",
+  "runners": {
+    "Windows": {
+      "sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+    },
+    "Linux": {
+      "sha256": "3c28df95ba498438704ec63fff5b49b2f127566b2d4dbdd556ec40655fe50452",
+      "compiler": "GNU 13.3.0",
+      "build_type": "Release"
+    }
+  },
+  "cross_platform_check": {
+    "pattern": "uniform",
+    "total": 64,
+    "same_configuration_misses_and_pruning_counts": true
+  },
+  "omitted_points": [
+    {
+      "pattern": "uniform",
+      "total": 290,
+      "reason": "Stopped because of computation time"
+    },
+    {
+      "pattern": "popular",
+      "total": 290,
+      "reason": "Stopped because of computation time"
+    }
+  ],
+  "validation": {
+    "seeds": [
+      2,
+      3
+    ],
+    "configuration_selection": "unchanged_from_search",
+    "training_replay_matches": true,
+    "runner_sha256": "03063f417f7247fdd03f9d8bd43ea4a157160757468c46f77f61bddd8535dd13",
+    "csv_sha256": "a2d1ad3ba431326db6144565c6abac372e6a06647cacbe33d8fa997c7eaeaf8a",
+    "source_sha256": "619dc5b24cb512fbd15474b9cf71be681077943076680934fd69e88fcac5c176"
+  },
+  "results_sha256": "82922025e7e8546e9a09ee677eedd93a97a7e5c7640e027ddcfae1e0f506722b",
+  "report_source_sha256": {
+    "cache_unrestricted.py": "619dc5b24cb512fbd15474b9cf71be681077943076680934fd69e88fcac5c176",
+    "research_report.py": "3fa51a74fd64b5a9dca02b95791c20aa712e9ddd3d0b5cbf223440441edfc613",
+    "unrestricted_report.py": "bae41284a43ffb5ec5b31e82ea6fddef195a0257022fb4fe15283cc7b9e1708e"
+  }
+}
