@@ -110,6 +110,10 @@ target_link_libraries(cache_benchmark_runner PRIVATE
     CacheResearch::general_functions
 )
 
+add_executable(cache_exact_search cacheBenchmarks/cache_exact_search.cpp)
+target_compile_features(cache_exact_search PRIVATE cxx_std_17)
+target_link_libraries(cache_exact_search PRIVATE CacheResearch::general_functions)
+
 add_subdirectory(third_party/googletest)
 
 file(GLOB cache_test_sources CONFIGURE_DEPENDS
