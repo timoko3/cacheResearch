@@ -1,57 +1,235 @@
 # Cache Research
 
-**[Результаты исследования и отчёты](cacheBenchmarks/reports/README.md)** — описание экспериментов, основные выводы и ссылки на подробные результаты.
+**[Результаты исследования и отчёты](cacheBenchmarks/reports/README.md)** —
+описание экспериментов, основные выводы и подробные результаты.
 
-## Настройка, сборка и запуск
+Этот README описывает сборку и запуск. Все команды выполняются **из корня
+репозитория**.
 
-Все команды выполняются из корня проекта.
+## 1. Подготовка
+
+Нужны компилятор C++17, CMake 3.24 или новее, Ninja и Python 3.
+В примерах Python запускается командой `python`; если в системе используется
+`python3`, замените её во всех командах.
+
+Инициализируйте подмодули и установите библиотеку графиков:
 
 ```sh
-cmake --preset debug
-cmake --build --preset debug --parallel
+git submodule update --init --recursive
+python -m pip install matplotlib
 ```
 
-#### Сборка тестов:
-```
-cmake --preset debug
-cmake --build --preset debug
-```
-#### Запуск тестов:
-```
-ctest --test-dir build/Linux/debug --output-on-failure
-```
-Для запуска конкретной группы (к примеру, CacheREF):
-```
-./build/Linux/debug/cache_tests --gtest_filter='CacheREF*'
+## 2. Сборка бенчмарков
+
+```sh
+cmake --preset release
+cmake --build --preset release --target cache_benchmark_runner cache_exact_search cache_tests --parallel
 ```
 
-#### Сборка бенчмарков кешей:
+Эта команда собирает два исполнителя для экспериментов и C++ тесты.
+Пути зависят от операционной системы. Задайте переменные для последующих
+команд **в той же сессии терминала**.
+
+**Windows, PowerShell:**
+
+```powershell
+$buildDir = "build/Windows/release"
+$runner = "$buildDir/cache_benchmark_runner.exe"
+$exact = "$buildDir/cache_exact_search.exe"
 ```
-cmake -S . -B build-benchmark -DCMAKE_BUILD_TYPE=Release
-cmake --build build-benchmark --target cache_benchmark_runner -j
+
+**Linux, Bash:**
+
+```bash
+buildDir="build/Linux/release"
+runner="$buildDir/cache_benchmark_runner"
+exact="$buildDir/cache_exact_search"
 ```
-#### Запуск исходного бенчмарка (64 страницы):
+
+Дальнейшие команды с `"$runner"`, `"$exact"` и `"$buildDir"` работают
+с этими переменными. Если сборка уже находится в другом каталоге, например
+`build/Windows/research`, укажите его в переменных.
+
+В Linux без Ninja можно использовать пресет `release-make` в обеих командах
+сборки и каталог `build/Linux/release-make`.
+
+## 3. Короткая проверка запуска
+
+Небольшой одноуровневый эксперимент:
+
+```sh
+python cacheBenchmarks/cache_research.py --mode software --runner "$runner" --root build/bench-smoke --requests 200 --seeds 1 --sizes 8 16
 ```
-python3 ./cacheBenchmarks/cache_benchmark.py --runner ./build-benchmark/cache_benchmark_runner
+
+В `build/bench-smoke/software/` появятся CSV с измерениями и сводками,
+графики и параметры запуска.
+
+## 4. Запуск экспериментов
+
+Примеры сохраняют новые результаты в `build/bench-results/`.
+Так они не заменяют опубликованные таблицы и рисунки в `cacheBenchmarks/reports/`.
+
+### Влияние размера кеша на выбор алгоритма
+
+```sh
+python cacheBenchmarks/cache_research.py --mode software --runner "$runner" --root build/bench-results
 ```
 
-##### Доступные параметры:
+По умолчанию: 30 вместимостей, 10 видов запросов, 20 000 обращений
+и пять начальных значений генератора. Результаты — в `build/bench-results/software/`.
 
-- `--runner PATH` — путь к исполняемому файлу `cache_benchmark_runner`;
-- `--root PATH` — директория для сгенерированных конфигураций и входных данных. По умолчанию `./cacheBenchmarks`;
-- `--requests N` — количество запросов в одном benchmark-запуске. По умолчанию `20000`;
-- `--seeds N [N ...]` — набор seed'ов, для которых выполняются тесты. По умолчанию `1 2 3`;
-- `--output PATH` — путь к итоговому CSV-файлу. По умолчанию `./cacheBenchmarks/cache_benchmark_results.csv`.
+### Иерархия, приближённая к процессорной
 
-## Формат входных файлов
+```sh
+python cacheBenchmarks/cache_research.py --mode hierarchy --runner "$runner" --root build/bench-results
+```
 
-Программа принимает два файла: конфигурацию кеш-системы и входные данные теста.
+По умолчанию: три уровня, общий объём 290 страниц, пределы вместимости
+4/64/256, восемь видов запросов, 20 000 обращений и пять начальных
+значений генератора. Результаты — в `build/bench-results/hierarchy/`.
 
-### Файл конфигурации
+Параметр `--mode all` запускает оба этих эксперимента.
 
-Первое значение — количество уровней кеша. После него должны идти стратегии вытеснения для каждого уровня в порядке от `L1` к последнему уровню.
+| Параметр `cache_research.py` | Назначение |
+|---|---|
+| `--root PATH` | Общая папка результатов; без указания — `cacheBenchmarks/reports` |
+| `--requests N` | Число запросов; по умолчанию 20 000 |
+| `--seeds N ...` | Начальные значения генератора; по умолчанию 1 2 3 4 5 |
+| `--sizes N ...` | Вместимости одноуровневого кеша |
+| `--total N` | Общая вместимость иерархии; по умолчанию 290 |
+| `--level-limits N N N` | Верхние границы размеров L1, L2 и L3 |
+| `--l1-sizes N ...`, `--l2-sizes N ...` | Проверяемые размеры первых двух уровней; L3 получает остаток |
+| `--workload-scale N` | Масштаб генерации запросов; по умолчанию 290, независимо от вместимости кеша |
+| `--trace PATH` | Собственная последовательность для режима `software` |
+| `--generate-only` | Сохранить план опыта без запуска симулятора |
 
-Пример `configs/config_1.txt`:
+### Иерархия с бесплатным обращением к уровням
+
+Сначала можно выполнить небольшой поиск:
+
+```sh
+python cacheBenchmarks/cache_unrestricted.py --runner "$exact" --output build/bench-smoke/unrestricted --patterns uniform --totals 4 8 --requests 200
+```
+
+Полная серия запускается отдельно:
+
+```sh
+python cacheBenchmarks/cache_unrestricted.py --runner "$exact" --output build/bench-results/unrestricted
+```
+
+По умолчанию проверяются общие объёмы 8, 16, 36, 64, 145 и 290,
+от одного до трёх уровней, 10 видов запросов и последовательности
+из 6000 обращений с начальным значением 1.
+Точный поиск на больших объёмах может занимать много времени.
+Команда запрашивает все 60 сочетаний, включая две точки,
+для которых в опубликованном исследовании результатов нет.
+
+| Параметр `cache_unrestricted.py` | Назначение |
+|---|---|
+| `--output PATH` | Папка этой серии; без указания — `cacheBenchmarks/reports/unrestricted` |
+| `--patterns NAME ...` | Виды запросов, например `uniform popular navigation`; полный список — в `--help` |
+| `--totals N ...` | Общие вместимости |
+| `--max-levels 1\|2\|3` | Максимальное число уровней; по умолчанию 3 |
+| `--requests N`, `--seeds N ...` | Длина и начальные значения последовательностей для подбора |
+| `--workload-scale N` | Масштаб генерации запросов; по умолчанию 290 |
+| `--workers N` | Число одновременно рассчитываемых видов запросов; по умолчанию 2 |
+
+### Проверка выбранных конфигураций и пересчёт графиков
+
+После завершённого поиска можно сравнить выбранные конфигурации на новых
+последовательностях без повторного подбора:
+
+```sh
+python cacheBenchmarks/cache_unrestricted.py --validate-with "$runner" --validation-seeds 2 3 --output build/bench-results/unrestricted
+```
+
+Начальные значения проверки должны отличаться от использованных при подборе.
+Результат сохраняется в `validation.csv`.
+
+Пересчитать сводную таблицу и рисунки по сохранённым результатам:
+
+```sh
+python cacheBenchmarks/cache_unrestricted.py --render-only --output build/bench-results/unrestricted
+```
+
+## 5. Собственная последовательность запросов
+
+Создайте текстовый файл, например `requests.txt`:
+
+```text
+a b a c b d a
+```
+
+Каждое слово обозначает объект; одинаковые слова — один и тот же объект.
+Количество запросов в начале файла указывать не нужно.
+
+```sh
+python cacheBenchmarks/cache_research.py --mode software --runner "$runner" --trace requests.txt --sizes 2 4 8 --root build/custom-trace
+```
+
+Последовательность используется целиком. Параметры `--requests` и `--seeds`
+не меняют запросы из файла.
+
+## 6. Тесты
+
+C++ тесты:
+
+```sh
+ctest --test-dir "$buildDir" --output-on-failure
+```
+
+Python тесты запускаются из корня проекта. Для интеграционных проверок
+укажите оба исполнителя.
+
+**Windows, PowerShell:**
+
+```powershell
+$env:CACHE_RESEARCH_RUNNER = (Resolve-Path $runner).Path
+$env:CACHE_EXACT_SEARCH = (Resolve-Path $exact).Path
+python -m unittest discover -s cacheBenchmarks -p "test_*.py" -v
+```
+
+**Linux, Bash:**
+
+```bash
+CACHE_RESEARCH_RUNNER="$runner" CACHE_EXACT_SEARCH="$exact" python -m unittest discover -s cacheBenchmarks -p "test_*.py" -v
+```
+
+Без этих переменных модульные проверки выполняются, а интеграционные
+явно пропускаются. Обнаружение тестов начинается с `cacheBenchmarks`,
+хотя сами файлы находятся в `cacheBenchmarks/tests/`.
+
+## 7. Структура кода и результатов
+
+```text
+cacheBenchmarks/
+  cache_benchmark.py       исходный эксперимент на 64 страницы
+  cache_research.py        одноуровневый и процессорный эксперименты
+  cache_unrestricted.py    точный поиск и проверка выбранных конфигураций
+  research/
+    model.py              ограничения и метрики
+    reference.py          эталон REF
+    workloads.py          последовательности запросов
+    runner.py             взаимодействие с C++ симулятором
+    results.py            сводные таблицы и сохранение результатов
+    plots.py              графики
+  tests/                  Python тесты
+  reports/                отчёты и результаты
+```
+
+Одноуровневый и процессорный эксперименты сохраняют `raw.csv`,
+`summary.csv`, рисунки.
+Точный поиск сохраняет `results.json`, `summary.csv`, рисунки.
+проверка на новых запросах дополнительно создаёт `validation.csv`.
+
+Папки `work/` и `inputs/` содержат служебные файлы запуска.
+
+## 8. Обычный запуск
+
+Перед сборкой создайте в корне папки `configs/` и `inputs/`:
+CMake копирует их в каталог приложения. Сохраните в них следующие файлы.
+
+`configs/config_1.txt` — число уровней и алгоритмы сверху вниз:
 
 ```text
 4
@@ -61,24 +239,7 @@ LIRS
 2Q
 ```
 
-Для этого примера создаётся кеш-система из 4 уровней:
-
-```text
-L1 -> LFU
-L2 -> LRU
-L3 -> LIRS
-L4 -> 2Q
-```
-
-Разделителями между значениями могут быть пробелы, табы и переводы строк.
-
-### Файл входных данных
-
-Сначала указываются размеры всех уровней кеша. Количество размеров должно совпадать с количеством уровней из файла конфигурации.
-
-После размеров указывается количество запросов, а затем — сами запросы.
-
-Пример `inputs/input_1.txt`:
+`inputs/input_1.txt` — вместимости уровней, число запросов и идентификаторы:
 
 ```text
 3 4 5 7
@@ -86,86 +247,21 @@ L4 -> 2Q
 1 2 3 2 1
 ```
 
-Для конфигурации из 4 уровней это означает:
-
-```text
-Размеры уровней: 3 4 5 7
-Количество запросов: 5
-Запросы: 1 2 3 2 1
-```
-
-Количество запросов в файле должно совпадать с указанным значением.
-
-## Запуск
-
-Все команды выполняются из корня проекта.
-
-Сначала настроить и собрать проект:
-
 ```sh
-cmake --preset debug
-cmake --build --preset debug --parallel
+cmake --build --preset release --target cache_research --parallel
 ```
 
-Затем запустить программу, передав первым аргументом файл конфигурации, а вторым — файл входных данных:
+**Windows, PowerShell:**
 
-```sh
-./build/Linux/debug/bin/Debug/cache_research configs/config_1.txt inputs/input_1.txt
+```powershell
+& "$buildDir/bin/Release/cache_research.exe" configs/config_1.txt inputs/input_1.txt
 ```
 
-Общий вид запуска:
+**Linux, Bash:**
 
-```sh
-./build/Linux/debug/bin/Debug/cache_research <config_file> <input_file>
-```
-## Исследования кешей
-
-Описание экспериментов, методика и результаты собраны [тут](cacheBenchmarks/reports/README.md). Ниже приведены команды для запуска исследований.
-
-Пример сборки в Windows:
-
-```sh
-cmake -S . -B build/Windows/research -G Ninja -DCMAKE_BUILD_TYPE=Release
-cmake --build build/Windows/research --target cache_benchmark_runner cache_exact_search
+```bash
+"$buildDir/bin/Release/cache_research" configs/config_1.txt inputs/input_1.txt
 ```
 
-Запуск новых опытов отдельно:
-
-```sh
-python cacheBenchmarks/cache_research.py --mode software --runner build/Windows/research/cache_benchmark_runner.exe
-python cacheBenchmarks/cache_research.py --mode hierarchy --runner build/Windows/research/cache_benchmark_runner.exe
-```
-
-В Linux замените путь runner на путь к Linux-сборке без .exe.
-
-| Параметр нового скрипта | Назначение |
-|---|---|
-| --mode software/hierarchy/all | Какой опыт выполнить |
-| --root PATH | Каталог результатов; по умолчанию cacheBenchmarks/reports |
-| --requests N | Длина искусственной последовательности; по умолчанию 20000 |
-| --seeds N ... | Начальные значения генератора; по умолчанию 1 2 3 4 5 |
-| --sizes N ... | Размеры одного программного кеша |
-| --trace PATH | Свои запросы в режиме software, по одному идентификатору на слово |
-| --total N | Сумма размеров трёх уровней; по умолчанию 290 |
-| --level-limits N N N | Верхние границы L1, L2, L3; по умолчанию 4 64 256 |
-| --l1-sizes N ... | Проверяемые размеры L1; по умолчанию 1 2 4 |
-| --l2-sizes N ... | Проверяемые размеры L2; по умолчанию 16 32 48 64 |
-| --workload-scale N | Масштаб наборов объектов в искусственных запросах; по умолчанию 290 |
-| --generate-only | Сохранить plan.json без запуска экспериментов |
-
-Одинаковые запросы используются для всех размеров и алгоритмов.
-Результаты программного кеша и иерархии находятся в разных подкаталогах.
-
-Исходный `cache_benchmark.py` остаётся отдельным опытом на 64 страницы.
-Он сохраняет параметры `--output`, `--root` и `--generate-only`.
-В сравнении с REF теперь выводится процент от его стоимости:
-100% означает равенство, а 150% — стоимость в полтора раза больше.
-
-### Проверки новых модулей
-
-```sh
-python -m unittest discover -s cacheBenchmarks -p "test_*.py" -v
-```
-
-Для интеграционных проверок задайте переменную окружения CACHE_RESEARCH_RUNNER
-с путём к исполняемому runner. Без неё эта проверка будет явно пропущена.
+Количество вместимостей должно совпадать с количеством уровней, а число
+идентификаторов — с заявленным количеством запросов.

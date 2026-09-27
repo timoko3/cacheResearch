@@ -5,5 +5,17 @@
 /cmake-build-*/
 /CMakeUserPresets.json
 *.csv
-**/configs/
-**/inputs/
+
+# Published reports: keep only compact evidence and figures.
+__pycache__/
+/cacheBenchmarks/configs
+/cacheBenchmarks/inputs
+/cacheBenchmarks/local_data/
+/cacheBenchmarks/reports/**/work/
+/cacheBenchmarks/reports/**/inputs/
+/cacheBenchmarks/reports/*/manifest.json
+!/cacheBenchmarks/reports/*/summary.csv
+!/cacheBenchmarks/reports/software/comparison_with_lru.csv
+!/cacheBenchmarks/reports/hierarchy/optimal_strategies_by_pattern.csv
+!/cacheBenchmarks/reports/unrestricted/results.json
+!/cacheBenchmarks/reports/unrestricted/validation.csv
