@@ -116,7 +116,7 @@ file(GLOB cache_test_sources CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/*_tests.cpp"
 )
 
-add_executable(cache_tests ${cache_test_sources})
+add_executable(cache_tests ${cache_test_sources} generalFunctions/lexer.cpp)
 
 target_link_libraries(cache_tests PRIVATE
     CacheResearch::general_functions
