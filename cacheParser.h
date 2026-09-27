@@ -15,10 +15,12 @@ using namespace cache;
 template <typename keyT = int>
 class CacheParser
 {
-    size_t num_of_levels_;
-    cache::cacheSystemParams cacheSysParams_;
+    size_t num_of_levels_ = 0;
+    cache::cacheSystemParams cacheSysParams_{};
+
+    bool config_parsed_ = false;
     std::vector<keyT> requests_;
-    Token currentToken_;
+    Token currentToken_{};
 
 public:
     CacheParser() {};
@@ -26,6 +28,10 @@ public:
 
     void parseConfig(Lexer& configLexer)
     {
+        num_of_levels_ = 0;
+        cacheSysParams_.levels.clear();
+        config_parsed_ = false;
+
         currentToken_ = configLexer.getNextToken();
 
         if (currentToken_.type != INT)
@@ -35,6 +41,18 @@ public:
         }
 
         num_of_levels_ = std::get<int>(currentToken_.value);
+
+        if (num_of_levels_ < 0)
+        {
+            grammarError(currentToken_, configLexer,
+                         "Number of cache levels cannot be negative");
+        }
+
+        if (num_of_levels_ > MAX_CACHE_LEVELS)
+        {
+            grammarError(currentToken_, configLexer,
+                         "Too many cache levels");
+        }
 
         for (size_t cur_level = L1; cur_level < num_of_levels_; cur_level++)
         {
@@ -54,13 +72,27 @@ public:
         if (endToken.type != END)
         {
             grammarError(endToken, configLexer,
-                         "Check num of levels, not all have parsed yet");
+                         "Check num of levels not all have parsed yet");
         }
+
+        config_parsed_ = true;
 
     }
 
     void parseInput(Lexer& configInput)
     {
+        if (!config_parsed_)
+        {
+            throw std::logic_error("parseInput call before parseConfig");
+        }
+
+        if (cacheSysParams_.levels.size() != static_cast<size_t>(num_of_levels_))
+        {
+            throw std::logic_error("incorrect size of levels arr");
+        }
+
+        requests_.clear();
+
         for (size_t level_it = 0; level_it < num_of_levels_; ++level_it)
         {
             currentToken_ = configInput.getNextToken();
@@ -71,7 +103,7 @@ public:
                              "Incorrect size of cache level");
             }
 
-            cacheSysParams_.levels[level_it].size =
+            cacheSysParams_.levels.at(level_it).size =
                 std::get<int>(currentToken_.value);
         }
 
@@ -85,14 +117,9 @@ public:
 
         size_t num_of_requests = std::get<int>(currentToken_.value);
 
-        //std::cout << "NUM_OF_REQ " << num_of_requests << "\n\n"; 
-
         for (size_t request_it = 0; request_it < num_of_requests; ++request_it)
         {
             currentToken_ = configInput.getNextToken();
-
-            // std::cout << "TTTTT " << currentToken_.type << "\n";
-            // std::cout << "VVVVV " << std::get<int>(currentToken_.value) << "\n\n"; 
             
             if (currentToken_.type == END)
             {

@@ -13,6 +13,8 @@
 #include <algorithm>
 #include <vector>
 
+#define MAX_CACHE_LEVELS 5
+
 namespace cache {
 
 enum cacheLevel { L1, L2, L3, L4, L5};
