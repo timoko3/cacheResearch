@@ -10,8 +10,6 @@
 #include "cache.h"
 #include "cacheSystem.h"
 
-using namespace cache;
-
 template <typename keyT = int>
 class CacheParser
 {
@@ -42,19 +40,13 @@ public:
 
         num_of_levels_ = std::get<int>(currentToken_.value);
 
-        if (num_of_levels_ < 0)
-        {
-            grammarError(currentToken_, configLexer,
-                         "Number of cache levels cannot be negative");
-        }
-
         if (num_of_levels_ > MAX_CACHE_LEVELS)
         {
             grammarError(currentToken_, configLexer,
                          "Too many cache levels");
         }
 
-        for (size_t cur_level = L1; cur_level < num_of_levels_; cur_level++)
+        for (size_t cur_level = cache::L1; cur_level < num_of_levels_; cur_level++)
         {
             currentToken_ = configLexer.getNextToken();
 
@@ -64,7 +56,7 @@ public:
                              "Not enought levels in config file");
             }
 
-            parseLevel(static_cast<cacheLevel>(cur_level), configLexer);
+            parseLevel(static_cast<cache::cacheLevel>(cur_level), configLexer);
         }
 
         Token endToken = configLexer.getNextToken();
@@ -166,20 +158,20 @@ private:
     cache::cacheEvictionType parseStrategy(const std::string& strategy_name, 
                                            const Lexer& lexer) const
     {
-        if (strategy_name == "LFU")  return C_LFU;
-        if (strategy_name == "LRU")  return C_LRU;
-        if (strategy_name == "LIRS") return C_LIRS;
-        if (strategy_name == "2Q")   return C_2Q;
-        if (strategy_name == "ARC")  return C_ARC;
-        if (strategy_name == "REF")  return C_REF;
+        if (strategy_name == "LFU")  return cache::C_LFU;
+        if (strategy_name == "LRU")  return cache::C_LRU;
+        if (strategy_name == "LIRS") return cache::C_LIRS;
+        if (strategy_name == "2Q")   return cache::C_2Q;
+        if (strategy_name == "ARC")  return cache::C_ARC;
+        if (strategy_name == "REF")  return cache::C_REF;
 
         grammarError(currentToken_,lexer,
                      "Unknown cache strategy");
 
-        return C_UNKNOWN; // unreachable
+        return cache::C_UNKNOWN; // unreachable
     }
 
-    void parseLevel(cacheLevel level, const Lexer& lexer)
+    void parseLevel(cache::cacheLevel level, const Lexer& lexer)
     {
         if (currentToken_.type != IDENTIFIER)
         {
