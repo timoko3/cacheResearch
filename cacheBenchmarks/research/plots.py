@@ -54,7 +54,7 @@ def plot_software(folder, summary, patterns, scale):
                 label="REF",
             )
             axis.set_title(pattern_label(pattern, scale), fontsize=11)
-            axis.set_xlabel("Вместимость кеша, объектов")
+            axis.set_xlabel("Вместимость кеша, страниц")
             axis.set_ylabel("Загрузок на 1000 запросов")
             axis.set_xscale("log", base=2)
             shown_sizes = [int(row["capacities"]) for row in reference]
@@ -134,7 +134,7 @@ def plot_size_details(folder, summary, patterns, scale):
             label="REF",
         )
         axis.set_title(pattern_label(pattern, scale), fontsize=11)
-        axis.set_xlabel("Вместимость кеша, объектов")
+        axis.set_xlabel("Вместимость кеша, страниц")
         axis.set_ylabel("Загрузок на 1000 запросов")
         axis.set_ylim(bottom=0)
         axis.grid(alpha=0.25)
@@ -258,7 +258,7 @@ def plot_unrestricted(folder, results, metadata):
                 color="#555555",
             )
         axis.set_title(pattern_label(pattern, metadata["workload_scale"]), fontsize=10)
-        axis.set_xlabel("Суммарная вместимость, объектов")
+        axis.set_xlabel("Суммарная вместимость, страниц")
         axis.set_ylabel("Загрузок на 1000 запросов")
         axis.set_xscale("log", base=2)
         axis.set_xticks(total_capacities, [str(value) for value in total_capacities], fontsize=8)
@@ -304,7 +304,7 @@ def plot_configurations(folder, results, metadata):
         range(len(patterns)),
         [pattern_label(pattern, metadata["workload_scale"]) for pattern in patterns],
     )
-    axis.set_xlabel("Суммарная вместимость, объектов")
+    axis.set_xlabel("Суммарная вместимость, страниц")
     axis.set_title(
         "Выбранные алгоритмы и размеры: сверху вниз L1 → L2 → L3\n"
         "Синий: 1 уровень; оранжевый: 2; зелёный: 3. При равенстве показан один вариант.",

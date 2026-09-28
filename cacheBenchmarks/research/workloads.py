@@ -4,11 +4,11 @@ import random
 from pathlib import Path
 
 PATTERN_LABELS = {
-    "small_cycle": "Цикл 145 объектов",
-    "boundary_cycle": "Цикл 291 объекта",
+    "small_cycle": "Цикл 145 страниц",
+    "boundary_cycle": "Цикл 291 страницы",
     "scan": "Длинный последовательный проход",
     "hot_cold": "Постоянное горячее множество",
-    "hot_scan": "Горячие объекты и сканирование",
+    "hot_scan": "Горячие страницы и сканирование",
     "phase_change": "Смена горячего множества",
     "bursts": "Серии повторных запросов",
     "uniform": "Равномерные случайные запросы",
@@ -23,9 +23,9 @@ SOFTWARE_PATTERNS = HIERARCHY_PATTERNS + ("popular", "navigation")
 
 def pattern_label(pattern, scale):
     if pattern == "small_cycle":
-        return f"Цикл {max(1, scale // 2)} объектов"
+        return f"Цикл {max(1, scale // 2)} страниц"
     if pattern == "boundary_cycle":
-        return f"Цикл {scale + 1} объекта"
+        return f"Цикл {scale + 1} страницы"
     return PATTERN_LABELS[pattern]
 
 
