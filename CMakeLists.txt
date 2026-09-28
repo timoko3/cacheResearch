@@ -7,6 +7,24 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
         "Use cmake --preset debug to create a build directory for this OS.")
 endif()
 
+# These files are used by the default run target and copied beside the executable.
+set(missing_runtime_files "")
+foreach(runtime_file IN ITEMS configs/config_1.txt inputs/input_1.txt)
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${runtime_file}"
+       OR IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${runtime_file}")
+        list(APPEND missing_runtime_files "${runtime_file}")
+    endif()
+endforeach()
+if(missing_runtime_files)
+    list(JOIN missing_runtime_files ", " missing_runtime_files_text)
+    message(FATAL_ERROR
+        "Missing configuration/input files: ${missing_runtime_files_text}\n"
+        "Create configs/ and inputs/ in the project root and add these files.\n"
+        "The config file contains the level count and cache strategies; "
+        "the input file contains level capacities, request count and requests.\n"
+        "See README.md, section 6, for examples.")
+endif()
+
 project(CacheResearch LANGUAGES CXX)
 
 option(CACHE_RESEARCH_WARNINGS_AS_ERRORS "Treat project compiler warnings as errors" OFF)
@@ -90,7 +108,7 @@ add_dependencies(cache_research cache_research_pattern)
 
 # Relative paths inside the application resolve from its runtime directory.
 add_custom_target(run
-    COMMAND "$<TARGET_FILE:cache_research>"
+    COMMAND "$<TARGET_FILE:cache_research>" configs/config_1.txt inputs/input_1.txt
     WORKING_DIRECTORY "$<TARGET_FILE_DIR:cache_research>"
     DEPENDS cache_research
     USES_TERMINAL
