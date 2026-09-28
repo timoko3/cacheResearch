@@ -1,3 +1,5 @@
+"""Original fixed-capacity benchmark using the shared C++ cache runner."""
+
 import argparse
 import csv
 import itertools
@@ -5,25 +7,44 @@ import random
 import subprocess
 from pathlib import Path
 
-
 CACHE_STRATEGIES = ("LRU", "LFU", "ARC", "2Q", "LIRS")
 LEVEL_CAPACITIES = ((64,), (8, 56), (16, 48), (32, 32), (8, 16, 40))
 LEVEL_ACCESS_COSTS = (1.0, 5.0, 20.0)
 MEMORY_ACCESS_COST = 100.0
 
 REQUEST_PATTERNS = (
-    "small_cycle", "boundary_cycle", "scan", "hot_cold",
-    "hot_scan", "phase_change", "bursts", "uniform",
+    "small_cycle",
+    "boundary_cycle",
+    "scan",
+    "hot_cold",
+    "hot_scan",
+    "phase_change",
+    "bursts",
+    "uniform",
 )
 
 CSV_COLUMNS = (
-    "pattern", "seed", "configuration", "requests",
-    "l1_requests", "l1_hits", "l1_misses",
-    "l2_requests", "l2_hits", "l2_misses",
-    "l3_requests", "l3_hits", "l3_misses",
-    "memory_misses", "hit_rate", "amat",
-    "ideal_memory_misses", "ideal_hit_rate", "ideal_amat",
-    "extra_memory_misses", "slowdown_vs_ideal_pct",
+    "pattern",
+    "seed",
+    "configuration",
+    "requests",
+    "l1_requests",
+    "l1_hits",
+    "l1_misses",
+    "l2_requests",
+    "l2_hits",
+    "l2_misses",
+    "l3_requests",
+    "l3_hits",
+    "l3_misses",
+    "memory_misses",
+    "hit_rate",
+    "amat",
+    "ideal_memory_misses",
+    "ideal_hit_rate",
+    "ideal_amat",
+    "extra_memory_misses",
+    "percent_of_ideal_cost",
 )
 
 
@@ -80,8 +101,7 @@ def create_cache_configurations():
         for strategies in itertools.product(CACHE_STRATEGIES, repeat=len(capacities)):
             strategies = tuple(reversed(strategies))
             configuration_name = "+".join(
-                strategy + str(capacity)
-                for strategy, capacity in zip(strategies, capacities)
+                strategy + str(capacity) for strategy, capacity in zip(strategies, capacities)
             )
             configurations.append((configuration_name, strategies, capacities))
 
@@ -94,8 +114,10 @@ def get_config_path(root_directory, configuration_name):
 
 def get_input_path(root_directory, pattern_name, random_seed, capacities):
     capacity_name = "_".join(str(capacity) for capacity in capacities)
-    return root_directory / "inputs" / (
-        f"benchmark_{pattern_name}_seed{random_seed}_{capacity_name}.txt"
+    return (
+        root_directory
+        / "inputs"
+        / (f"benchmark_{pattern_name}_seed{random_seed}_{capacity_name}.txt")
     )
 
 
@@ -109,9 +131,7 @@ def write_config_file(file_path, strategies):
 def write_input_file(file_path, capacities, requests):
     capacity_line = " ".join(str(capacity) for capacity in capacities)
     request_line = " ".join(str(request) for request in requests)
-    file_path.write_text(
-        f"{capacity_line}\n{len(requests)}\n{request_line}\n", encoding="utf-8"
-    )
+    file_path.write_text(f"{capacity_line}\n{len(requests)}\n{request_line}\n", encoding="utf-8")
 
 
 def generate_benchmark_files(root_directory, configurations, random_seeds, request_count):
@@ -142,7 +162,7 @@ def check_statistics(statistics, request_count, level_count):
 
     for level_index in range(3):
         offset = 3 + 3 * level_index
-        level_requests, level_hits, level_misses = statistics[offset:offset + 3]
+        level_requests, level_hits, level_misses = statistics[offset : offset + 3]
 
         if level_index >= level_count:
             if level_requests or level_hits or level_misses:
@@ -155,8 +175,12 @@ def check_statistics(statistics, request_count, level_count):
         accumulated_hits += level_hits
         expected_requests = level_misses
 
-    if (total_requests != request_count or total_hits != accumulated_hits
-            or total_misses != expected_requests or total_hits + total_misses != total_requests):
+    if (
+        total_requests != request_count
+        or total_hits != accumulated_hits
+        or total_misses != expected_requests
+        or total_hits + total_misses != total_requests
+    ):
         raise ValueError("Incorrect total statistics")
 
 
@@ -164,7 +188,9 @@ def run_cache_experiment(runner_path, config_path, input_path, request_count, le
     try:
         process_result = subprocess.run(
             [str(runner_path), str(config_path), str(input_path)],
-            capture_output=True, text=True, check=True,
+            capture_output=True,
+            text=True,
+            check=True,
         )
         statistics = [int(value) for value in process_result.stdout.split()]
         check_statistics(statistics, request_count, level_count)
@@ -191,53 +217,71 @@ def calculate_hit_rate(statistics):
     return statistics[1] / statistics[0]
 
 
-def calculate_slowdown_percent(access_cost, reference_cost):
-    return 100 * (access_cost / reference_cost - 1)
+def calculate_percent_of_reference(access_cost, reference_cost):
+    return 100 * access_cost / reference_cost
 
 
-def write_csv_result(csv_writer, pattern_name, random_seed, configuration_name,
-                     statistics, ideal_statistics):
+def write_csv_result(
+    csv_writer, pattern_name, random_seed, configuration_name, statistics, ideal_statistics
+):
     access_cost = calculate_average_access_cost(statistics)
     ideal_cost = calculate_average_access_cost(ideal_statistics)
 
-    csv_writer.writerow([
-        pattern_name, random_seed, configuration_name, statistics[0],
-        *statistics[3:], statistics[2], calculate_hit_rate(statistics), access_cost,
-        ideal_statistics[2], calculate_hit_rate(ideal_statistics), ideal_cost,
-        statistics[2] - ideal_statistics[2],
-        calculate_slowdown_percent(access_cost, ideal_cost),
-    ])
+    csv_writer.writerow(
+        [
+            pattern_name,
+            random_seed,
+            configuration_name,
+            statistics[0],
+            *statistics[3:],
+            statistics[2],
+            calculate_hit_rate(statistics),
+            access_cost,
+            ideal_statistics[2],
+            calculate_hit_rate(ideal_statistics),
+            ideal_cost,
+            statistics[2] - ideal_statistics[2],
+            calculate_percent_of_reference(access_cost, ideal_cost),
+        ]
+    )
 
 
-def format_configuration_result(configuration_name, score, metric_name,
-                                 hit_rate=None, ideal_cost=None):
+def format_configuration_result(
+    configuration_name, score, metric_name, hit_rate=None, ideal_cost=None
+):
     result = f"{configuration_name} {metric_name}={score:.3f}"
 
     if hit_rate is not None:
         result += f" hit={100 * hit_rate:.3f}%"
     if ideal_cost is not None:
-        result += f" vs REF={calculate_slowdown_percent(score, ideal_cost):.3f}%"
+        result += f" vs REF={calculate_percent_of_reference(score, ideal_cost):.3f}%"
 
     return result
 
 
-def print_best_configurations(configurations, scores, metric_name, result_count,
-                              hit_rates=None, ideal_cost=None):
+def print_best_configurations(
+    configurations, scores, metric_name, result_count, hit_rates=None, ideal_cost=None
+):
     ranked_indices = sorted(range(len(configurations)), key=lambda index: scores[index])
 
     for rank, configuration_index in enumerate(ranked_indices[:result_count], start=1):
         hit_rate = None if hit_rates is None else hit_rates[configuration_index]
         result = format_configuration_result(
-            configurations[configuration_index][0], scores[configuration_index],
-            metric_name, hit_rate, ideal_cost,
+            configurations[configuration_index][0],
+            scores[configuration_index],
+            metric_name,
+            hit_rate,
+            ideal_cost,
         )
         print(f"  {rank}. {result}")
 
     for configuration_index in ranked_indices:
         if len(configurations[configuration_index][2]) > 1:
             result = format_configuration_result(
-                configurations[configuration_index][0], scores[configuration_index],
-                metric_name, ideal_cost=ideal_cost,
+                configurations[configuration_index][0],
+                scores[configuration_index],
+                metric_name,
+                ideal_cost=ideal_cost,
             )
             print(f"  Best multi-level: {result}")
             break
@@ -254,22 +298,27 @@ def evaluate_request_pattern(pattern_name, configurations, arguments, csv_writer
 
     for random_seed in arguments.seeds:
         ideal_statistics = run_cache_experiment(
-            arguments.runner, get_config_path(arguments.root, "REF64"),
+            arguments.runner,
+            get_config_path(arguments.root, "REF64"),
             get_input_path(arguments.root, pattern_name, random_seed, (64,)),
-            arguments.requests, 1,
+            arguments.requests,
+            1,
         )
         mean_ideal_cost += calculate_average_access_cost(ideal_statistics) / seed_count
         mean_ideal_hit_rate += calculate_hit_rate(ideal_statistics) / seed_count
         mean_ideal_misses += ideal_statistics[2] / seed_count
-        write_csv_result(csv_writer, pattern_name, random_seed, "REF64",
-                         ideal_statistics, ideal_statistics)
+        write_csv_result(
+            csv_writer, pattern_name, random_seed, "REF64", ideal_statistics, ideal_statistics
+        )
 
         for configuration_index, configuration in enumerate(configurations):
             configuration_name, strategies, capacities = configuration
             statistics = run_cache_experiment(
-                arguments.runner, get_config_path(arguments.root, configuration_name),
+                arguments.runner,
+                get_config_path(arguments.root, configuration_name),
                 get_input_path(arguments.root, pattern_name, random_seed, capacities),
-                arguments.requests, len(capacities),
+                arguments.requests,
+                len(capacities),
             )
             if statistics[2] < ideal_statistics[2]:
                 raise RuntimeError(
@@ -277,22 +326,35 @@ def evaluate_request_pattern(pattern_name, configurations, arguments, csv_writer
                     "fewer misses than REF64; check cache implementations"
                 )
 
-            mean_costs[configuration_index] += calculate_average_access_cost(statistics) / seed_count
+            mean_costs[configuration_index] += (
+                calculate_average_access_cost(statistics) / seed_count
+            )
             mean_hit_rates[configuration_index] += calculate_hit_rate(statistics) / seed_count
-            write_csv_result(csv_writer, pattern_name, random_seed, configuration_name,
-                             statistics, ideal_statistics)
+            write_csv_result(
+                csv_writer,
+                pattern_name,
+                random_seed,
+                configuration_name,
+                statistics,
+                ideal_statistics,
+            )
 
-    print(f"  Ideal REF64 AMAT={mean_ideal_cost:.3f} "
-          f"hit={100 * mean_ideal_hit_rate:.3f}% mean misses={mean_ideal_misses:.3f}")
-    print_best_configurations(configurations, mean_costs, "AMAT", 3,
-                              mean_hit_rates, mean_ideal_cost)
+    print(
+        f"  Ideal REF64 AMAT={mean_ideal_cost:.3f} "
+        f"hit={100 * mean_ideal_hit_rate:.3f}% mean misses={mean_ideal_misses:.3f}"
+    )
+    print_best_configurations(
+        configurations, mean_costs, "AMAT", 3, mean_hit_rates, mean_ideal_cost
+    )
     return mean_costs
 
 
 def run_cache_benchmark(configurations, arguments):
-    mean_slowdown = [0.0] * len(configurations)
-    print(f"{len(configurations)} configurations, {arguments.requests} requests, "
-          f"{len(arguments.seeds)} seeds; cold start included.")
+    mean_percent_of_best = [0.0] * len(configurations)
+    print(
+        f"{len(configurations)} configurations, {arguments.requests} requests, "
+        f"{len(arguments.seeds)} seeds; cold start included."
+    )
     print("Reference: offline REF64, one level; same requests and total capacity.")
 
     with arguments.output.open("w", newline="", encoding="utf-8") as output_file:
@@ -300,27 +362,35 @@ def run_cache_benchmark(configurations, arguments):
         csv_writer.writerow(CSV_COLUMNS)
 
         for pattern_name in REQUEST_PATTERNS:
-            mean_costs = evaluate_request_pattern(pattern_name, configurations, arguments, csv_writer)
+            mean_costs = evaluate_request_pattern(
+                pattern_name, configurations, arguments, csv_writer
+            )
             best_pattern_cost = min(mean_costs)
 
             for configuration_index, mean_cost in enumerate(mean_costs):
-                mean_slowdown[configuration_index] += (
-                    calculate_slowdown_percent(mean_cost, best_pattern_cost) / len(REQUEST_PATTERNS)
-                )
+                mean_percent_of_best[configuration_index] += calculate_percent_of_reference(
+                    mean_cost, best_pattern_cost
+                ) / len(REQUEST_PATTERNS)
 
-    print("\nTop 5 compromises: mean slowdown (%) vs each pattern's best")
-    print_best_configurations(configurations, mean_slowdown, "slowdown(%)", 5)
+    print("\nTop 5 compromises: mean cost (% of best) for each pattern's best")
+    print_best_configurations(configurations, mean_percent_of_best, "cost_of_best(%)", 5)
     print(f"\nCSV: {arguments.output}")
     print("Best among these candidates under this cost model.")
 
 
 def read_arguments():
-    argument_parser = argparse.ArgumentParser(description="Generate cache traces and run benchmarks")
+    argument_parser = argparse.ArgumentParser(
+        description="Generate cache traces and run benchmarks"
+    )
     argument_parser.add_argument("--runner", type=Path, help="Path to cache_benchmark_runner")
-    argument_parser.add_argument("--root", type=Path, default=Path("./cacheBenchmarks"), help="Directory for configs/inputs")
+    argument_parser.add_argument(
+        "--root", type=Path, default=Path("./cacheBenchmarks"), help="Directory for configs/inputs"
+    )
     argument_parser.add_argument("--requests", type=int, default=20000)
     argument_parser.add_argument("--seeds", type=int, nargs="+", default=[1, 2, 3])
-    argument_parser.add_argument("--output", type=Path, default=Path("./cacheBenchmarks/cache_benchmark_results.csv"))
+    argument_parser.add_argument(
+        "--output", type=Path, default=Path("./cacheBenchmarks/cache_benchmark_results.csv")
+    )
     argument_parser.add_argument("--generate-only", action="store_true")
     arguments = argument_parser.parse_args()
 
@@ -347,7 +417,9 @@ def main():
 
     if arguments.generate_only:
         input_count = len(REQUEST_PATTERNS) * len(arguments.seeds) * len(LEVEL_CAPACITIES)
-        print(f"Generated {len(configurations) + 1} configs and {input_count} inputs in {arguments.root}")
+        print(
+            f"Generated {len(configurations) + 1} configs and {input_count} inputs in {arguments.root}"
+        )
     else:
         run_cache_benchmark(configurations, arguments)
 

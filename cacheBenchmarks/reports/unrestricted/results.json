@@ -1,0 +1,1974 @@
+[
+  {
+    "total": 8,
+    "reference_misses": 5713,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 5713,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5713
+      ]
+    },
+    "best": {
+      "misses": 5713,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5713
+      ]
+    },
+    "pattern": "small_cycle",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 16,
+    "reference_misses": 5385,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 5385,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5385
+      ]
+    },
+    "best": {
+      "misses": 5385,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5385
+      ]
+    },
+    "pattern": "small_cycle",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 36,
+    "reference_misses": 4565,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 4565,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        4565
+      ]
+    },
+    "best": {
+      "misses": 4565,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        4565
+      ]
+    },
+    "pattern": "small_cycle",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 64,
+    "reference_misses": 3417,
+    "evaluated": 5,
+    "pruned": 313,
+    "single": {
+      "misses": 3425,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        3425
+      ]
+    },
+    "best": {
+      "misses": 3425,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        3425
+      ]
+    },
+    "pattern": "small_cycle",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 145,
+    "reference_misses": 145,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 145,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        145
+      ]
+    },
+    "best": {
+      "misses": 145,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        145
+      ]
+    },
+    "pattern": "small_cycle",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 290,
+    "reference_misses": 145,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 145,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        145
+      ]
+    },
+    "best": {
+      "misses": 145,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        145
+      ]
+    },
+    "pattern": "small_cycle",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 8,
+    "reference_misses": 5860,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 5860,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5860
+      ]
+    },
+    "best": {
+      "misses": 5860,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5860
+      ]
+    },
+    "pattern": "boundary_cycle",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 16,
+    "reference_misses": 5700,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 5700,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5700
+      ]
+    },
+    "best": {
+      "misses": 5700,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5700
+      ]
+    },
+    "pattern": "boundary_cycle",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 36,
+    "reference_misses": 5300,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 5300,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5300
+      ]
+    },
+    "best": {
+      "misses": 5300,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5300
+      ]
+    },
+    "pattern": "boundary_cycle",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 64,
+    "reference_misses": 4740,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 4740,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        4740
+      ]
+    },
+    "best": {
+      "misses": 4740,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        4740
+      ]
+    },
+    "pattern": "boundary_cycle",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 145,
+    "reference_misses": 3120,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 3120,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        3120
+      ]
+    },
+    "best": {
+      "misses": 3120,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        3120
+      ]
+    },
+    "pattern": "boundary_cycle",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 290,
+    "reference_misses": 310,
+    "evaluated": 1000,
+    "pruned": 188901,
+    "single": {
+      "misses": 348,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        348
+      ]
+    },
+    "best": {
+      "misses": 348,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        348
+      ]
+    },
+    "pattern": "boundary_cycle",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 8,
+    "reference_misses": 5965,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 5965,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5965
+      ]
+    },
+    "best": {
+      "misses": 5965,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5965
+      ]
+    },
+    "pattern": "scan",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 16,
+    "reference_misses": 5925,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 5925,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5925
+      ]
+    },
+    "best": {
+      "misses": 5925,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5925
+      ]
+    },
+    "pattern": "scan",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 36,
+    "reference_misses": 5825,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 5825,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5825
+      ]
+    },
+    "best": {
+      "misses": 5825,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5825
+      ]
+    },
+    "pattern": "scan",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 64,
+    "reference_misses": 5685,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 5685,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5685
+      ]
+    },
+    "best": {
+      "misses": 5685,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5685
+      ]
+    },
+    "pattern": "scan",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 145,
+    "reference_misses": 5280,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 5280,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5280
+      ]
+    },
+    "best": {
+      "misses": 5280,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        5280
+      ]
+    },
+    "pattern": "scan",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 290,
+    "reference_misses": 4640,
+    "evaluated": 1000,
+    "pruned": 188901,
+    "single": {
+      "misses": 4648,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        4648
+      ]
+    },
+    "best": {
+      "misses": 4648,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        4648
+      ]
+    },
+    "pattern": "scan",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 8,
+    "reference_misses": 3262,
+    "evaluated": 950,
+    "pruned": 197,
+    "single": {
+      "misses": 4780,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        4780
+      ]
+    },
+    "best": {
+      "misses": 4780,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        4780
+      ]
+    },
+    "pattern": "hot_cold",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 16,
+    "reference_misses": 2065,
+    "evaluated": 5645,
+    "pruned": 1086,
+    "single": {
+      "misses": 3538,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        3538
+      ]
+    },
+    "best": {
+      "misses": 3538,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        3538
+      ]
+    },
+    "pattern": "hot_cold",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 36,
+    "reference_misses": 651,
+    "evaluated": 705,
+    "pruned": 3568,
+    "single": {
+      "misses": 748,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        748
+      ]
+    },
+    "best": {
+      "misses": 748,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        748
+      ]
+    },
+    "pattern": "hot_cold",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 64,
+    "reference_misses": 530,
+    "evaluated": 100050,
+    "pruned": 18373,
+    "single": {
+      "misses": 601,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        601
+      ]
+    },
+    "best": {
+      "misses": 601,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        601
+      ]
+    },
+    "pattern": "hot_cold",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 145,
+    "reference_misses": 502,
+    "evaluated": 947325,
+    "pruned": 63879,
+    "single": {
+      "misses": 565,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        565
+      ]
+    },
+    "best": {
+      "misses": 565,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        565
+      ]
+    },
+    "pattern": "hot_cold",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 290,
+    "reference_misses": 502,
+    "evaluated": 3454980,
+    "pruned": 323630,
+    "single": {
+      "misses": 530,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        530
+      ]
+    },
+    "best": {
+      "misses": 525,
+      "capacities": [
+        256,
+        34
+      ],
+      "policies": [
+        "LIRS",
+        "LRU"
+      ],
+      "misses_by_run": [
+        525
+      ]
+    },
+    "pattern": "hot_cold",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc",
+    "two_level_tie_check": {
+      "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc",
+      "misses": 525,
+      "evaluated": 6575,
+      "pruned": 129
+    }
+  },
+  {
+    "total": 8,
+    "reference_misses": 3649,
+    "evaluated": 950,
+    "pruned": 197,
+    "single": {
+      "misses": 4950,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        4950
+      ]
+    },
+    "best": {
+      "misses": 4950,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        4950
+      ]
+    },
+    "pattern": "hot_scan",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 16,
+    "reference_misses": 2635,
+    "evaluated": 6005,
+    "pruned": 1048,
+    "single": {
+      "misses": 3922,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        3922
+      ]
+    },
+    "best": {
+      "misses": 3922,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        3922
+      ]
+    },
+    "pattern": "hot_scan",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 36,
+    "reference_misses": 1455,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 1455,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        1455
+      ]
+    },
+    "best": {
+      "misses": 1455,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        1455
+      ]
+    },
+    "pattern": "hot_scan",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 64,
+    "reference_misses": 1444,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 1444,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        1444
+      ]
+    },
+    "best": {
+      "misses": 1444,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        1444
+      ]
+    },
+    "pattern": "hot_scan",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 145,
+    "reference_misses": 1444,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 1444,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        1444
+      ]
+    },
+    "best": {
+      "misses": 1444,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        1444
+      ]
+    },
+    "pattern": "hot_scan",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 290,
+    "reference_misses": 1444,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 1444,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        1444
+      ]
+    },
+    "best": {
+      "misses": 1444,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        1444
+      ]
+    },
+    "pattern": "hot_scan",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 8,
+    "reference_misses": 3275,
+    "evaluated": 850,
+    "pruned": 214,
+    "single": {
+      "misses": 4799,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        4799
+      ]
+    },
+    "best": {
+      "misses": 4799,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        4799
+      ]
+    },
+    "pattern": "phase_change",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 16,
+    "reference_misses": 2095,
+    "evaluated": 5545,
+    "pruned": 1132,
+    "single": {
+      "misses": 3686,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        3686
+      ]
+    },
+    "best": {
+      "misses": 3686,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        3686
+      ]
+    },
+    "pattern": "phase_change",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 36,
+    "reference_misses": 719,
+    "evaluated": 360,
+    "pruned": 2936,
+    "single": {
+      "misses": 891,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        891
+      ]
+    },
+    "best": {
+      "misses": 891,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        891
+      ]
+    },
+    "pattern": "phase_change",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 64,
+    "reference_misses": 602,
+    "evaluated": 53005,
+    "pruned": 25788,
+    "single": {
+      "misses": 682,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        682
+      ]
+    },
+    "best": {
+      "misses": 682,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        682
+      ]
+    },
+    "pattern": "phase_change",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 145,
+    "reference_misses": 574,
+    "evaluated": 977505,
+    "pruned": 56455,
+    "single": {
+      "misses": 649,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        649
+      ]
+    },
+    "best": {
+      "misses": 649,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        649
+      ]
+    },
+    "pattern": "phase_change",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 290,
+    "reference_misses": 574,
+    "evaluated": 3806470,
+    "pruned": 264652,
+    "single": {
+      "misses": 607,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        607
+      ]
+    },
+    "best": {
+      "misses": 607,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        607
+      ]
+    },
+    "pattern": "phase_change",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 8,
+    "reference_misses": 346,
+    "evaluated": 140,
+    "pruned": 99,
+    "single": {
+      "misses": 373,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        373
+      ]
+    },
+    "best": {
+      "misses": 372,
+      "capacities": [
+        1,
+        7
+      ],
+      "policies": [
+        "LRU",
+        "LIRS"
+      ],
+      "misses_by_run": [
+        372
+      ]
+    },
+    "pattern": "bursts",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 16,
+    "reference_misses": 336,
+    "evaluated": 1440,
+    "pruned": 535,
+    "single": {
+      "misses": 369,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        369
+      ]
+    },
+    "best": {
+      "misses": 369,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        369
+      ]
+    },
+    "pattern": "bursts",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 36,
+    "reference_misses": 329,
+    "evaluated": 15770,
+    "pruned": 3588,
+    "single": {
+      "misses": 361,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        361
+      ]
+    },
+    "best": {
+      "misses": 360,
+      "capacities": [
+        16,
+        20
+      ],
+      "policies": [
+        "LFU",
+        "LIRS"
+      ],
+      "misses_by_run": [
+        360
+      ]
+    },
+    "pattern": "bursts",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc",
+    "two_level_tie_check": {
+      "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc",
+      "misses": 360,
+      "evaluated": 435,
+      "pruned": 87
+    }
+  },
+  {
+    "total": 64,
+    "reference_misses": 329,
+    "evaluated": 65445,
+    "pruned": 12016,
+    "single": {
+      "misses": 356,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        356
+      ]
+    },
+    "best": {
+      "misses": 353,
+      "capacities": [
+        30,
+        34
+      ],
+      "policies": [
+        "LRU",
+        "LIRS"
+      ],
+      "misses_by_run": [
+        353
+      ]
+    },
+    "pattern": "bursts",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc",
+    "two_level_tie_check": {
+      "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc",
+      "misses": 353,
+      "evaluated": 840,
+      "pruned": 146
+    }
+  },
+  {
+    "total": 145,
+    "reference_misses": 329,
+    "evaluated": 362790,
+    "pruned": 70807,
+    "single": {
+      "misses": 342,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        342
+      ]
+    },
+    "best": {
+      "misses": 340,
+      "capacities": [
+        117,
+        28
+      ],
+      "policies": [
+        "LRU",
+        "LIRS"
+      ],
+      "misses_by_run": [
+        340
+      ]
+    },
+    "pattern": "bursts",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc",
+    "two_level_tie_check": {
+      "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc",
+      "misses": 340,
+      "evaluated": 1940,
+      "pruned": 331
+    }
+  },
+  {
+    "total": 290,
+    "reference_misses": 329,
+    "evaluated": 5,
+    "pruned": 0,
+    "single": {
+      "misses": 329,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        329
+      ]
+    },
+    "best": {
+      "misses": 329,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        329
+      ]
+    },
+    "pattern": "bursts",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 8,
+    "reference_misses": 5456,
+    "evaluated": 1010,
+    "pruned": 185,
+    "single": {
+      "misses": 5943,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        5943
+      ]
+    },
+    "best": {
+      "misses": 5943,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        5943
+      ]
+    },
+    "pattern": "uniform",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 16,
+    "reference_misses": 5170,
+    "evaluated": 8335,
+    "pruned": 620,
+    "single": {
+      "misses": 5907,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        5907
+      ]
+    },
+    "best": {
+      "misses": 5907,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        5907
+      ]
+    },
+    "pattern": "uniform",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 36,
+    "reference_misses": 4703,
+    "evaluated": 57235,
+    "pruned": 2590,
+    "single": {
+      "misses": 5794,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "ARC"
+      ],
+      "misses_by_run": [
+        5794
+      ]
+    },
+    "best": {
+      "misses": 5791,
+      "capacities": [
+        6,
+        30
+      ],
+      "policies": [
+        "LFU",
+        "LRU"
+      ],
+      "misses_by_run": [
+        5791
+      ]
+    },
+    "pattern": "uniform",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 64,
+    "reference_misses": 4279,
+    "evaluated": 198485,
+    "pruned": 7590,
+    "single": {
+      "misses": 5660,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        5660
+      ]
+    },
+    "best": {
+      "misses": 5650,
+      "capacities": [
+        6,
+        58
+      ],
+      "policies": [
+        "LFU",
+        "ARC"
+      ],
+      "misses_by_run": [
+        5650
+      ]
+    },
+    "pattern": "uniform",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 145,
+    "reference_misses": 3491,
+    "evaluated": 1073725,
+    "pruned": 39086,
+    "single": {
+      "misses": 5247,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "ARC"
+      ],
+      "misses_by_run": [
+        5247
+      ]
+    },
+    "best": {
+      "misses": 5227,
+      "capacities": [
+        7,
+        138
+      ],
+      "policies": [
+        "LFU",
+        "ARC"
+      ],
+      "misses_by_run": [
+        5227
+      ]
+    },
+    "pattern": "uniform",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 8,
+    "reference_misses": 3694,
+    "evaluated": 280,
+    "pruned": 285,
+    "single": {
+      "misses": 4112,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        4112
+      ]
+    },
+    "best": {
+      "misses": 4112,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        4112
+      ]
+    },
+    "pattern": "popular",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 16,
+    "reference_misses": 3089,
+    "evaluated": 5790,
+    "pruned": 1027,
+    "single": {
+      "misses": 3680,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        3680
+      ]
+    },
+    "best": {
+      "misses": 3622,
+      "capacities": [
+        10,
+        6
+      ],
+      "policies": [
+        "LFU",
+        "2Q"
+      ],
+      "misses_by_run": [
+        3622
+      ]
+    },
+    "pattern": "popular",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 36,
+    "reference_misses": 2420,
+    "evaluated": 43345,
+    "pruned": 4795,
+    "single": {
+      "misses": 3019,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "ARC"
+      ],
+      "misses_by_run": [
+        3019
+      ]
+    },
+    "best": {
+      "misses": 2999,
+      "capacities": [
+        2,
+        34
+      ],
+      "policies": [
+        "LFU",
+        "LFU"
+      ],
+      "misses_by_run": [
+        2999
+      ]
+    },
+    "pattern": "popular",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 64,
+    "reference_misses": 1974,
+    "evaluated": 158600,
+    "pruned": 13834,
+    "single": {
+      "misses": 2561,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        2561
+      ]
+    },
+    "best": {
+      "misses": 2556,
+      "capacities": [
+        1,
+        63
+      ],
+      "policies": [
+        "LRU",
+        "LFU"
+      ],
+      "misses_by_run": [
+        2556
+      ]
+    },
+    "pattern": "popular",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 145,
+    "reference_misses": 1401,
+    "evaluated": 902010,
+    "pruned": 67668,
+    "single": {
+      "misses": 1979,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        1979
+      ]
+    },
+    "best": {
+      "misses": 1979,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        1979
+      ]
+    },
+    "pattern": "popular",
+    "execution_platform": "Windows",
+    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 8,
+    "reference_misses": 3475,
+    "evaluated": 5,
+    "pruned": 33,
+    "single": {
+      "misses": 3568,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        3568
+      ]
+    },
+    "best": {
+      "misses": 3568,
+      "capacities": [
+        8
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        3568
+      ]
+    },
+    "pattern": "navigation",
+    "execution_platform": "Linux",
+    "runner_sha256": "3c28df95ba498438704ec63fff5b49b2f127566b2d4dbdd556ec40655fe50452"
+  },
+  {
+    "total": 16,
+    "reference_misses": 2884,
+    "evaluated": 845,
+    "pruned": 664,
+    "single": {
+      "misses": 3132,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        3132
+      ]
+    },
+    "best": {
+      "misses": 3132,
+      "capacities": [
+        16
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        3132
+      ]
+    },
+    "pattern": "navigation",
+    "execution_platform": "Linux",
+    "runner_sha256": "3c28df95ba498438704ec63fff5b49b2f127566b2d4dbdd556ec40655fe50452"
+  },
+  {
+    "total": 36,
+    "reference_misses": 2264,
+    "evaluated": 17530,
+    "pruned": 4988,
+    "single": {
+      "misses": 3074,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "ARC"
+      ],
+      "misses_by_run": [
+        3074
+      ]
+    },
+    "best": {
+      "misses": 3074,
+      "capacities": [
+        36
+      ],
+      "policies": [
+        "ARC"
+      ],
+      "misses_by_run": [
+        3074
+      ]
+    },
+    "pattern": "navigation",
+    "execution_platform": "Linux",
+    "runner_sha256": "3c28df95ba498438704ec63fff5b49b2f127566b2d4dbdd556ec40655fe50452"
+  },
+  {
+    "total": 64,
+    "reference_misses": 1612,
+    "evaluated": 695,
+    "pruned": 4496,
+    "single": {
+      "misses": 1644,
+      "capacities": [
+        64
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        1644
+      ]
+    },
+    "best": {
+      "misses": 1627,
+      "capacities": [
+        56,
+        8
+      ],
+      "policies": [
+        "LRU",
+        "LIRS"
+      ],
+      "misses_by_run": [
+        1627
+      ]
+    },
+    "pattern": "navigation",
+    "execution_platform": "Linux",
+    "runner_sha256": "3c28df95ba498438704ec63fff5b49b2f127566b2d4dbdd556ec40655fe50452"
+  },
+  {
+    "total": 145,
+    "reference_misses": 1288,
+    "evaluated": 35725,
+    "pruned": 95482,
+    "single": {
+      "misses": 1644,
+      "capacities": [
+        145
+      ],
+      "policies": [
+        "LRU"
+      ],
+      "misses_by_run": [
+        1644
+      ]
+    },
+    "best": {
+      "misses": 1384,
+      "capacities": [
+        56,
+        89
+      ],
+      "policies": [
+        "LRU",
+        "LIRS"
+      ],
+      "misses_by_run": [
+        1384
+      ]
+    },
+    "pattern": "navigation",
+    "execution_platform": "Linux",
+    "runner_sha256": "3c28df95ba498438704ec63fff5b49b2f127566b2d4dbdd556ec40655fe50452"
+  },
+  {
+    "total": 290,
+    "reference_misses": 810,
+    "evaluated": 281060,
+    "pruned": 363876,
+    "single": {
+      "misses": 1356,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LFU"
+      ],
+      "misses_by_run": [
+        1356
+      ]
+    },
+    "best": {
+      "misses": 952,
+      "capacities": [
+        56,
+        234
+      ],
+      "policies": [
+        "LRU",
+        "LIRS"
+      ],
+      "misses_by_run": [
+        952
+      ]
+    },
+    "pattern": "navigation",
+    "execution_platform": "Linux",
+    "runner_sha256": "3c28df95ba498438704ec63fff5b49b2f127566b2d4dbdd556ec40655fe50452",
+    "two_level_tie_check": {
+      "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc",
+      "misses": 952,
+      "evaluated": 2015,
+      "pruned": 1041
+    }
+  }
+]

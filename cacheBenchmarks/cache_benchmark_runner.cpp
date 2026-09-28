@@ -9,7 +9,6 @@
 
 #include "cacheParser.h"
 
-
 void checkReadableFile(const std::string& filePath) {
     std::ifstream inputFile(filePath);
 
@@ -48,7 +47,8 @@ std::size_t processRequests(CacheType& cacheInstance, const std::vector<int>& re
     };
 
     for (const int requestedKey : requests) {
-        if (cacheInstance.lookupUpdate(requestedKey, slowGetPage) != generatePageValue(requestedKey)) {
+        if (cacheInstance.lookupUpdate(requestedKey, slowGetPage) !=
+            generatePageValue(requestedKey)) {
             throw std::runtime_error("Incorrect cached page");
         }
     }
@@ -56,10 +56,8 @@ std::size_t processRequests(CacheType& cacheInstance, const std::vector<int>& re
     return memoryLoadCount;
 }
 
-void checkCacheStatistics(const cache::CacheSystemStats& statistics,
-                          std::size_t requestCount,
-                          std::size_t memoryLoadCount,
-                          std::size_t levelCount) {
+void checkCacheStatistics(const cache::CacheSystemStats& statistics, std::size_t requestCount,
+                          std::size_t memoryLoadCount, std::size_t levelCount) {
 
     if (statistics.levels.size() != levelCount) {
         throw std::runtime_error("Incorrect number of cache levels");
@@ -80,14 +78,14 @@ void checkCacheStatistics(const cache::CacheSystemStats& statistics,
 
     if (statistics.total.amountRequests != requestCount ||
         statistics.total.amountHits != totalHits ||
-        statistics.total.amountMisses != memoryLoadCount ||
-        expectedRequests != memoryLoadCount || totalHits + memoryLoadCount != requestCount) {
+        statistics.total.amountMisses != memoryLoadCount || expectedRequests != memoryLoadCount ||
+        totalHits + memoryLoadCount != requestCount) {
         throw std::runtime_error("Incorrect total statistics");
     }
 }
 
 cache::CacheSystemStats runCacheExperiment(const cache::cacheSystemParams& configuration,
-                                          const std::vector<int>& requests) {
+                                           const std::vector<int>& requests) {
 
     checkCacheConfiguration(configuration);
 
@@ -100,7 +98,8 @@ cache::CacheSystemStats runCacheExperiment(const cache::cacheSystemParams& confi
 
     if (configuration.levels.front().strategy == cache::C_REF) {
         std::list<int> futureRequests(requests.begin(), requests.end());
-        cache::CacheREF<uint32_t, int> idealCache(configuration.levels.front().size, futureRequests);
+        cache::CacheREF<uint32_t, int> idealCache(configuration.levels.front().size,
+                                                  futureRequests);
 
         memoryLoadCount = processRequests(idealCache, requests);
         statistics.total = idealCache.getStats();
@@ -118,16 +117,14 @@ cache::CacheSystemStats runCacheExperiment(const cache::cacheSystemParams& confi
 }
 
 void printCacheStatistics(const cache::CacheSystemStats& statistics) {
-    std::cout << statistics.total.amountRequests << ' '
-              << statistics.total.amountHits << ' '
+    std::cout << statistics.total.amountRequests << ' ' << statistics.total.amountHits << ' '
               << statistics.total.amountMisses;
 
     for (std::size_t levelIndex = 0; levelIndex < 3; ++levelIndex) {
         if (levelIndex < statistics.levels.size()) {
             const auto& levelStats = statistics.levels[levelIndex].stats;
-            std::cout << ' ' << levelStats.amountRequests
-                      << ' ' << levelStats.amountHits
-                      << ' ' << levelStats.amountMisses;
+            std::cout << ' ' << levelStats.amountRequests << ' ' << levelStats.amountHits << ' '
+                      << levelStats.amountMisses;
         } else {
             std::cout << " 0 0 0";
         }
@@ -136,24 +133,41 @@ void printCacheStatistics(const cache::CacheSystemStats& statistics) {
     std::cout << '\n';
 }
 
+cache::CacheSystemStats runCacheExperimentFromFiles(const std::string& configPath,
+                                                    const std::string& inputPath) {
+    checkReadableFile(configPath);
+    checkReadableFile(inputPath);
+
+    Lexer configurationLexer(configPath);
+    Lexer inputLexer(inputPath);
+    CacheParser<int> parser;
+    parser.parseAll(configurationLexer, inputLexer);
+
+    return runCacheExperiment(parser.getCacheSysParams(), parser.getReqList());
+}
+
 int main(int argc, char** argv) {
     try {
+        // Each experiment owns fresh caches; batch mode only avoids process startup.
+        if (argc == 2 && std::string(argv[1]) == "--batch") {
+            std::string configPath;
+            std::string inputPath;
+
+            while (std::getline(std::cin, configPath)) {
+                if (!std::getline(std::cin, inputPath)) {
+                    throw std::invalid_argument("Missing input path in batch");
+                }
+                printCacheStatistics(runCacheExperimentFromFiles(configPath, inputPath));
+                std::cout.flush();
+            }
+            return 0;
+        }
+
         if (argc != 3) {
             throw std::invalid_argument("Usage: cache_benchmark_runner config.txt input.txt");
         }
 
-        checkReadableFile(argv[1]);
-        checkReadableFile(argv[2]);
-
-        Lexer configurationLexer(argv[1]);
-        Lexer inputLexer(argv[2]);
-        CacheParser<int> cacheParser;
-        cacheParser.parseAll(configurationLexer, inputLexer);
-
-        const auto statistics = runCacheExperiment(
-            cacheParser.getCacheSysParams(), cacheParser.getReqList());
-
-        printCacheStatistics(statistics);
+        printCacheStatistics(runCacheExperimentFromFiles(argv[1], argv[2]));
     } catch (const std::exception& benchmarkError) {
         std::cerr << "Benchmark failed: " << benchmarkError.what() << '\n';
         return 1;
