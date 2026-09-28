@@ -7,19 +7,21 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
         "Use cmake --preset debug to create a build directory for this OS.")
 endif()
 
-# These files are used by the default run target and copied beside the executable.
-set(missing_runtime_files "")
-foreach(runtime_file IN ITEMS configs/config_1.txt inputs/input_1.txt)
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${runtime_file}"
-       OR IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/${runtime_file}")
-        list(APPEND missing_runtime_files "${runtime_file}")
+# Require configuration and input files without prescribing their names.
+set(empty_runtime_dirs "")
+foreach(runtime_dir IN ITEMS configs inputs)
+    file(GLOB runtime_files LIST_DIRECTORIES false CONFIGURE_DEPENDS
+        "${CMAKE_CURRENT_SOURCE_DIR}/${runtime_dir}/*")
+    if(NOT runtime_files)
+        list(APPEND empty_runtime_dirs "${runtime_dir}/")
     endif()
 endforeach()
-if(missing_runtime_files)
-    list(JOIN missing_runtime_files ", " missing_runtime_files_text)
+if(empty_runtime_dirs)
+    list(JOIN empty_runtime_dirs ", " empty_runtime_dirs_text)
     message(FATAL_ERROR
-        "Missing configuration/input files: ${missing_runtime_files_text}\n"
-        "Create configs/ and inputs/ in the project root and add these files.\n"
+        "No configuration/input files found in: ${empty_runtime_dirs_text}\n"
+        "Create these directories in the project root and add at least one file "
+        "to each. File names and extensions are unrestricted.\n"
         "The config file contains the level count and cache strategies; "
         "the input file contains level capacities, request count and requests.\n"
         "See README.md, section 6, for examples.")
