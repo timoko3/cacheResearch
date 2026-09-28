@@ -237,6 +237,7 @@ python cacheBenchmarks/cache_research.py --mode hierarchy --runner "$runner" --r
 
 | Параметр `cache_research.py` | Назначение |
 |---|---|
+| `--mode software\|hierarchy\|all` | Исследование №1, №2 или оба; по умолчанию `all`. Исследование №3 запускается отдельно через `cache_unrestricted.py` |
 | `--root PATH` | Общая папка результатов; без указания — `cacheBenchmarks/reports` |
 | `--requests N` | Число запросов; по умолчанию 20 000 |
 | `--seeds N ...` | Начальные значения генератора; по умолчанию 1 2 3 4 5 |
@@ -292,6 +293,13 @@ python cacheBenchmarks/cache_unrestricted.py --render-only --output build/bench-
 
 ### 4. Собственная последовательность запросов
 
+Собственный файл запросов поддерживается **только в исследовании №1**:
+для `cache_research.py` нужно явно указать `--mode software` вместе с `--trace PATH`.
+Режимы `--mode hierarchy` и `--mode all` не принимают `--trace`.
+Исследование №3 запускается скриптом `cache_unrestricted.py`, у которого
+нет параметров `--mode` и `--trace`; режима `--mode unrestricted` нет.
+Для исследований №2 и №3 эти скрипты используют встроенные генераторы запросов.
+
 Создайте текстовый файл, например `requests.txt`:
 
 ```text
@@ -304,6 +312,10 @@ a b a c b d a
 ```sh
 python cacheBenchmarks/cache_research.py --mode software --runner "$runner" --trace requests.txt --sizes 2 4 8 --root build/custom-trace
 ```
+
+Здесь `--sizes 2 4 8` задаёт вместимости одноуровневого кеша. Для каждой
+вместимости сравниваются поддерживаемые алгоритмы вытеснения.
+Результаты сохраняются в `build/custom-trace/software/`.
 
 Последовательность используется целиком. Параметры `--requests` и `--seeds`
 не меняют запросы из файла.
