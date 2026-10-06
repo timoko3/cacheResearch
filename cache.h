@@ -134,7 +134,7 @@ private:
   enum queueType { A1_IN, A1_OUT, AM };
 
   using Base = Cache<T, keyT>;
-  using Entry = std::pair<keyT, T>;
+  using Entry = std::pair<keyT, std::optional<T>>;
   using List = std::list<Entry>;
   using ListIt = typename List::iterator;
   using elemLoc = std::pair<ListIt, queueType>;
@@ -192,7 +192,7 @@ protected:
 
     switch (reqType) {
     case A1_IN:
-      return std::addressof(curIt->second);
+      return std::addressof(*curIt->second);
       break;
     case A1_OUT:
       isGhostHit_ = true;
@@ -202,7 +202,7 @@ protected:
     case AM:
       Am_.splice(Am_.begin(), Am_, curIt);
 
-      return std::addressof(curIt->second);
+      return std::addressof(*curIt->second);
       break;
     }
 
@@ -214,6 +214,7 @@ protected:
       if (isFullAIn()) {
         auto victim = std::prev(A1in_.end());
 
+        victim->second.reset();
         A1out_.splice(A1out_.begin(), A1in_, victim);
         hash_.at(victim->first).second = A1_OUT;
       }
@@ -230,7 +231,7 @@ protected:
         hash_.erase(Am_.back().first);
         Am_.pop_back();
       }
-      hash_.at(key).first->second = std::move(page);
+      hash_.at(key).first->second.emplace(std::move(page));
 
       Am_.splice(Am_.begin(), A1out_, hash_.find(key)->second.first);
       hash_.at(key).second = AM;
