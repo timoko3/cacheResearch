@@ -44,6 +44,8 @@ endforeach()
 add_library(general_functions STATIC
     generalFunctions/file.cpp
     generalFunctions/file.h
+    generalFunctions/lexer.cpp
+    generalFunctions/lexer.h
     generalFunctions/logger.cpp
     generalFunctions/logger.h
     generalFunctions/mathVector.h
@@ -56,14 +58,10 @@ target_include_directories(general_functions PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}
 
 add_executable(cache_research
     main.cpp
-    ./generalFunctions/lexer.cpp
-    ./generalFunctions/file.cpp
 
     cache.h
     cacheSystem.h
-    ./generalFunctions/lexer.h
     cacheParser.h
-    ./generalFunctions/file.h
 )
 target_compile_features(cache_research PRIVATE cxx_std_17)
 target_link_libraries(cache_research PRIVATE CacheResearch::general_functions)
