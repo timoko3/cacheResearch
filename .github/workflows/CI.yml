@@ -13,9 +13,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  format:
+    name: Check C++ formatting
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install clang-format 18
+        run: sudo apt-get update && sudo apt-get install --yes clang-format-18
+      - name: Check formatting
+        run: python3 scripts/code_quality.py format
+
+  tidy:
+    name: Analyze C++ with clang-tidy
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Install clang-tidy 18
+        run: sudo apt-get update && sudo apt-get install --yes clang-tidy-18 ninja-build
+      - name: Configure compilation database
+        run: cmake --preset debug
+      - name: Analyze project sources
+        run: python3 scripts/code_quality.py tidy --build-dir build/Linux/debug
+
   build:
     name: Build (${{ matrix.preset }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
 
     strategy:
       fail-fast: false
@@ -41,3 +65,6 @@ jobs:
 
       - name: Build
         run: cmake --build --preset ${{ matrix.preset }} --parallel
+
+      - name: Run tests
+        run: ctest --test-dir build/Linux/${{ matrix.preset }} --output-on-failure --no-tests=error
