@@ -4,13 +4,15 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <stdexcept>
+#include <string>
 #include <string_view>
 #include <unordered_set>
 #include <vector>
 
 #include <gtest/gtest.h>
 
-#include "cache.h"
+#include "cache/cache.h"
 
 namespace tests {
 

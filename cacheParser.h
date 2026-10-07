@@ -7,7 +7,7 @@
 #include <vector>
 
 #include "./generalFunctions/lexer.h"
-#include "cache.h"
+#include "cache/cache.h"
 #include "cacheSystem.h"
 
 template <typename keyT = int>

@@ -60,6 +60,13 @@ add_executable(cache_research
     main.cpp
 
     cache.h
+    cache/cache.h
+    cache/cache2Q.h
+    cache/cacheARC.h
+    cache/cacheLFU.h
+    cache/cacheLIRS.h
+    cache/cacheLRU.h
+    cache/cacheREF.h
     cacheSystem.h
     cacheParser.h
 )
@@ -116,6 +123,20 @@ add_custom_target(run
 )
 
 enable_testing()
+
+# Compile each public header separately, without transitive includes from other strategies.
+add_library(cache_header_checks OBJECT
+    tests/cache_headers/base.cpp
+    tests/cache_headers/2Q.cpp
+    tests/cache_headers/ARC.cpp
+    tests/cache_headers/LFU.cpp
+    tests/cache_headers/LIRS.cpp
+    tests/cache_headers/LRU.cpp
+    tests/cache_headers/REF.cpp
+)
+target_compile_features(cache_header_checks PRIVATE cxx_std_17)
+set_target_properties(cache_header_checks PROPERTIES CXX_EXTENSIONS OFF)
+target_include_directories(cache_header_checks PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 add_executable(cache_benchmark_runner
     cacheBenchmarks/cache_benchmark_runner.cpp

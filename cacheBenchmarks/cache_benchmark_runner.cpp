@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 
+#include "cache/cacheREF.h"
 #include "cacheParser.h"
 
 void checkReadableFile(const std::string& filePath) {

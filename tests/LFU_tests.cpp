@@ -1,3 +1,4 @@
+#include "cache/cacheLFU.h"
 #include "cache_tests_tools.h"
 
 namespace tests {

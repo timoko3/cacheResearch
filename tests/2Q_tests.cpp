@@ -1,3 +1,4 @@
+#include "cache/cache2Q.h"
 #include "cache_tests_tools.h"
 
 namespace tests {

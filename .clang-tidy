@@ -22,6 +22,6 @@ Checks: >-
 # Optional residency and exception propagation need a separate contract review;
 # do not enable every bugprone check indiscriminately.
 WarningsAsErrors: '*'
-HeaderFilterRegex: '(^|/)(cache\.h|cacheParser\.h|cacheSystem\.h|tests/.*\.h)$'
+HeaderFilterRegex: '(^|/)(cache\.h|cache/.*\.h|cacheParser\.h|cacheSystem\.h|tests/.*\.h)$'
 SystemHeaders: false
 FormatStyle: file
