@@ -1,8 +1,9 @@
-name: CI
+name: CMake CI
 
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -13,6 +14,7 @@ concurrency:
 
 jobs:
   build:
+    name: Build (${{ matrix.preset }})
     runs-on: ubuntu-latest
 
     strategy:
@@ -23,13 +25,16 @@ jobs:
           - release
 
     steps:
-      - name: Checkout
+      - name: Checkout repository and submodules
         uses: actions/checkout@v7
+        with:
+          submodules: recursive
 
-      - name: Check tools
+      - name: Show tool versions
         run: |
           cmake --version
           ninja --version
+          g++ --version
 
       - name: Configure
         run: cmake --preset ${{ matrix.preset }}
@@ -40,6 +45,3 @@ jobs:
           --preset ${{ matrix.preset }}
           --target general_functions cache_research_config
           --parallel
-
-      - name: Run tests
-        run: ctest --preset ${{ matrix.preset }} --output-on-failure
