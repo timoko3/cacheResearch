@@ -29,18 +29,17 @@ class CacheSystem {
     std::vector<std::unique_ptr<Cache<T, keyT>>> cacheSys_;
 
     template <typename F>
-    T lookupAt(size_t index, keyT key, F& slow_get_page){
-        if(index == cacheSys_.size()){
+    T lookupAt(size_t index, keyT key, F& slow_get_page) {
+        if (index == cacheSys_.size()) {
             return slow_get_page(key);
         }
 
         return cacheSys_[index]->lookupUpdate(
-            key, 
-            [this, index, &slow_get_page](keyT requestedKey)->T{
+            key, [this, index, &slow_get_page](keyT requestedKey) -> T {
                 return lookupAt(index + 1, requestedKey, slow_get_page);
-            }
-        );
+            });
     }
+
 public:
     explicit CacheSystem(const cacheSystemParams& params) {
         if (params.levels.empty()) {
@@ -52,24 +51,24 @@ public:
         for (const auto& description : params.levels) {
             switch (description.strategy) {
                 case C_LRU:
-                    cacheSys_.push_back(std::make_unique<CacheLRU<T, keyT>>(
-                        description.size, description.level));
+                    cacheSys_.push_back(
+                        std::make_unique<CacheLRU<T, keyT>>(description.size, description.level));
                     break;
                 case C_LFU:
-                    cacheSys_.push_back(std::make_unique<CacheLFU<T, keyT>>(
-                        description.size, description.level));
+                    cacheSys_.push_back(
+                        std::make_unique<CacheLFU<T, keyT>>(description.size, description.level));
                     break;
                 case C_ARC:
-                    cacheSys_.push_back(std::make_unique<CacheARC<T, keyT>>(
-                        description.size, description.level));
+                    cacheSys_.push_back(
+                        std::make_unique<CacheARC<T, keyT>>(description.size, description.level));
                     break;
                 case C_2Q:
-                    cacheSys_.push_back(std::make_unique<Cache2Q<T, keyT>>(
-                        description.size, description.level));
+                    cacheSys_.push_back(
+                        std::make_unique<Cache2Q<T, keyT>>(description.size, description.level));
                     break;
                 case C_LIRS:
-                    cacheSys_.push_back(std::make_unique<CacheLIRS<T, keyT>>(
-                        description.size, description.level));
+                    cacheSys_.push_back(
+                        std::make_unique<CacheLIRS<T, keyT>>(description.size, description.level));
                     break;
                 default:
                     throw std::invalid_argument("Unsupported cache strategy");
@@ -78,7 +77,7 @@ public:
     }
 
     template <typename F>
-    T lookupUpdate(keyT key, F slow_get_page){
+    T lookupUpdate(keyT key, F slow_get_page) {
         return lookupAt(0, key, slow_get_page);
     }
 

@@ -58,7 +58,6 @@ std::size_t processRequests(CacheType& cacheInstance, const std::vector<int>& re
 
 void checkCacheStatistics(const cache::CacheSystemStats& statistics, std::size_t requestCount,
                           std::size_t memoryLoadCount, std::size_t levelCount) {
-
     if (statistics.levels.size() != levelCount) {
         throw std::runtime_error("Incorrect number of cache levels");
     }
@@ -86,7 +85,6 @@ void checkCacheStatistics(const cache::CacheSystemStats& statistics, std::size_t
 
 cache::CacheSystemStats runCacheExperiment(const cache::cacheSystemParams& configuration,
                                            const std::vector<int>& requests) {
-
     checkCacheConfiguration(configuration);
 
     if (requests.empty()) {

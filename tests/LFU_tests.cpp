@@ -117,12 +117,14 @@ TEST(CacheLFU, ReloadedPageHasNewValue) {
 
 TEST(CacheLFU, RetryFailedLoad) {
     cache::CacheLFU<int, int> c(3);
-    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int {
-        throw std::runtime_error("load failed");
-    }), std::runtime_error);
+    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int { throw std::runtime_error("load failed"); }),
+                 std::runtime_error);
 
     int loads = 0;
-    auto slow = [&](int) { ++loads; return 420; };
+    auto slow = [&](int) {
+        ++loads;
+        return 420;
+    };
     EXPECT_EQ(c.lookupUpdate(42, slow), 420);
     EXPECT_EQ(c.lookupUpdate(42, slow), 420);
     EXPECT_EQ(loads, 1);
@@ -131,7 +133,10 @@ TEST(CacheLFU, RetryFailedLoad) {
 TEST(CacheLFU, VectorPage) {
     cache::CacheLFU<std::vector<int>, int> c(3);
     int loads = 0;
-    auto slow = [&](int key) { ++loads; return std::vector<int>{key, key + 1}; };
+    auto slow = [&](int key) {
+        ++loads;
+        return std::vector<int>{key, key + 1};
+    };
 
     auto page = c.lookupUpdate(7, slow);
     ASSERT_EQ(page.size(), 2);
@@ -145,7 +150,10 @@ TEST(CacheLFU, VectorPage) {
 TEST(CacheLFU, StringKeys) {
     cache::CacheLFU<int, std::string> c(3);
     int loads = 0;
-    auto slow = [&](const std::string& key) { ++loads; return static_cast<int>(key.size()); };
+    auto slow = [&](const std::string& key) {
+        ++loads;
+        return static_cast<int>(key.size());
+    };
 
     EXPECT_EQ(c.lookupUpdate("alpha", slow), 5);
     EXPECT_EQ(c.lookupUpdate("alpha", slow), 5);

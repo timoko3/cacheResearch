@@ -1,11 +1,11 @@
-#include <gtest/gtest.h>
-
 #include <filesystem>
 #include <fstream>
 #include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "cacheParser.h"
 
@@ -34,9 +34,7 @@ public:
     TempFile(const TempFile&) = delete;
     TempFile& operator=(const TempFile&) = delete;
 
-    std::string path() const {
-        return path_.string();
-    }
+    std::string path() const { return path_.string(); }
 
 private:
     static std::size_t nextId() {
@@ -49,22 +47,17 @@ private:
 
 } // namespace
 
-
 TEST(CacheParserValid, ParsesConfigAndInput) {
-    TempFile config(
-        "3\n"
-        "LRU\n"
-        "LFU\n"
-        "ARC\n"
-    );
+    TempFile config("3\n"
+                    "LRU\n"
+                    "LFU\n"
+                    "ARC\n");
 
-    TempFile input(
-        "4\n"
-        "8\n"
-        "16\n"
-        "5\n"
-        "1 2 3 2 1\n"
-    );
+    TempFile input("4\n"
+                   "8\n"
+                   "16\n"
+                   "5\n"
+                   "1 2 3 2 1\n");
 
     Lexer configLexer(config.path());
     Lexer inputLexer(input.path());
@@ -91,25 +84,20 @@ TEST(CacheParserValid, ParsesConfigAndInput) {
     EXPECT_EQ(parser.getReqList(), (std::vector<int>{1, 2, 3, 2, 1}));
 }
 
-
 TEST(CacheParserValid, ParsesEverySupportedStrategy) {
     const std::vector<std::pair<std::string, cache::cacheEvictionType>> strategies{
-        {"LFU",  cache::C_LFU},
-        {"LRU",  cache::C_LRU},
+        {"LFU", cache::C_LFU},
+        {"LRU", cache::C_LRU},
         {"LIRS", cache::C_LIRS},
-        {"2Q",   cache::C_2Q},
-        {"ARC",  cache::C_ARC},
-        {"REF",  cache::C_REF},
+        {"2Q", cache::C_2Q},
+        {"ARC", cache::C_ARC},
+        {"REF", cache::C_REF},
     };
 
     for (const auto& [name, expected] : strategies) {
         SCOPED_TRACE(name);
 
-        TempFile config(
-            "1\n" +
-            name +
-            "\n"
-        );
+        TempFile config("1\n" + name + "\n");
 
         Lexer configLexer(config.path());
 
@@ -124,12 +112,9 @@ TEST(CacheParserValid, ParsesEverySupportedStrategy) {
     }
 }
 
-
 TEST(CacheParserValid, TwoQIsParsedAsIdentifier) {
-    TempFile config(
-        "1\n"
-        "2Q\n"
-    );
+    TempFile config("1\n"
+                    "2Q\n");
 
     Lexer configLexer(config.path());
 
@@ -142,17 +127,12 @@ TEST(CacheParserValid, TwoQIsParsedAsIdentifier) {
     EXPECT_EQ(params.levels[0].strategy, cache::C_2Q);
 }
 
-
 TEST(CacheParserValid, ZeroRequestsAreAllowed) {
-    TempFile config(
-        "1\n"
-        "LRU\n"
-    );
+    TempFile config("1\n"
+                    "LRU\n");
 
-    TempFile input(
-        "8\n"
-        "0\n"
-    );
+    TempFile input("8\n"
+                   "0\n");
 
     Lexer configLexer(config.path());
     Lexer inputLexer(input.path());
@@ -167,18 +147,13 @@ TEST(CacheParserValid, ZeroRequestsAreAllowed) {
     EXPECT_EQ(params.levels[0].size, 8);
 }
 
-
 TEST(CacheParserValid, WhitespaceIsIgnored) {
-    TempFile config(
-        "  2 \n"
-        "LRU\t2Q\n"
-    );
+    TempFile config("  2 \n"
+                    "LRU\t2Q\n");
 
-    TempFile input(
-        " 4\t8 \n"
-        "3\n"
-        "1\t2 3\n"
-    );
+    TempFile input(" 4\t8 \n"
+                   "3\n"
+                   "1\t2 3\n");
 
     Lexer configLexer(config.path());
     Lexer inputLexer(input.path());
@@ -197,51 +172,39 @@ TEST(CacheParserValid, WhitespaceIsIgnored) {
     EXPECT_EQ(parser.getReqList(), (std::vector<int>{1, 2, 3}));
 }
 
-
 TEST(CacheParserConfigErrors, LevelCountMustBeInt) {
-    TempFile config(
-        "LRU\n"
-    );
+    TempFile config("LRU\n");
 
     Lexer configLexer(config.path());
     CacheParser<int> parser;
 
     EXPECT_THROW(parser.parseConfig(configLexer), std::runtime_error);
 }
-
 
 TEST(CacheParserConfigErrors, UnknownStrategyIsRejected) {
-    TempFile config(
-        "1\n"
-        "FIFO\n"
-    );
+    TempFile config("1\n"
+                    "FIFO\n");
 
     Lexer configLexer(config.path());
     CacheParser<int> parser;
 
     EXPECT_THROW(parser.parseConfig(configLexer), std::runtime_error);
 }
-
 
 TEST(CacheParserConfigErrors, NotEnoughStrategiesAreRejected) {
-    TempFile config(
-        "2\n"
-        "LRU\n"
-    );
+    TempFile config("2\n"
+                    "LRU\n");
 
     Lexer configLexer(config.path());
     CacheParser<int> parser;
 
     EXPECT_THROW(parser.parseConfig(configLexer), std::runtime_error);
 }
-
 
 TEST(CacheParserConfigErrors, ExtraStrategiesAreRejected) {
-    TempFile config(
-        "1\n"
-        "LRU\n"
-        "LFU\n"
-    );
+    TempFile config("1\n"
+                    "LRU\n"
+                    "LFU\n");
 
     Lexer configLexer(config.path());
     CacheParser<int> parser;
@@ -249,12 +212,9 @@ TEST(CacheParserConfigErrors, ExtraStrategiesAreRejected) {
     EXPECT_THROW(parser.parseConfig(configLexer), std::runtime_error);
 }
 
-
 TEST(CacheParserInputErrors, ParseInputBeforeConfigIsRejected) {
-    TempFile input(
-        "8\n"
-        "0\n"
-    );
+    TempFile input("8\n"
+                   "0\n");
 
     Lexer inputLexer(input.path());
     CacheParser<int> parser;
@@ -262,17 +222,12 @@ TEST(CacheParserInputErrors, ParseInputBeforeConfigIsRejected) {
     EXPECT_THROW(parser.parseInput(inputLexer), std::logic_error);
 }
 
-
 TEST(CacheParserInputErrors, LevelSizeMustBeInt) {
-    TempFile config(
-        "1\n"
-        "LRU\n"
-    );
+    TempFile config("1\n"
+                    "LRU\n");
 
-    TempFile input(
-        "large\n"
-        "0\n"
-    );
+    TempFile input("large\n"
+                   "0\n");
 
     Lexer configLexer(config.path());
     Lexer inputLexer(input.path());
@@ -282,18 +237,13 @@ TEST(CacheParserInputErrors, LevelSizeMustBeInt) {
 
     EXPECT_THROW(parser.parseInput(inputLexer), std::runtime_error);
 }
-
 
 TEST(CacheParserInputErrors, NotEnoughLevelSizesAreRejected) {
-    TempFile config(
-        "2\n"
-        "LRU\n"
-        "LFU\n"
-    );
+    TempFile config("2\n"
+                    "LRU\n"
+                    "LFU\n");
 
-    TempFile input(
-        "8\n"
-    );
+    TempFile input("8\n");
 
     Lexer configLexer(config.path());
     Lexer inputLexer(input.path());
@@ -303,18 +253,13 @@ TEST(CacheParserInputErrors, NotEnoughLevelSizesAreRejected) {
 
     EXPECT_THROW(parser.parseInput(inputLexer), std::runtime_error);
 }
-
 
 TEST(CacheParserInputErrors, RequestCountMustBeInt) {
-    TempFile config(
-        "1\n"
-        "LRU\n"
-    );
+    TempFile config("1\n"
+                    "LRU\n");
 
-    TempFile input(
-        "8\n"
-        "many\n"
-    );
+    TempFile input("8\n"
+                   "many\n");
 
     Lexer configLexer(config.path());
     Lexer inputLexer(input.path());
@@ -324,19 +269,14 @@ TEST(CacheParserInputErrors, RequestCountMustBeInt) {
 
     EXPECT_THROW(parser.parseInput(inputLexer), std::runtime_error);
 }
-
 
 TEST(CacheParserInputErrors, NotEnoughRequestsAreRejected) {
-    TempFile config(
-        "1\n"
-        "LRU\n"
-    );
+    TempFile config("1\n"
+                    "LRU\n");
 
-    TempFile input(
-        "8\n"
-        "3\n"
-        "10 20\n"
-    );
+    TempFile input("8\n"
+                   "3\n"
+                   "10 20\n");
 
     Lexer configLexer(config.path());
     Lexer inputLexer(input.path());
@@ -346,19 +286,14 @@ TEST(CacheParserInputErrors, NotEnoughRequestsAreRejected) {
 
     EXPECT_THROW(parser.parseInput(inputLexer), std::runtime_error);
 }
-
 
 TEST(CacheParserInputErrors, RequestMustBeInt) {
-    TempFile config(
-        "1\n"
-        "LRU\n"
-    );
+    TempFile config("1\n"
+                    "LRU\n");
 
-    TempFile input(
-        "8\n"
-        "2\n"
-        "10 bad\n"
-    );
+    TempFile input("8\n"
+                   "2\n"
+                   "10 bad\n");
 
     Lexer configLexer(config.path());
     Lexer inputLexer(input.path());
@@ -368,19 +303,14 @@ TEST(CacheParserInputErrors, RequestMustBeInt) {
 
     EXPECT_THROW(parser.parseInput(inputLexer), std::runtime_error);
 }
-
 
 TEST(CacheParserInputErrors, ExtraRequestsAreRejected) {
-    TempFile config(
-        "1\n"
-        "LRU\n"
-    );
+    TempFile config("1\n"
+                    "LRU\n");
 
-    TempFile input(
-        "8\n"
-        "1\n"
-        "10 20\n"
-    );
+    TempFile input("8\n"
+                   "1\n"
+                   "10 20\n");
 
     Lexer configLexer(config.path());
     Lexer inputLexer(input.path());
@@ -391,18 +321,13 @@ TEST(CacheParserInputErrors, ExtraRequestsAreRejected) {
     EXPECT_THROW(parser.parseInput(inputLexer), std::runtime_error);
 }
 
-
 TEST(CacheParserReuse, ParseConfigReplacesPreviousLevels) {
-    TempFile firstConfig(
-        "2\n"
-        "LRU\n"
-        "LFU\n"
-    );
+    TempFile firstConfig("2\n"
+                         "LRU\n"
+                         "LFU\n");
 
-    TempFile secondConfig(
-        "1\n"
-        "ARC\n"
-    );
+    TempFile secondConfig("1\n"
+                          "ARC\n");
 
     Lexer firstLexer(firstConfig.path());
     Lexer secondLexer(secondConfig.path());
@@ -419,24 +344,17 @@ TEST(CacheParserReuse, ParseConfigReplacesPreviousLevels) {
     EXPECT_EQ(params.levels[0].strategy, cache::C_ARC);
 }
 
-
 TEST(CacheParserReuse, ParseInputReplacesPreviousRequests) {
-    TempFile config(
-        "1\n"
-        "LRU\n"
-    );
+    TempFile config("1\n"
+                    "LRU\n");
 
-    TempFile firstInput(
-        "8\n"
-        "3\n"
-        "1 2 3\n"
-    );
+    TempFile firstInput("8\n"
+                        "3\n"
+                        "1 2 3\n");
 
-    TempFile secondInput(
-        "16\n"
-        "2\n"
-        "9 10\n"
-    );
+    TempFile secondInput("16\n"
+                         "2\n"
+                         "9 10\n");
 
     Lexer configLexer(config.path());
     Lexer firstInputLexer(firstInput.path());

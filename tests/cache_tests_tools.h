@@ -1,14 +1,14 @@
 #ifndef CACHE_TESTS_TOOLS_H
 #define CACHE_TESTS_TOOLS_H
 
-#include <gtest/gtest.h>
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <string_view>
 #include <unordered_set>
 #include <vector>
+
+#include <gtest/gtest.h>
 
 #include "cache.h"
 
@@ -25,14 +25,11 @@ inline uint32_t hashInt(int key) {
 }
 
 template <typename CacheT>
-void checkCacheStats(CacheT& cache,
-                     const std::vector<int>& requests,
-                     std::string_view expected) {
-
-    const auto expectedMisses = static_cast<std::size_t>(std::count(expected.begin(),
-    expected.end(), 'M'));
-    const auto expectedHits   = static_cast<std::size_t>(std::count(expected.begin(),
-    expected.end(), 'H'));
+void checkCacheStats(CacheT& cache, const std::vector<int>& requests, std::string_view expected) {
+    const auto expectedMisses =
+        static_cast<std::size_t>(std::count(expected.begin(), expected.end(), 'M'));
+    const auto expectedHits =
+        static_cast<std::size_t>(std::count(expected.begin(), expected.end(), 'H'));
 
     const auto& stats = cache.getStats();
 
@@ -43,11 +40,8 @@ void checkCacheStats(CacheT& cache,
 }
 
 template <typename CacheT>
-void testOneLookup(CacheT& cache,
-                   std::unordered_set<int>& loadedKeys,
-                   const int key,
+void testOneLookup(CacheT& cache, std::unordered_set<int>& loadedKeys, const int key,
                    const char expectedResult) {
-
     bool slowGetPageWasCalled = false;
     const bool wasLoadedBefore = loadedKeys.find(key) != loadedKeys.end();
 
@@ -74,10 +68,7 @@ void testOneLookup(CacheT& cache,
 }
 
 template <typename CacheT>
-void lookupUpdateTest(CacheT& cache,
-                      const std::vector<int>& requests,
-                      std::string_view expected) {
-
+void lookupUpdateTest(CacheT& cache, const std::vector<int>& requests, std::string_view expected) {
     ASSERT_EQ(requests.size(), expected.size());
 
     std::unordered_set<int> loadedKeys;

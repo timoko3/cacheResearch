@@ -1,23 +1,22 @@
 #include <iostream>
 #include <string>
-#include <vector>
 #include <variant>
+#include <vector>
 
 #include "./generalFunctions/lexer.h"
-#include "cacheParser.h"
 #include "cache.h"
+#include "cacheParser.h"
 #include "cacheSystem.h"
 
 int slowGetPage(int key);
 
-int main(const int argc, const char** argv)
-{
+int main(const int argc, const char** argv) {
     std::vector<std::string> args(argv + 1, argv + argc);
     const std::string configFile = argv[1];
     const std::string inputFile = argv[2];
 
     Lexer configLexer(configFile);
-    Lexer inputLexer (inputFile);
+    Lexer inputLexer(inputFile);
 
     CacheParser<int> Parser;
 
@@ -28,8 +27,7 @@ int main(const int argc, const char** argv)
 
     cache::CacheSystem<int> cacheSystem(cacheSysParams);
 
-    for (int request : requests)
-    {
+    for (int request : requests) {
         cacheSystem.lookupUpdate(request, slowGetPage);
     }
 
@@ -42,7 +40,6 @@ int main(const int argc, const char** argv)
     return 0;
 }
 
-int slowGetPage(int key)
-{
+int slowGetPage(int key) {
     return key;
 }

@@ -104,7 +104,10 @@ TEST(Cache2QFocused, OverflowOfA1inCreatesGhostEntry) {
 TEST(Cache2QFocused, GhostHitIsMissAndPromotesPageToAm) {
     cache::Cache2Q<int, int> c(4);
     int calls = 0;
-    auto slow = [&](int key) { ++calls; return key * 10; };
+    auto slow = [&](int key) {
+        ++calls;
+        return key * 10;
+    };
 
     c.lookupUpdate(1, slow);
     c.lookupUpdate(2, slow);
@@ -166,12 +169,14 @@ TEST(Cache2Q, ReloadedPageHasNewValue) {
 
 TEST(Cache2Q, RetryFailedLoad) {
     cache::Cache2Q<int, int> c(3);
-    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int {
-        throw std::runtime_error("load failed");
-    }), std::runtime_error);
+    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int { throw std::runtime_error("load failed"); }),
+                 std::runtime_error);
 
     int loads = 0;
-    auto slow = [&](int) { ++loads; return 420; };
+    auto slow = [&](int) {
+        ++loads;
+        return 420;
+    };
     EXPECT_EQ(c.lookupUpdate(42, slow), 420);
     EXPECT_EQ(c.lookupUpdate(42, slow), 420);
     EXPECT_EQ(loads, 1);
@@ -180,7 +185,10 @@ TEST(Cache2Q, RetryFailedLoad) {
 TEST(Cache2Q, VectorPage) {
     cache::Cache2Q<std::vector<int>, int> c(3);
     int loads = 0;
-    auto slow = [&](int key) { ++loads; return std::vector<int>{key, key + 1}; };
+    auto slow = [&](int key) {
+        ++loads;
+        return std::vector<int>{key, key + 1};
+    };
 
     auto page = c.lookupUpdate(7, slow);
     ASSERT_EQ(page.size(), 2);
@@ -194,7 +202,10 @@ TEST(Cache2Q, VectorPage) {
 TEST(Cache2Q, StringKeys) {
     cache::Cache2Q<int, std::string> c(3);
     int loads = 0;
-    auto slow = [&](const std::string& key) { ++loads; return static_cast<int>(key.size()); };
+    auto slow = [&](const std::string& key) {
+        ++loads;
+        return static_cast<int>(key.size());
+    };
 
     EXPECT_EQ(c.lookupUpdate("alpha", slow), 5);
     EXPECT_EQ(c.lookupUpdate("alpha", slow), 5);
