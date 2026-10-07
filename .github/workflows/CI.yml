@@ -40,8 +40,4 @@ jobs:
         run: cmake --preset ${{ matrix.preset }}
 
       - name: Build
-        run: >
-          cmake --build
-          --preset ${{ matrix.preset }}
-          --target general_functions cache_research_config
-          --parallel
+        run: cmake --build --preset ${{ matrix.preset }} --parallel
