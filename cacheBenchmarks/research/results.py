@@ -87,7 +87,7 @@ def configuration_label(configuration):
     )
 
 
-def write_results(folder, raw_rows, metadata):
+def write_results(folder, raw_rows, metadata, plots=True):
     """Save measurements, aggregate tables and figures without touching Markdown."""
     folder.mkdir(parents=True, exist_ok=True)
     summary = summarize(raw_rows)
@@ -96,15 +96,16 @@ def write_results(folder, raw_rows, metadata):
     patterns, scale = metadata["patterns"], metadata["workload_scale"]
     if metadata["mode"] == "software":
         write_csv(folder / "comparison_with_lru.csv", paired_comparison(raw_rows))
-        plot_software(folder, summary, patterns, scale)
-    else:
+        if plots:
+            plot_software(folder, summary, patterns, scale)
+    elif plots:
         tied_rows = plot_hierarchy(folder, summary, patterns, scale)
         write_csv(folder / "optimal_strategies_by_pattern.csv", tied_rows)
 
     return summary
 
 
-def write_unrestricted_results(folder, results, metadata):
+def write_unrestricted_results(folder, results, metadata, plots=True):
     folder.mkdir(parents=True, exist_ok=True)
     requests_in_thousands = metadata["requests"] * len(metadata["seeds"]) / 1000
     rows = []
@@ -130,6 +131,7 @@ def write_unrestricted_results(folder, results, metadata):
             }
         )
     write_csv(folder / "summary.csv", rows)
-    plot_unrestricted(folder, results, metadata)
-    plot_configurations(folder, results, metadata)
+    if plots:
+        plot_unrestricted(folder, results, metadata)
+        plot_configurations(folder, results, metadata)
     return rows

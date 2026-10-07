@@ -110,7 +110,7 @@ def validate_saved(folder, runner_path, seeds):
     )
 
 
-def render_saved(folder):
+def render_saved(folder, plots=True):
     """Rebuild numeric summaries and plots without rerunning simulations."""
     metadata = json.loads((folder / "manifest.json").read_text(encoding="utf-8"))
     if metadata.get("status") == "running":
@@ -130,7 +130,7 @@ def render_saved(folder):
         or len(results) != len(expected_points - omitted_points)
     ):
         raise ValueError("The saved experiment has undeclared omissions or duplicate points")
-    write_unrestricted_results(folder, results, metadata)
+    write_unrestricted_results(folder, results, metadata, plots=plots)
     metadata["results_sha256"] = hashlib.sha256(results_path.read_bytes()).hexdigest()
     metadata["analysis_source_sha256"] = {
         path.name: hashlib.sha256(path.read_bytes()).hexdigest()
@@ -188,7 +188,7 @@ def run_pattern(pattern, runner_path, input_folder, max_levels, totals):
     return search_results
 
 
-def main():
+def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runner", type=Path)
     parser.add_argument(
@@ -212,14 +212,21 @@ def main():
         "--patterns", nargs="+", choices=SOFTWARE_PATTERNS, default=list(SOFTWARE_PATTERNS)
     )
     parser.add_argument("--workers", type=positive_integer, default=2)
+    parser.add_argument("--no-plots", action="store_true", help="Save numeric results without matplotlib")
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
+    if args.workload_scale < 2 or args.requests + 12 * args.workload_scale > 2147483647:
+        parser.error("Workload scale must be >= 2; page IDs must fit in a C++ int")
+    if len(set(args.seeds)) != len(args.seeds):
+        parser.error("Seeds must be distinct")
+    if max(args.totals) > 2147483647:
+        parser.error("Cache capacities must fit in a C++ int")
     if args.validate_with:
         validate_saved(args.output, args.validate_with, args.validation_seeds)
-        render_saved(args.output)
+        render_saved(args.output, plots=not args.no_plots)
         return
     if args.render_only:
-        render_saved(args.output)
+        render_saved(args.output, plots=not args.no_plots)
         return
     if args.runner is None:
         parser.error("--runner is required unless --render-only is used")
@@ -250,8 +257,9 @@ def main():
         Path(__file__).with_name("cache_exact_search.cpp"),
         Path(__file__).parent / "research" / "workloads.py",
         Path(__file__).parent / "research" / "results.py",
-        Path("cache.h"),
+        Path(__file__).resolve().parents[1] / "cache.h",
     ]
+    sources.extend(sorted((Path(__file__).resolve().parents[1] / "cache").glob("*.h")))
     metadata["source_sha256"] = {
         str(path): hashlib.sha256(path.read_bytes()).hexdigest() for path in sources
     }
@@ -293,7 +301,7 @@ def main():
     (args.output / "manifest.json").write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
     )
-    render_saved(args.output)
+    render_saved(args.output, plots=not args.no_plots)
     print("Results:", args.output, flush=True)
 
 

@@ -41,7 +41,7 @@ SOURCE_FILES = (
     "cacheBenchmarks/research/plots.py",
     "cacheBenchmarks/research/runner.py",
     "cacheBenchmarks/research/workloads.py",
-)
+) + tuple(f"cache/{path.name}" for path in sorted((PROJECT_ROOT / "cache").glob("*.h")))
 
 
 def read_arguments(argv=None):
@@ -59,6 +59,10 @@ def read_arguments(argv=None):
     parser.add_argument("--sizes", type=int, nargs="+", help="Single-cache capacities")
     parser.add_argument("--trace", type=Path, help="Software mode: whitespace-separated object IDs")
     parser.add_argument("--generate-only", action="store_true")
+    parser.add_argument("--patterns", nargs="+", choices=SOFTWARE_PATTERNS,
+                        help="Only run these patterns (default: all for the selected mode)")
+    parser.add_argument("--no-plots", action="store_true",
+                        help="Save numeric results without requiring matplotlib")
     args = parser.parse_args(argv)
     if args.requests < 1 or args.workload_scale < 2:
         parser.error("requests must be positive; workload-scale must be >= 2")
@@ -72,6 +76,11 @@ def read_arguments(argv=None):
         parser.error("Total capacity exceeds the C++ integer range")
     if args.trace and args.mode != "software":
         parser.error("--trace is supported with --mode software")
+    if args.trace and args.patterns:
+        parser.error("Use --trace or --patterns, not both")
+    if args.patterns and args.mode in ("hierarchy", "all"):
+        if any(pattern not in HIERARCHY_PATTERNS for pattern in args.patterns):
+            parser.error("popular/navigation are only supported in software mode")
     if not args.generate_only and (args.runner is None or not args.runner.is_file()):
         parser.error("Provide --runner PATH or use --generate-only")
     if args.trace and not args.trace.is_file():
@@ -88,6 +97,8 @@ def experiment_plan(mode, args):
         capacities = sorted(set(args.sizes or software_sizes(args.workload_scale)))
         layouts = [(capacity,) for capacity in capacities]
         patterns = ("user_trace",) if args.trace else SOFTWARE_PATTERNS
+    if args.patterns:
+        patterns = tuple(dict.fromkeys(args.patterns))
     return layouts, patterns
 
 
@@ -111,6 +122,7 @@ def make_metadata(mode, args, layouts, patterns):
         "python": platform.python_version(),
         "source_hashes": source_hashes,
         "trace_hashes": {},
+        "plots": not args.no_plots,
     }
 
 
@@ -151,9 +163,12 @@ def run_experiment(mode, args):
         return
 
     # Check plot support before starting the simulations.
-    import matplotlib
-
-    metadata["matplotlib"] = matplotlib.__version__
+    if not args.no_plots:
+        try:
+            import matplotlib
+        except ImportError as error:
+            raise RuntimeError("Plots require matplotlib; install it or use --no-plots") from error
+        metadata["matplotlib"] = matplotlib.__version__
     metadata["runner_sha256"] = hashlib.sha256(args.runner.read_bytes()).hexdigest()
     external_requests = read_requests(args.trace) if args.trace else None
     if external_requests is not None:
@@ -187,7 +202,7 @@ def run_experiment(mode, args):
                         )
                         rows.append({"pattern": pattern, "seed": seed, **measured})
 
-    write_results(folder, rows, metadata)
+    write_results(folder, rows, metadata, plots=not args.no_plots)
     (folder / "manifest.json").write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"
     )

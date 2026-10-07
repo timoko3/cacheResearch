@@ -13,6 +13,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  benchmark-cli:
+    name: Test benchmark CLI
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Test generators and command-line interface
+        run: python3 -m unittest discover -s tests -p test_benchmark_cli.py -v
+
   format:
     name: Check C++ formatting
     runs-on: ubuntu-24.04
@@ -65,6 +73,12 @@ jobs:
 
       - name: Build
         run: cmake --build --preset ${{ matrix.preset }} --parallel
+
+      - name: Test benchmark CLI with C++ runner
+        env:
+          CACHE_BENCHMARK_RUNNER: ${{ github.workspace }}/build/Linux/${{ matrix.preset }}/cache_benchmark_runner
+          CACHE_EXACT_SEARCH_RUNNER: ${{ github.workspace }}/build/Linux/${{ matrix.preset }}/cache_exact_search
+        run: python3 -m unittest discover -s tests -p test_benchmark_cli.py -v
 
       - name: Run tests
         run: ctest --test-dir build/Linux/${{ matrix.preset }} --output-on-failure --no-tests=error

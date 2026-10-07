@@ -124,6 +124,12 @@ add_custom_target(run
 
 enable_testing()
 
+# The exact-search runner is also available through the standard CMake presets.
+add_executable(cache_exact_search cacheBenchmarks/cache_exact_search.cpp)
+target_compile_features(cache_exact_search PRIVATE cxx_std_17)
+set_target_properties(cache_exact_search PROPERTIES CXX_EXTENSIONS OFF)
+target_include_directories(cache_exact_search PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+
 # Compile each public header separately, without transitive includes from other strategies.
 add_library(cache_header_checks OBJECT
     tests/cache_headers/base.cpp
