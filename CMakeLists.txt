@@ -44,8 +44,11 @@ endforeach()
 add_library(general_functions STATIC
     generalFunctions/file.cpp
     generalFunctions/file.h
-    generalFunctions/lexer.cpp
-    generalFunctions/lexer.h
+    generalFunctions/lexer/lexer.cpp
+    generalFunctions/lexer/lexer.h
+    generalFunctions/lexer/token_stream.cpp
+    generalFunctions/lexer/token_stream.h
+    generalFunctions/lexer/token.h
     generalFunctions/logger.cpp
     generalFunctions/logger.h
     generalFunctions/mathVector.h
@@ -146,7 +149,7 @@ target_include_directories(cache_header_checks PRIVATE "${CMAKE_CURRENT_SOURCE_D
 
 add_executable(cache_benchmark_runner
     cacheBenchmarks/cache_benchmark_runner.cpp
-    generalFunctions/lexer.cpp
+    generalFunctions/lexer/lexer.cpp
 )
 
 target_compile_features(cache_benchmark_runner PRIVATE cxx_std_17)
@@ -161,7 +164,7 @@ file(GLOB cache_test_sources CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/*_tests.cpp"
 )
 
-add_executable(cache_tests ${cache_test_sources} generalFunctions/lexer.cpp)
+add_executable(cache_tests  ${cache_test_sources} generalFunctions/lexer/lexer.cpp)
 
 target_link_libraries(cache_tests PRIVATE
     CacheResearch::general_functions

@@ -1,4 +1,3 @@
-// Exact search over the existing policies and all positive ordered capacity splits.
 #include <algorithm>
 #include <array>
 #include <cstddef>
