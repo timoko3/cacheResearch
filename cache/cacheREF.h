@@ -18,7 +18,8 @@ private:
         T page;
     };
 
-    using Base_t = Cache<T, keyT>;
+    using Base = Cache<T, keyT>;
+    using typename Base::pageResult_t;
     using CacheList_t = std::list<Entry_t>;
     using ReqList_t = std::list<keyT>;
     using CacheIt_t = typename CacheList_t::iterator;
@@ -29,36 +30,36 @@ private:
     HashTable_t hash_;
     CacheList_t cache_;
     ReqList_t requests_;
-    ReqIt_t pos_;
+    ReqIt_t curRec_;
 
-    bool isFull() { return cache_.size() >= this->getSize(); };
+    bool isFull() const { return cache_.size() >= this->getSize(); };
 
     CacheIt_t findVictim() {
-        CacheIt_t victim_it = cache_.begin();
-        Dist_t max_dist = 0;
+        CacheIt_t victimIt = cache_.begin();
+        Dist_t maxDist = 0;
 
-        for (auto cache_it = cache_.begin(); cache_it != cache_.end(); ++cache_it) {
-            Dist_t dist_to_next = requests_.size();
+        for (auto cacheIt = cache_.begin(); cacheIt != cache_.end(); ++cacheIt) {
+            Dist_t distToNext = requests_.size();
 
-            for (auto req_it = pos_; req_it != requests_.end(); ++req_it) {
-                if (*req_it == cache_it->key) {
-                    dist_to_next = std::distance(pos_, req_it);
+            for (auto reqIt = curRec_; reqIt != requests_.end(); ++reqIt) {
+                if (*reqIt == cacheIt->key) {
+                    distToNext = std::distance(curRec_, reqIt);
                     break;
                 }
             }
 
-            if (dist_to_next >= max_dist) {
-                max_dist = dist_to_next;
-                victim_it = cache_it;
+            if (distToNext >= maxDist) {
+                maxDist = distToNext;
+                victimIt = cacheIt;
             }
         }
 
-        return victim_it;
+        return victimIt;
     };
 
 public:
-    explicit CacheREF(size_t size, ReqList_t reqs, cacheLevel_t level = L1)
-        : Base_t(size, level), requests_(reqs), pos_(requests_.begin()) {
+    CacheREF(std::size_t size, ReqList_t reqs, cacheLevel_t level = cacheLevel_t::L1)
+        : Base(size, level), requests_(reqs), curRec_(requests_.begin()) {
         if (requests_.empty()) {
             throw std::invalid_argument("Array with requests are empty");
         }
@@ -67,26 +68,31 @@ public:
     ~CacheREF() = default;
 
 protected:
-    virtual const T* findAndTouch(const keyT& key) override {
-        if (pos_ == requests_.end()) {
+    virtual pageResult_t getPage(const keyT& key) override {
+        if (curRec_ == requests_.end()) {
             throw std::out_of_range("Request sequence exhausted");
         }
-        ++pos_;
+
+        if (*curRec_ != key) {
+            throw std::invalid_argument("Request does not match the supplied sequence");
+        }
+
+        ++curRec_;
 
         auto hit = hash_.find(key);
 
         if (hit == hash_.end()) {
-            return nullptr;
+            return std::nullopt;
         }
 
-        return std::addressof(hit->second->page);
+        return std::cref(hit->second->page);
     }
 
-    void insert(const keyT& key, T page) override {
+    void insert(const keyT& key, const T& page) override {
         if (isFull()) {
-            auto victim_it = findVictim();
-            hash_.erase(victim_it->key);
-            cache_.erase(victim_it);
+            auto victimIt = findVictim();
+            hash_.erase(victimIt->key);
+            cache_.erase(victimIt);
         }
 
         cache_.push_front({key, page});

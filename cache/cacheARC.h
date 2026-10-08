@@ -24,7 +24,7 @@ private:
     };
 
     using Base = Cache<T, keyT>;
-    using typename Base::pageResult;
+    using typename Base::pageResult_t;
     using list_t = std::list<entry_t>;
     using listIt_t = typename list_t::iterator;
 
@@ -141,7 +141,7 @@ public:
         : Base(capacity, level), capacity_(capacity) {}
 
 protected:
-    pageResult getPage(const keyT& key) override {
+    pageResult_t getPage(const keyT& key) override {
         auto hit = hash_.find(key);
 
         if (hit == hash_.end()) {

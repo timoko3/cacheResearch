@@ -20,7 +20,7 @@ private:
     };
 
     using Base = Cache<T, keyT>;
-    using typename Base::pageResult;
+    using typename Base::pageResult_t;
     using List_t = std::list<Entry_t>;
     using ListIt_t = typename List_t::iterator;
 
@@ -45,7 +45,7 @@ public:
     ~CacheLFU() = default;
 
 protected:
-    pageResult getPage(const keyT& key) override {
+    pageResult_t getPage(const keyT& key) override {
         auto hit = hash_.find(key);
 
         if (hit == hash_.end()) {
