@@ -146,9 +146,6 @@ add_executable(cache_benchmark_runner
     generalFunctions/lexer/lexer.cpp
 )
 
-add_executable(cache_exact_search cacheBenchmarks/cache_exact_search.cpp)
-target_link_libraries(cache_exact_search PRIVATE CacheResearch::general_functions)
-
 target_compile_features(cache_benchmark_runner PRIVATE cxx_std_17)
 
 target_link_libraries(cache_benchmark_runner PRIVATE
