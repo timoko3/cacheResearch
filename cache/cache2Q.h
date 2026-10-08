@@ -38,7 +38,7 @@ private:
 public:
     // Johnson/Shasha: A1in = 25%, A1out = 50% of cache capacity.
     // https://www.openu.ac.il/home/wiseman/2os/lru/2q.pdf
-    explicit Cache2Q(size_t size, cacheLevel level = L1)
+    explicit Cache2Q(size_t size, cacheLevel_t level = L1)
         : Base(size, level), KIn_(std::max<size_t>(1, size / 4)),
           KOut_(std::max<size_t>(1, size / 2)), AmSize_(0) {
         if (size < 2) {

@@ -57,7 +57,7 @@ private:
     };
 
 public:
-    explicit CacheREF(size_t size, ReqList_t reqs, cacheLevel level = L1)
+    explicit CacheREF(size_t size, ReqList_t reqs, cacheLevel_t level = L1)
         : Base_t(size, level), requests_(reqs), pos_(requests_.begin()) {
         if (requests_.empty()) {
             throw std::invalid_argument("Array with requests are empty");

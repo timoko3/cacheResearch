@@ -47,7 +47,7 @@ public:
                 grammarError(currentToken_, configLexer, "Not enought levels in config file");
             }
 
-            parseLevel(static_cast<cache::cacheLevel>(cur_level), configLexer);
+            parseLevel(static_cast<cache::cacheLevel_t>(cur_level), configLexer);
         }
 
         Token endToken = configLexer.getNextToken();
@@ -123,7 +123,7 @@ public:
     std::vector<keyT> getReqList() const { return requests_; }
 
 private:
-    cache::cacheEvictionType parseStrategy(const std::string& strategy_name,
+    cache::cacheEviction_t parseStrategy(const std::string& strategy_name,
                                            const Lexer& lexer) const {
         if (strategy_name == "LFU")
             return cache::C_LFU;
@@ -143,7 +143,7 @@ private:
         return cache::C_UNKNOWN; // unreachable
     }
 
-    void parseLevel(cache::cacheLevel level, const Lexer& lexer) {
+    void parseLevel(cache::cacheLevel_t level, const Lexer& lexer) {
         if (currentToken_.type != IDENTIFIER) {
             grammarError(currentToken_, lexer, "Incorrect name of cache strategy");
         }

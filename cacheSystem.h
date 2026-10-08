@@ -20,12 +20,12 @@ struct cacheSystemParams {
 };
 
 struct CacheLevelStats {
-    cacheLevel level;
-    CacheStats stats;
+    cacheLevel_t level;
+    cacheStats stats;
 };
 
 struct CacheSystemStats {
-    CacheStats total;
+    cacheStats total;
     std::vector<CacheLevelStats> levels;
 };
 

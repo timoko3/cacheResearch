@@ -22,7 +22,7 @@ private:
     std::unordered_map<keyT, ListIt> hash_;
 
 public:
-    explicit CacheLRU(size_t size, cacheLevel level = L1) : Base(size, level) {}
+    explicit CacheLRU(size_t size, cacheLevel_t level = L1) : Base(size, level) {}
 
     const List& getCache() const { return cache_; }
 

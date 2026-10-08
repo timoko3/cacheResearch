@@ -105,7 +105,7 @@ class CacheLIRS : public Cache<T, keyT> {
 public:
     // Jiang/Zhang: resident HIR = 1%, LIR gets the remaining capacity.
     // https://xiaodongzhang1911.github.io/Zhang-papers/TR-05-11.pdf
-    explicit CacheLIRS(size_t size, cacheLevel level = L1)
+    explicit CacheLIRS(size_t size, cacheLevel_t level = L1)
         : Base(size, level), sizeLIR_(0), sizeHIR_(std::max<size_t>(1, size / 100)) {
         if (size < 2) {
             throw std::invalid_argument("LIRS requires at least 2 cache slots");

@@ -19,7 +19,8 @@ private:
         std::size_t frequency = 0;
     };
 
-    using Base_t = Cache<T, keyT>;
+    using Base = Cache<T, keyT>;
+    using typename Base::pageResult;
     using List_t = std::list<Entry_t>;
     using ListIt_t = typename List_t::iterator;
 
@@ -32,34 +33,42 @@ private:
 
     bool isFull() const { return cache_.size() >= this->getSize(); }
 
+    void recordHit(ListIt_t hitIt) {
+        hitIt->frequency++;
+        cache_.splice(cache_.end(), cache_, hitIt);
+    }
+
 public:
-    explicit CacheLFU(size_t size, cacheLevel level = L1) : Base_t(size, level){};
+    CacheLFU(std::size_t size, cacheLevel_t level = cacheLevel_t::L1)
+        : Base(size, level) {};
 
     ~CacheLFU() = default;
 
 protected:
-    const T* findAndTouch(const keyT& key) override {
+    pageResult getPage(const keyT& key) override {
         auto hit = hash_.find(key);
 
         if (hit == hash_.end()) {
-            return nullptr;
+            return std::nullopt;
         }
 
-        auto entryIt = hit->second;
-        entryIt->frequency++;
-        cache_.splice(cache_.end(), cache_, entryIt);
-        return std::addressof(entryIt->page);
+        auto hitIt = hit->second;
+        recordHit(hitIt);
+
+        return std::cref(hitIt->page);
     }
 
-    void insert(const keyT& key, T page) override {
+    void insert(const keyT& key, const T& page) override {
         if (isFull()) {
-            auto victim = std::min_element(cache_.begin(), cache_.end(), compareEntriesByFreq);
+            auto victim = std::min_element(cache_.begin(), cache_.end(),
+                                           compareEntriesByFreq);
             hash_.erase(victim->key);
             cache_.erase(victim);
         }
 
-        Entry_t new_entry = {key, page, 1};
-        cache_.push_back(new_entry);
+        constexpr std::size_t kInitialFrequency = 1;
+        Entry_t newEntry = {key, page, kInitialFrequency};
+        cache_.push_back(newEntry);
         hash_.emplace(key, std::prev(cache_.end()));
     }
 };

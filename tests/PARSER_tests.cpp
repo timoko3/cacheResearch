@@ -85,7 +85,7 @@ TEST(CacheParserValid, ParsesConfigAndInput) {
 }
 
 TEST(CacheParserValid, ParsesEverySupportedStrategy) {
-    const std::vector<std::pair<std::string, cache::cacheEvictionType>> strategies{
+    const std::vector<std::pair<std::string, cache::cacheEviction_t>> strategies{
         {"LFU", cache::C_LFU},
         {"LRU", cache::C_LRU},
         {"LIRS", cache::C_LIRS},
