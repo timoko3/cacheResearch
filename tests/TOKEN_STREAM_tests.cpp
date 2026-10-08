@@ -5,8 +5,8 @@
 
 #include <gtest/gtest.h>
 
-#include "generalFunctions/lexer/token.h"
 #include "generalFunctions/lexer/lexer.h"
+#include "generalFunctions/lexer/token.h"
 #include "generalFunctions/lexer/token_stream.h"
 
 namespace tests {
@@ -188,10 +188,8 @@ TEST(TokenStreamValid, IdentReferenceStaysValidAfterMovePos) {
 }
 
 TEST(TokenStreamValid, ReadsFullSequence) {
-    std::vector<Token> tokens{intToken(2, 1, 1),
-                              identToken("LRU", 2, 1),
-                              identToken("LFU", 3, 1),
-                              endToken(3, 4)};
+    std::vector<Token> tokens{
+        intToken(2, 1, 1), identToken("LRU", 2, 1), identToken("LFU", 3, 1), endToken(3, 4)};
     TokenStream stream(tokens);
 
     EXPECT_EQ(stream.expectInt("levels"), 2);
@@ -204,16 +202,14 @@ TEST(TokenStreamErrors, ExpectIntOnIdentifierThrows) {
     std::vector<Token> tokens{identToken("a", 1, 1), endToken(1, 2)};
     TokenStream stream(tokens, "main.txt");
 
-    EXPECT_EQ(errorText([&] { stream.expectInt("need int"); }),
-              "main.txt:1:1: need int");
+    EXPECT_EQ(errorText([&] { stream.expectInt("need int"); }), "main.txt:1:1: need int");
 }
 
 TEST(TokenStreamErrors, ExpectIdentOnIntThrows) {
     std::vector<Token> tokens{intToken(7, 4, 2), endToken(4, 3)};
     TokenStream stream(tokens, "main.txt");
 
-    EXPECT_EQ(errorText([&] { stream.expectIdent("need ident"); }),
-              "main.txt:4:2: need ident");
+    EXPECT_EQ(errorText([&] { stream.expectIdent("need ident"); }), "main.txt:4:2: need ident");
 }
 
 TEST(TokenStreamErrors, ExpectTokenWrongTypeThrows) {
@@ -310,8 +306,7 @@ TEST(LexerWithTokenStream, WrongTokenTypeIsReportedWithPosition) {
 
     EXPECT_EQ(stream.expectInt("levels"), 2);
     EXPECT_EQ(stream.expectIdent("strategy"), "LRU");
-    EXPECT_EQ(errorText([&] { stream.expectIdent("strategy"); }),
-              "config.txt:2:5: strategy");
+    EXPECT_EQ(errorText([&] { stream.expectIdent("strategy"); }), "config.txt:2:5: strategy");
 }
 
 } // namespace tests

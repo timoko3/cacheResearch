@@ -8,8 +8,8 @@
 #include <vector>
 
 #include "cache/cacheREF.h"
-#include "generalFunctions/file.h"
 #include "cacheParser.h"
+#include "generalFunctions/file.h"
 
 void checkReadableFile(const std::string& filePath) {
     std::ifstream inputFile(filePath);
@@ -139,7 +139,7 @@ cache::CacheSystemStats runCacheExperimentFromFiles(const std::string& configPat
     checkReadableFile(inputPath);
 
     lexer::Lexer configLexer(generalFunctions::readFile(configPath), configPath);
-    lexer::Lexer inputLexer (generalFunctions::readFile(inputPath), inputPath);
+    lexer::Lexer inputLexer(generalFunctions::readFile(inputPath), inputPath);
 
     lexer::TokenStream tsConfig(configLexer.tokenize(), configPath);
     lexer::TokenStream tsInput(inputLexer.tokenize(), inputPath);

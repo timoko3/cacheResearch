@@ -6,47 +6,40 @@
 #include <variant>
 #include <vector>
 
-#include "./generalFunctions/lexer/token_stream.h"
-#include "./generalFunctions/lexer/token.h"
 #include "./generalFunctions/lexer/lexer.h"
-
+#include "./generalFunctions/lexer/token.h"
+#include "./generalFunctions/lexer/token_stream.h"
 #include "cache/cache.h"
 #include "cacheSystem.h"
 
-namespace parser
-{
+namespace parser {
 
 const int max_cache_level = 5;
 
 template <typename keyT = int>
-class CacheParser
-{
+class CacheParser {
     cache::cacheSystemParams cacheSysParams_{};
     std::vector<keyT> reqList_;
     bool config_parsed_ = false;
 
 public:
-    CacheParser() {};
+    CacheParser(){};
 
-    void parseConfig(lexer::TokenStream& ts)
-    {
+    void parseConfig(lexer::TokenStream& ts) {
         config_parsed_ = false;
         cacheSysParams_.levels.clear();
 
         const lexer::Token& level_token = ts.peekToken();
 
-        const std::size_t count = static_cast<std::size_t>
-        (ts.expectInt("Incorrect num of cache strategies"));
+        const std::size_t count =
+            static_cast<std::size_t>(ts.expectInt("Incorrect num of cache strategies"));
 
-        if (count > max_cache_level)
-        {
+        if (count > max_cache_level) {
             ts.failAtToken(level_token, "Too many cache levels");
         }
 
-        for (std::size_t level = cache::L1; level < count; ++level)
-        {
-            if (!ts.isMatchType(lexer::TokenType::IDENTIFIER))
-            {
+        for (std::size_t level = cache::L1; level < count; ++level) {
+            if (!ts.isMatchType(lexer::TokenType::IDENTIFIER)) {
                 ts.failAtToken(ts.peekToken(), "Not enough cache levels");
             }
 
@@ -58,27 +51,22 @@ public:
         config_parsed_ = true;
     }
 
-    void parseInput(lexer::TokenStream& ts)
-    {
-        if (!config_parsed_)
-        {
+    void parseInput(lexer::TokenStream& ts) {
+        if (!config_parsed_) {
             throw std::logic_error("parseInput called before parseConfig");
         }
 
         reqList_.clear();
 
-        for (auto& level : cacheSysParams_.levels)
-        {
+        for (auto& level : cacheSysParams_.levels) {
             level.size = ts.expectInt("Incorrect size of cache level");
         }
 
-        const std::size_t count = static_cast<std::size_t>
-        (ts.expectInt("Incorrect amount of requests"));
+        const std::size_t count =
+            static_cast<std::size_t>(ts.expectInt("Incorrect amount of requests"));
 
-        for (std::size_t i = 0; i < count; ++i)
-        {
-            if (!ts.isMatchType(lexer::TokenType::INT))
-            {
+        for (std::size_t i = 0; i < count; ++i) {
+            if (!ts.isMatchType(lexer::TokenType::INT)) {
                 ts.failAtToken(ts.peekToken(), "Not enough requests");
             }
 
@@ -89,42 +77,39 @@ public:
                        "Extra data after requests check num of levels and num of requests");
     }
 
-    void parseAll(lexer::TokenStream& config_ts, lexer::TokenStream& input_ts)
-    {
+    void parseAll(lexer::TokenStream& config_ts, lexer::TokenStream& input_ts) {
         parseConfig(config_ts);
         parseInput(input_ts);
     }
 
-    const cache::cacheSystemParams& getCacheSysParams() const
-    {
-        return cacheSysParams_;
-    }
+    const cache::cacheSystemParams& getCacheSysParams() const { return cacheSysParams_; }
 
-    const std::vector<keyT>& getReqList() const
-    {
-        return reqList_;
-    }
+    const std::vector<keyT>& getReqList() const { return reqList_; }
 
 private:
-    void parseLevel(lexer::TokenStream& ts, cache::cacheLevel level)
-    {
-        const lexer::Token& name_token = ts.expectToken(lexer::TokenType::IDENTIFIER, 
-                                         "Incorrect name of cache strategy");
+    void parseLevel(lexer::TokenStream& ts, cache::cacheLevel level) {
+        const lexer::Token& name_token =
+            ts.expectToken(lexer::TokenType::IDENTIFIER, "Incorrect name of cache strategy");
 
         cacheSysParams_.levels.push_back({0, level, strategyFromToken(name_token, ts)});
     }
 
     cache::cacheEvictionType strategyFromToken(const lexer::Token& token,
-                                               const lexer::TokenStream& ts)
-    {
+                                               const lexer::TokenStream& ts) {
         const std::string& name = std::get<std::string>(token.data);
 
-        if (name == "LFU")  return cache::C_LFU;
-        if (name == "LRU")  return cache::C_LRU;
-        if (name == "LIRS") return cache::C_LIRS;
-        if (name == "2Q")   return cache::C_2Q;
-        if (name == "ARC")  return cache::C_ARC;
-        if (name == "REF")  return cache::C_REF;
+        if (name == "LFU")
+            return cache::C_LFU;
+        if (name == "LRU")
+            return cache::C_LRU;
+        if (name == "LIRS")
+            return cache::C_LIRS;
+        if (name == "2Q")
+            return cache::C_2Q;
+        if (name == "ARC")
+            return cache::C_ARC;
+        if (name == "REF")
+            return cache::C_REF;
 
         ts.failAtToken(token, "Unknown cache strategy");
         return cache::C_UNKNOWN;

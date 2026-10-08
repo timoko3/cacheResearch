@@ -3,26 +3,22 @@
 #include <variant>
 #include <vector>
 
+#include "./generalFunctions/file.h"
 #include "./generalFunctions/lexer/lexer.h"
 #include "./generalFunctions/lexer/token.h"
 #include "./generalFunctions/lexer/token_stream.h"
-#include "./generalFunctions/file.h"
+#include "cache.h"
 #include "cacheParser.h"
 #include "cacheSystem.h"
-#include "cache.h"
 
 void printTokenArr(std::vector<lexer::Token> token_arr);
 
 int slowGetPage(int key);
 
-int main(const int argc, const char** argv)
-{
+int main(const int argc, const char** argv) {
     try {
-
-        if (argc < 3) 
-        {
-            throw std::invalid_argument(
-                "Args format: <configFile> <inputFile>");
+        if (argc < 3) {
+            throw std::invalid_argument("Args format: <configFile> <inputFile>");
         }
 
         std::vector<std::string> args(argv + 1, argv + argc);
@@ -36,8 +32,8 @@ int main(const int argc, const char** argv)
         lexer::Lexer configLexer(config_str);
         lexer::Lexer inputLexer(input_str);
 
-        //printTokenArr(configLexer.tokenize());
-        //printTokenArr(inputLexer.tokenize());
+        // printTokenArr(configLexer.tokenize());
+        // printTokenArr(inputLexer.tokenize());
 
         lexer::TokenStream tsConfig(configLexer.tokenize(), configFile);
         lexer::TokenStream tsInput(inputLexer.tokenize(), inputFile);
@@ -45,8 +41,7 @@ int main(const int argc, const char** argv)
         parser::CacheParser<int> cacheParser;
         cacheParser.parseAll(tsConfig, tsInput);
 
-        cache::cacheSystemParams cacheSysParams =
-            cacheParser.getCacheSysParams();
+        cache::cacheSystemParams cacheSysParams = cacheParser.getCacheSysParams();
 
         std::vector<int> requests = cacheParser.getReqList();
 
@@ -63,14 +58,12 @@ int main(const int argc, const char** argv)
         std::cout << "Misses:   " << stats.total.amountMisses << '\n';
     }
 
-    catch (const std::exception& e) 
-    {
+    catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << '\n';
         return 1;
     }
 
-    catch (...) 
-    {
+    catch (...) {
         std::cerr << "Unknown error\n";
         return 1;
     }
@@ -78,31 +71,26 @@ int main(const int argc, const char** argv)
     return 0;
 }
 
-void printTokenArr(std::vector<lexer::Token> token_arr)
-{
-    for (std::size_t i = 0 ; i < token_arr.size(); ++i)
-    {
+void printTokenArr(std::vector<lexer::Token> token_arr) {
+    for (std::size_t i = 0; i < token_arr.size(); ++i) {
         std::cout << "TYPE:    " << static_cast<int>(token_arr[i].type) << '\n';
 
-        if (   token_arr[i].type == lexer::TokenType::INT 
-            || token_arr[i].type == lexer::TokenType::END)
-        {
+        if (token_arr[i].type == lexer::TokenType::INT ||
+            token_arr[i].type == lexer::TokenType::END) {
             std::cout << "DATA:    " << std::get<int>(token_arr[i].data) << '\n';
         }
 
-        else
-        {
+        else {
             std::cout << "DATA:    " << std::get<std::string>(token_arr[i].data) << '\n';
         }
 
         std::cout << "LINE:    " << token_arr[i].line << '\n';
-        std::cout << "COLUMN:  " << token_arr[i].col  << '\n';
+        std::cout << "COLUMN:  " << token_arr[i].col << '\n';
 
         std::cout << "\n\n";
     }
 }
 
-int slowGetPage(int key)
-{
+int slowGetPage(int key) {
     return key;
 }
