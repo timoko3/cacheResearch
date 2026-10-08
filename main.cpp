@@ -1,13 +1,15 @@
 #include <iostream>
 #include <string>
-#include <vector>
 #include <variant>
+#include <vector>
 
-#include "./generalFunctions/lexer_new.h"
+#include "./generalFunctions/lexer/lexer.h"
+#include "./generalFunctions/lexer/token.h"
+#include "./generalFunctions/lexer/token_stream.h"
 #include "./generalFunctions/file.h"
-//#include "cacheParser.h"
-#include "cache.h"
+#include "cacheParser.h"
 #include "cacheSystem.h"
+#include "cache.h"
 
 void printTokenArr(std::vector<lexer::Token> token_arr);
 
@@ -15,37 +17,65 @@ int slowGetPage(int key);
 
 int main(const int argc, const char** argv)
 {
-    std::vector<std::string> args(argv + 1, argv + argc);
-    const std::string configFile = argv[1];
-    const std::string inputFile = argv[2];
+    try {
 
-    std::string config_str = generalFunctions::readFile(configFile);
+        if (argc < 3) 
+        {
+            throw std::invalid_argument(
+                "Args format: <configFile> <inputFile>");
+        }
 
-    lexer::Lexer ConfigLexer(config_str);
+        std::vector<std::string> args(argv + 1, argv + argc);
 
-    printTokenArr(ConfigLexer.run());
+        const std::string configFile = argv[1];
+        const std::string inputFile = argv[2];
 
-    // CacheParser<int> Parser;
+        std::string config_str = generalFunctions::readFile(configFile);
+        std::string input_str = generalFunctions::readFile(inputFile);
 
-    // Parser.parseAll(configLexer, inputLexer);
+        lexer::Lexer configLexer(config_str);
+        lexer::Lexer inputLexer(input_str);
 
-    // cache::cacheSystemParams cacheSysParams = Parser.getCacheSysParams();
-    // std::vector<int> requests = Parser.getReqList();
+        //printTokenArr(configLexer.tokenize());
+        //printTokenArr(inputLexer.tokenize());
 
-    // cache::CacheSystem<int> cacheSystem(cacheSysParams);
+        lexer::TokenStream tsConfig(configLexer.tokenize(), configFile);
+        lexer::TokenStream tsInput(inputLexer.tokenize(), inputFile);
 
-    // for (int request : requests)
-    // {
-    //     cacheSystem.lookupUpdate(request, slowGetPage);
-    // }
+        parser::CacheParser<int> cacheParser;
+        cacheParser.parseAll(tsConfig, tsInput);
 
-    // auto stats = cacheSystem.getStats();
+        cache::cacheSystemParams cacheSysParams =
+            cacheParser.getCacheSysParams();
 
-    // std::cout << "Requests: " << stats.total.amountRequests << '\n';
-    // std::cout << "Hits:     " << stats.total.amountHits << '\n';
-    // std::cout << "Misses:   " << stats.total.amountMisses << '\n';
+        std::vector<int> requests = cacheParser.getReqList();
 
-    // return 0;
+        cache::CacheSystem<int> cacheSystem(cacheSysParams);
+
+        for (int request : requests) {
+            cacheSystem.lookupUpdate(request, slowGetPage);
+        }
+
+        auto stats = cacheSystem.getStats();
+
+        std::cout << "Requests: " << stats.total.amountRequests << '\n';
+        std::cout << "Hits:     " << stats.total.amountHits << '\n';
+        std::cout << "Misses:   " << stats.total.amountMisses << '\n';
+    }
+
+    catch (const std::exception& e) 
+    {
+        std::cerr << "Error: " << e.what() << '\n';
+        return 1;
+    }
+
+    catch (...) 
+    {
+        std::cerr << "Unknown error\n";
+        return 1;
+    }
+
+    return 0;
 }
 
 void printTokenArr(std::vector<lexer::Token> token_arr)

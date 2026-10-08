@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include "cache/cacheREF.h"
+#include "generalFunctions/file.h"
 #include "cacheParser.h"
 
 void checkReadableFile(const std::string& filePath) {
@@ -58,7 +60,6 @@ std::size_t processRequests(CacheType& cacheInstance, const std::vector<int>& re
 
 void checkCacheStatistics(const cache::CacheSystemStats& statistics, std::size_t requestCount,
                           std::size_t memoryLoadCount, std::size_t levelCount) {
-
     if (statistics.levels.size() != levelCount) {
         throw std::runtime_error("Incorrect number of cache levels");
     }
@@ -86,7 +87,6 @@ void checkCacheStatistics(const cache::CacheSystemStats& statistics, std::size_t
 
 cache::CacheSystemStats runCacheExperiment(const cache::cacheSystemParams& configuration,
                                            const std::vector<int>& requests) {
-
     checkCacheConfiguration(configuration);
 
     if (requests.empty()) {
@@ -138,10 +138,14 @@ cache::CacheSystemStats runCacheExperimentFromFiles(const std::string& configPat
     checkReadableFile(configPath);
     checkReadableFile(inputPath);
 
-    Lexer configurationLexer(configPath);
-    Lexer inputLexer(inputPath);
-    CacheParser<int> parser;
-    parser.parseAll(configurationLexer, inputLexer);
+    lexer::Lexer configLexer(generalFunctions::readFile(configPath), configPath);
+    lexer::Lexer inputLexer (generalFunctions::readFile(inputPath), inputPath);
+
+    lexer::TokenStream tsConfig(configLexer.tokenize(), configPath);
+    lexer::TokenStream tsInput(inputLexer.tokenize(), inputPath);
+
+    parser::CacheParser<int> parser;
+    parser.parseAll(tsConfig, tsInput);
 
     return runCacheExperiment(parser.getCacheSysParams(), parser.getReqList());
 }

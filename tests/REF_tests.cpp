@@ -1,3 +1,4 @@
+#include "cache/cacheREF.h"
 #include "cache_tests_tools.h"
 
 namespace tests {
@@ -154,12 +155,14 @@ TEST(CacheREF, ReloadedPageHasNewValue) {
 
 TEST(CacheREF, RetryFailedLoad) {
     cache::CacheREF<int, int> c(3, std::list<int>{42, 42, 42});
-    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int {
-        throw std::runtime_error("load failed");
-    }), std::runtime_error);
+    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int { throw std::runtime_error("load failed"); }),
+                 std::runtime_error);
 
     int loads = 0;
-    auto slow = [&](int) { ++loads; return 420; };
+    auto slow = [&](int) {
+        ++loads;
+        return 420;
+    };
     EXPECT_EQ(c.lookupUpdate(42, slow), 420);
     EXPECT_EQ(c.lookupUpdate(42, slow), 420);
     EXPECT_EQ(loads, 1);
@@ -168,7 +171,10 @@ TEST(CacheREF, RetryFailedLoad) {
 TEST(CacheREF, VectorPage) {
     cache::CacheREF<std::vector<int>, int> c(3, std::list<int>{7, 7});
     int loads = 0;
-    auto slow = [&](int key) { ++loads; return std::vector<int>{key, key + 1}; };
+    auto slow = [&](int key) {
+        ++loads;
+        return std::vector<int>{key, key + 1};
+    };
 
     auto page = c.lookupUpdate(7, slow);
     ASSERT_EQ(page.size(), 2);
@@ -180,10 +186,12 @@ TEST(CacheREF, VectorPage) {
 }
 
 TEST(CacheREF, StringKeys) {
-    cache::CacheREF<int, std::string> c(
-        3, std::list<std::string>{"alpha", "alpha", "beta"});
+    cache::CacheREF<int, std::string> c(3, std::list<std::string>{"alpha", "alpha", "beta"});
     int loads = 0;
-    auto slow = [&](const std::string& key) { ++loads; return static_cast<int>(key.size()); };
+    auto slow = [&](const std::string& key) {
+        ++loads;
+        return static_cast<int>(key.size());
+    };
 
     EXPECT_EQ(c.lookupUpdate("alpha", slow), 5);
     EXPECT_EQ(c.lookupUpdate("alpha", slow), 5);

@@ -44,8 +44,11 @@ endforeach()
 add_library(general_functions STATIC
     generalFunctions/file.cpp
     generalFunctions/file.h
-    generalFunctions/lexer_new.cpp
-    generalFunctions/lexer_new.h
+    generalFunctions/lexer/lexer.cpp
+    generalFunctions/lexer/lexer.h
+    generalFunctions/lexer/token_stream.cpp
+    generalFunctions/lexer/token_stream.h
+    generalFunctions/lexer/token.h
     generalFunctions/logger.cpp
     generalFunctions/logger.h
     generalFunctions/mathVector.h
@@ -60,8 +63,15 @@ add_executable(cache_research
     main.cpp
 
     cache.h
+    cache/cache.h
+    cache/cache2Q.h
+    cache/cacheARC.h
+    cache/cacheLFU.h
+    cache/cacheLIRS.h
+    cache/cacheLRU.h
+    cache/cacheREF.h
     cacheSystem.h
-    #cacheParser.h
+    cacheParser.h
 )
 target_compile_features(cache_research PRIVATE cxx_std_17)
 target_link_libraries(cache_research PRIVATE CacheResearch::general_functions)
@@ -117,10 +127,27 @@ add_custom_target(run
 
 enable_testing()
 
-add_executable(cache_benchmark_runner EXCLUDE_FROM_ALL
-    #cacheBenchmarks/cache_benchmark_runner.cpp
-    generalFunctions/lexer_new.cpp
+# Compile each public header separately, without transitive includes from other strategies.
+add_library(cache_header_checks OBJECT
+    tests/cache_headers/base.cpp
+    tests/cache_headers/2Q.cpp
+    tests/cache_headers/ARC.cpp
+    tests/cache_headers/LFU.cpp
+    tests/cache_headers/LIRS.cpp
+    tests/cache_headers/LRU.cpp
+    tests/cache_headers/REF.cpp
 )
+target_compile_features(cache_header_checks PRIVATE cxx_std_17)
+set_target_properties(cache_header_checks PROPERTIES CXX_EXTENSIONS OFF)
+target_include_directories(cache_header_checks PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+
+add_executable(cache_benchmark_runner
+    cacheBenchmarks/cache_benchmark_runner.cpp
+    generalFunctions/lexer/lexer.cpp
+)
+
+add_executable(cache_exact_search cacheBenchmarks/cache_exact_search.cpp)
+target_link_libraries(cache_exact_search PRIVATE CacheResearch::general_functions)
 
 target_compile_features(cache_benchmark_runner PRIVATE cxx_std_17)
 
@@ -134,7 +161,7 @@ file(GLOB cache_test_sources CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/tests/*_tests.cpp"
 )
 
-add_executable(cache_tests EXCLUDE_FROM_ALL ${cache_test_sources} generalFunctions/lexer_new.cpp)
+add_executable(cache_tests  ${cache_test_sources} generalFunctions/lexer/lexer.cpp)
 
 target_link_libraries(cache_tests PRIVATE
     CacheResearch::general_functions
