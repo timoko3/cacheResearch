@@ -23,8 +23,8 @@ int main(const int argc, const char** argv) {
 
         std::vector<std::string> args(argv + 1, argv + argc);
 
-        const std::string configFile = argv[1];
-        const std::string inputFile = argv[2];
+        const std::filesystem::path configFile = argv[1];
+        const std::filesystem::path inputFile = argv[2];
 
         std::string config_str = generalFunctions::readFile(configFile);
         std::string input_str = generalFunctions::readFile(inputFile);
