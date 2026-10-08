@@ -1,6 +1,6 @@
 #pragma once
 
-#include <сstddef.h>
+#include <cstddef>
 #include <functional>
 #include <optional>
 
@@ -63,11 +63,11 @@ public:
     }
 
 protected:
-    using pageResult = std::optional<std::reference_wrapper<const T>>;
+    using pageResult_t = std::optional<std::reference_wrapper<const T>>;
 
     // Returns a resident page reference,
     // or std::nullopt on a miss (including ghost entries).
-    virtual pageResult getPage(const keyT& key) = 0;
+    virtual pageResult_t getPage(const keyT& key) = 0;
 
     virtual void insert(const keyT& key, const T& page) = 0;
 };
