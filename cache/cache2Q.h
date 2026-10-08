@@ -2,154 +2,204 @@
 
 #include <algorithm>
 #include <functional>
-#include <iterator>
 #include <list>
 #include <optional>
 #include <stdexcept>
+#include <type_traits>
 #include <unordered_map>
+#include <variant>
 
 #include "cache.h"
 
 namespace cache {
 
+// Single-threaded, non-reentrant cache. References and queue views must not
+// outlive their backing pages or be used concurrently with mutations.
 template <typename T, typename keyT = int>
 class Cache2Q : public Cache<T, keyT> {
 private:
-    enum class queueType { A1_IN, A1_OUT, AM };
-
     using Base = Cache<T, keyT>;
-    using typename Base::pageResult;
+    using typename Base::pageResult_t;
+
+    enum class ResidentQueue { A1in, Am };
+
     struct PageRecord {
         keyT key;
-        std::optional<T> page;
+        T page;
 
         PageRecord(const keyT& pageKey, const T& pageValue) : key(pageKey), page(pageValue) {}
     };
 
-    using List = std::list<PageRecord>;
-    using ListIt = typename List::iterator;
+    using PageList = std::list<PageRecord>;
+    using PageIterator = typename PageList::iterator;
+    using GhostHistory = std::list<keyT>;
+    using GhostIterator = typename GhostHistory::iterator;
 
-    struct QueuePosition {
-        ListIt iterator;
-        queueType queue;
+    struct ResidentPosition {
+        PageIterator iterator;
+        ResidentQueue queue;
     };
 
-    std::size_t KIn_, KOut_, AmSize_;
+    // Ghosts have key iterators; residents have page iterators and queue names.
+    using QueuePosition = std::variant<ResidentPosition, GhostIterator>;
+    using PageIndex = std::unordered_map<keyT, QueuePosition>;
+    using IndexIterator = typename PageIndex::iterator;
 
-    List Am_;
-    List A1in_;
+    static_assert(std::is_nothrow_assignable_v<QueuePosition&, ResidentPosition> &&
+                  std::is_nothrow_assignable_v<QueuePosition&, GhostIterator>,
+                  "Queue transitions must not throw");
+    static_assert(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<keyT>,
+                  "Pages and keys must have non-throwing destructors");
 
-    List A1out_;
+    static constexpr std::size_t recentTargetDivisor = 4;
+    static constexpr std::size_t ghostLimitDivisor = 2;
 
-    std::unordered_map<keyT, QueuePosition> hash_;
+    const std::size_t recentTarget_;
+    const std::size_t ghostLimit_;
+    PageList A1in_;
+    PageList Am_;
+    GhostHistory A1out_;
+    PageIndex pageIndex_;
 
-public:
-    // Johnson/Shasha: A1in = 25%, A1out = 50% of cache capacity.
-    // https://www.openu.ac.il/home/wiseman/2os/lru/2q.pdf
-    explicit Cache2Q(std::size_t size, cacheLevel_t level = cacheLevel_t::L1)
-        : Base(size, level), KIn_(std::max<std::size_t>(1, size / 4)),
-          KOut_(std::max<std::size_t>(1, size / 2)), AmSize_(0) {
-        if (size < 2) {
-            throw std::invalid_argument("2Q requires at least 2 cache slots");
-        }
+    struct EvictionPlan {
+        IndexIterator residentToEvict;
+        IndexIterator ghostToForget;
+    };
 
-        AmSize_ = size - KIn_;
+    PageList& residentQueue(ResidentQueue queue) noexcept {
+        return queue == ResidentQueue::A1in ? A1in_ : Am_;
     }
 
-    const std::unordered_map<keyT, QueuePosition>& getHash() const { return hash_; }
+    EvictionPlan prepareEviction(bool promotingGhost, GhostHistory& stagedHistory) {
+        EvictionPlan plan{pageIndex_.end(), pageIndex_.end()};
+        if (getResidentCount() < this->getSize()) {
+            return plan;
+        }
 
-    const List& getAm() const { return Am_; }
-    const List& getA1in() const { return A1in_; }
-    const List& getA1out() const { return A1out_; }
+        const bool evictFromA1in = A1in_.size() > recentTarget_ || Am_.empty();
+        if (!evictFromA1in) {
+            plan.residentToEvict = pageIndex_.find(Am_.back().key);
+            return plan;
+        }
 
-    bool isFullAIn() const { return A1in_.size() >= KIn_; }
-    bool isFullAOut() const { return A1out_.size() > KOut_; }
-    bool isFullAm() const { return Am_.size() >= AmSize_; }
+        plan.residentToEvict = pageIndex_.find(A1in_.back().key);
+        stagedHistory.emplace_front(A1in_.back().key);
+        // Promotion removes one ghost, so its replacement cannot overflow history.
+        if (!promotingGhost && A1out_.size() >= ghostLimit_) {
+            plan.ghostToForget = pageIndex_.find(A1out_.back());
+        }
+        return plan;
+    }
+
+    void forgetGhost(IndexIterator indexedGhost) noexcept {
+        auto ghostIterator = std::get<GhostIterator>(indexedGhost->second);
+        pageIndex_.erase(indexedGhost);
+        A1out_.erase(ghostIterator);
+    }
+
+    void commitEviction(const EvictionPlan& plan, GhostHistory& stagedHistory) noexcept {
+        if (plan.ghostToForget != pageIndex_.end()) {
+            forgetGhost(plan.ghostToForget);
+        }
+        if (plan.residentToEvict == pageIndex_.end()) {
+            return;
+        }
+
+        auto position = std::get<ResidentPosition>(plan.residentToEvict->second);
+        if (position.queue == ResidentQueue::A1in) {
+            auto ghostIterator = stagedHistory.begin();
+            A1out_.splice(A1out_.begin(), stagedHistory, ghostIterator);
+            plan.residentToEvict->second = ghostIterator;
+        } else {
+            pageIndex_.erase(plan.residentToEvict);
+        }
+        residentQueue(position.queue).erase(position.iterator);
+    }
+
+    void insertNewPage(const keyT& key, const T& page) {
+        PageList stagedPage;
+        stagedPage.emplace_front(key, page);
+        auto [indexedPage, wasInserted] = pageIndex_.emplace(
+            key, ResidentPosition{stagedPage.begin(), ResidentQueue::A1in});
+        if (!wasInserted) {
+            throw std::logic_error("insertNewPage requires an unknown key");
+        }
+
+        GhostHistory stagedHistory;
+        EvictionPlan plan{pageIndex_.end(), pageIndex_.end()};
+        try {
+            // Acquire index iterators after emplace, which may rehash.
+            plan = prepareEviction(false, stagedHistory);
+        } catch (...) {
+            pageIndex_.erase(indexedPage);
+            throw;
+        }
+
+        commitEviction(plan, stagedHistory);
+        A1in_.splice(A1in_.begin(), stagedPage, stagedPage.begin());
+    }
+
+    void promoteGhostPage(IndexIterator indexedGhost, const T& page) {
+        PageList stagedPage;
+        stagedPage.emplace_front(indexedGhost->first, page);
+        GhostHistory stagedHistory;
+        auto plan = prepareEviction(true, stagedHistory);
+        auto previousGhost = std::get<GhostIterator>(indexedGhost->second);
+
+        commitEviction(plan, stagedHistory);
+        auto pageIterator = stagedPage.begin();
+        Am_.splice(Am_.begin(), stagedPage, pageIterator);
+        indexedGhost->second = ResidentPosition{pageIterator, ResidentQueue::Am};
+        A1out_.erase(previousGhost);
+    }
+
+public:
+    // Johnson/Shasha defaults: A1in target 25%, ghost history limit 50%.
+    // https://www.vldb.org/conf/1994/P439.PDF
+    explicit Cache2Q(std::size_t capacity, cacheLevel_t level = cacheLevel_t::L1)
+        : Base(capacity, level),
+          recentTarget_(std::max<std::size_t>(1, capacity / recentTargetDivisor)),
+          ghostLimit_(std::max<std::size_t>(1, capacity / ghostLimitDivisor)) {
+        if (capacity < 2) {
+            throw std::invalid_argument("2Q requires at least 2 cache slots");
+        }
+    }
+
+    std::size_t getResidentCount() const noexcept { return A1in_.size() + Am_.size(); }
+    std::size_t getIndexedCount() const noexcept { return pageIndex_.size(); }
+    std::size_t getRecentTarget() const noexcept { return recentTarget_; }
+    std::size_t getGhostLimit() const noexcept { return ghostLimit_; }
+    const PageList& getAm() const noexcept { return Am_; }
+    const PageList& getA1in() const noexcept { return A1in_; }
+    const GhostHistory& getA1out() const noexcept { return A1out_; }
 
 protected:
-    pageResult getPage(const keyT& key) override {
-        auto hit = hash_.find(key);
-
-        if (hit == hash_.end()) {
+    pageResult_t getPage(const keyT& key) override {
+        auto indexedRecord = pageIndex_.find(key);
+        if (indexedRecord == pageIndex_.end()) {
             return std::nullopt;
         }
 
-        const auto& location = hit->second;
-        auto curPageIt = location.iterator;
-
-        switch (location.queue) {
-            case queueType::A1_IN:
-                return std::cref(*curPageIt->page);
-            case queueType::A1_OUT:
-                return std::nullopt;
-            case queueType::AM:
-                Am_.splice(Am_.begin(), Am_, curPageIt);
-
-                return std::cref(*entry->page);
+        auto resident = std::get_if<ResidentPosition>(&indexedRecord->second);
+        if (resident == nullptr) {
+            return std::nullopt;
         }
-
-        return std::nullopt;
+        if (resident->queue == ResidentQueue::Am) {
+            Am_.splice(Am_.begin(), Am_, resident->iterator);
+        }
+        return std::cref(resident->iterator->page);
     }
 
     void insert(const keyT& key, const T& page) override {
-        auto hit = hash_.find(key);
-        if (hit == hash_.end()) {
-            // Prepare allocations and index lookups before changing resident queues.
-            List pending;
-            pending.emplace_front(key, page);
-            auto [insertedEntry, wasInserted] =
-                hash_.emplace(key, QueuePosition{pending.begin(), queueType::A1_IN});
-            if (!wasInserted) {
-                return;
-            }
-
-            auto victim = A1in_.end();
-            auto victimLocation = hash_.end();
-            auto oldestGhost = hash_.end();
-            try {
-                if (isFullAIn()) {
-                    victim = std::prev(A1in_.end());
-                    victimLocation = hash_.find(victim->key);
-                    if (A1out_.size() >= KOut_) {
-                        oldestGhost = hash_.find(A1out_.back().key);
-                    }
-                }
-            } catch (...) {
-                hash_.erase(insertedEntry);
-                throw;
-            }
-
-            if (victim != A1in_.end()) {
-                victim->page.reset();
-                A1out_.splice(A1out_.begin(), A1in_, victim);
-                victimLocation->second.queue = queueType::A1_OUT;
-            }
-
-            if (oldestGhost != hash_.end()) {
-                hash_.erase(oldestGhost);
-                A1out_.pop_back();
-            }
-
-            A1in_.splice(A1in_.begin(), pending, pending.begin());
-        } else {
-            auto& location = hit->second;
-            if (location.queue != queueType::A1_OUT) {
-                return;
-            }
-
-            auto ghost = location.iterator;
-            auto hotVictim = hash_.end();
-            if (isFullAm()) {
-                hotVictim = hash_.find(Am_.back().key);
-            }
-            ghost->page.emplace(page);
-            if (hotVictim != hash_.end()) {
-                hash_.erase(hotVictim);
-                Am_.pop_back();
-            }
-            Am_.splice(Am_.begin(), A1out_, ghost);
-            location.queue = queueType::AM;
+        auto indexedRecord = pageIndex_.find(key);
+        if (indexedRecord == pageIndex_.end()) {
+            insertNewPage(key, page);
+            return;
         }
+        if (std::holds_alternative<ResidentPosition>(indexedRecord->second)) {
+            throw std::logic_error("insert requires a non-resident key");
+        }
+        promoteGhostPage(indexedRecord, page);
     }
 };
 
