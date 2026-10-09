@@ -11,35 +11,35 @@
 
 namespace cache {
 
-struct cacheSystemParams {
+struct CacheSystemParams {
     // Descriptions are ordered from the first cache level to the last.
-    std::vector<cacheDescription> levels;
+    std::vector<CacheDescription> levels;
 };
 
 struct CacheLevelStats {
-    cacheLevel_t level;
-    cacheStats stats;
+    CacheLevel level;
+    CacheStats stats;
 };
 
 struct CacheSystemStats {
-    cacheStats total;
+    CacheStats total;
     std::vector<CacheLevelStats> levels;
 };
 
-template <typename T, typename keyT = int>
+template <typename T, typename KeyT = int>
 class CacheSystem {
-    std::vector<std::unique_ptr<Cache<T, keyT>>> cacheSys_;
-    cacheStats stats_;
+    std::vector<std::unique_ptr<Cache<T, KeyT>>> cacheSys_;
+    CacheStats stats_;
 
     template <typename F>
-    const T& lookupUpdate(std::size_t index, keyT key, F& slow_get_page) {
+    const T& lookupUpdate(std::size_t index, KeyT key, F& slowGetPage) {
         if (index == cacheSys_.size()) {
-            return slow_get_page(key);
+            return slowGetPage(key);
         }
 
         return cacheSys_[index]->lookupUpdate(
-            key, [this, index, &slow_get_page](keyT requestedKey) -> const T& {
-                return lookupUpdate(index + 1, requestedKey, slow_get_page);
+            key, [this, index, &slowGetPage](KeyT requestedKey) -> const T& {
+                return lookupUpdate(index + 1, requestedKey, slowGetPage);
             });
     }
 
@@ -53,7 +53,7 @@ class CacheSystem {
     }
 
 public:
-    explicit CacheSystem(const cacheSystemParams& params) {
+    explicit CacheSystem(const CacheSystemParams& params) {
         if (params.levels.empty()) {
             throw std::invalid_argument("At least one cache level is needed");
         }
@@ -61,16 +61,16 @@ public:
         cacheSys_.reserve(params.levels.size());
 
         for (const auto& description : params.levels) {
-            cacheSys_.push_back(CacheFactory<T, keyT>::make(description));
+            cacheSys_.push_back(CacheFactory<T, KeyT>::make(description));
         }
     }
 
     template <typename F>
-    const T& lookupUpdate(keyT key, F slow_get_page) {
-        static_assert(std::is_lvalue_reference_v<decltype(slow_get_page(key))>,
+    const T& lookupUpdate(KeyT key, F slowGetPage) {
+        static_assert(std::is_lvalue_reference_v<decltype(slowGetPage(key))>,
                       "The page loader must return a reference to a live page");
         try {
-            const T& page = lookupUpdate(0, key, slow_get_page);
+            const T& page = lookupUpdate(0, key, slowGetPage);
             updateStats();
             return page;
         } catch (...) {
@@ -79,7 +79,7 @@ public:
         }
     }
 
-    const cacheStats& getStats() const { return stats_; }
+    const CacheStats& getStats() const { return stats_; }
 
     CacheSystemStats getSystemStats() const {
         CacheSystemStats result;

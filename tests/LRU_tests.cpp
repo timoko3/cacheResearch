@@ -76,9 +76,9 @@ TEST(CacheLRUTrace, HotTwoLong) {
 }
 
 TEST(CacheLRUFocused, MetadataAndStartsEmpty) {
-    cache::CacheLRU<int, int> c(3, cache::cacheLevel_t::L2);
+    cache::CacheLRU<int, int> c(3, cache::CacheLevel::L2);
     EXPECT_EQ(c.getSize(), 3u);
-    EXPECT_EQ(c.getLevel(), cache::cacheLevel_t::L2);
+    EXPECT_EQ(c.getLevel(), cache::CacheLevel::L2);
     EXPECT_TRUE(c.getCache().empty());
     EXPECT_EQ(c.getIndexedCount(), 0u);
 }

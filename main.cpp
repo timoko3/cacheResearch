@@ -11,7 +11,7 @@
 #include "cacheParser.h"
 #include "cacheSystem.h"
 
-void printTokenArr(std::vector<lexer::Token> token_arr);
+void printTokenArr(std::vector<lexer::Token> tokenArr);
 
 int main(const int argc, const char** argv) {
     try {
@@ -24,11 +24,11 @@ int main(const int argc, const char** argv) {
         const std::filesystem::path configFile = argv[1];
         const std::filesystem::path inputFile = argv[2];
 
-        std::string config_str = generalFunctions::readFile(configFile);
-        std::string input_str = generalFunctions::readFile(inputFile);
+        std::string configStr = generalFunctions::readFile(configFile);
+        std::string inputStr = generalFunctions::readFile(inputFile);
 
-        lexer::Lexer configLexer(config_str);
-        lexer::Lexer inputLexer(input_str);
+        lexer::Lexer configLexer(configStr);
+        lexer::Lexer inputLexer(inputStr);
 
         // printTokenArr(configLexer.tokenize());
         // printTokenArr(inputLexer.tokenize());
@@ -39,7 +39,7 @@ int main(const int argc, const char** argv) {
         parser::CacheParser<int> cacheParser;
         cacheParser.parseAll(tsConfig, tsInput);
 
-        cache::cacheSystemParams cacheSysParams = cacheParser.getCacheSysParams();
+        cache::CacheSystemParams cacheSysParams = cacheParser.getCacheSysParams();
 
         std::vector<int> requests = cacheParser.getReqList();
 
@@ -75,21 +75,21 @@ int main(const int argc, const char** argv) {
     return 0;
 }
 
-void printTokenArr(std::vector<lexer::Token> token_arr) {
-    for (std::size_t i = 0; i < token_arr.size(); ++i) {
-        std::cout << "TYPE:    " << static_cast<int>(token_arr[i].type) << '\n';
+void printTokenArr(std::vector<lexer::Token> tokenArr) {
+    for (std::size_t i = 0; i < tokenArr.size(); ++i) {
+        std::cout << "TYPE:    " << static_cast<int>(tokenArr[i].type) << '\n';
 
-        if (token_arr[i].type == lexer::TokenType::INT ||
-            token_arr[i].type == lexer::TokenType::END) {
-            std::cout << "DATA:    " << std::get<int>(token_arr[i].data) << '\n';
+        if (tokenArr[i].type == lexer::TokenType::INT ||
+            tokenArr[i].type == lexer::TokenType::END) {
+            std::cout << "DATA:    " << std::get<int>(tokenArr[i].data) << '\n';
         }
 
         else {
-            std::cout << "DATA:    " << std::get<std::string>(token_arr[i].data) << '\n';
+            std::cout << "DATA:    " << std::get<std::string>(tokenArr[i].data) << '\n';
         }
 
-        std::cout << "LINE:    " << token_arr[i].line << '\n';
-        std::cout << "COLUMN:  " << token_arr[i].col << '\n';
+        std::cout << "LINE:    " << tokenArr[i].line << '\n';
+        std::cout << "COLUMN:  " << tokenArr[i].col << '\n';
 
         std::cout << "\n\n";
     }

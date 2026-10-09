@@ -7,13 +7,13 @@
 namespace tests {
 namespace {
 
-class CacheInterface : public testing::TestWithParam<cache::cacheEviction_t> {
+class CacheInterface : public testing::TestWithParam<cache::CacheEviction> {
 protected:
     std::unique_ptr<cache::Cache<int>> makeCache(std::size_t capacity) {
-        if (GetParam() == cache::cacheEviction_t::C_REF) {
+        if (GetParam() == cache::CacheEviction::C_REF) {
             return std::make_unique<cache::CacheREF<int>>(capacity, std::list<int>{7, 7});
         }
-        return cache::CacheFactory<int>::make({capacity, cache::cacheLevel_t::L1, GetParam()});
+        return cache::CacheFactory<int>::make({capacity, cache::CacheLevel::L1, GetParam()});
     }
 };
 
@@ -42,11 +42,11 @@ TEST_P(CacheInterface, MissAndHitReturnSameStoredCopy) {
     EXPECT_EQ(c->getStats().amountHits, 1u);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    AllStrategies, CacheInterface,
-    testing::Values(cache::cacheEviction_t::C_LRU, cache::cacheEviction_t::C_LFU,
-                    cache::cacheEviction_t::C_ARC, cache::cacheEviction_t::C_2Q,
-                    cache::cacheEviction_t::C_LIRS, cache::cacheEviction_t::C_REF));
+INSTANTIATE_TEST_SUITE_P(AllStrategies, CacheInterface,
+                         testing::Values(cache::CacheEviction::C_LRU, cache::CacheEviction::C_LFU,
+                                         cache::CacheEviction::C_ARC, cache::CacheEviction::C_2Q,
+                                         cache::CacheEviction::C_LIRS,
+                                         cache::CacheEviction::C_REF));
 
 TEST_P(CacheInterface, AcceptsLoaderReturningConstReference) {
     auto c = makeCache(3);
@@ -63,10 +63,10 @@ TEST_P(CacheInterface, ZeroCapacityIsRejected) {
 
 TEST_P(CacheInterface, StoredReferenceSurvivesLoaderBufferReuseAndDestruction) {
     std::unique_ptr<cache::Cache<int>> c;
-    if (GetParam() == cache::cacheEviction_t::C_REF) {
+    if (GetParam() == cache::CacheEviction::C_REF) {
         c = std::make_unique<cache::CacheREF<int>>(3, std::list<int>{1, 2, 1});
     } else {
-        c = cache::CacheFactory<int>::make({3, cache::cacheLevel_t::L1, GetParam()});
+        c = cache::CacheFactory<int>::make({3, cache::CacheLevel::L1, GetParam()});
     }
 
     const int* first = nullptr;

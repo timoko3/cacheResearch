@@ -11,25 +11,25 @@
 
 namespace cache {
 
-template <typename T, typename keyT = int>
-class CacheLRU : public Cache<T, keyT> {
+template <typename T, typename KeyT = int>
+class CacheLRU : public Cache<T, KeyT> {
 private:
-    using Base = Cache<T, keyT>;
-    using typename Base::pageResult_t;
+    using Base = Cache<T, KeyT>;
+    using typename Base::PageResult;
 
     struct PageRecord {
-        keyT key;
+        KeyT key;
         T page;
 
-        PageRecord(const keyT& pageKey, const T& pageValue) : key(pageKey), page(pageValue) {}
+        PageRecord(const KeyT& pageKey, const T& pageValue) : key(pageKey), page(pageValue) {}
     };
 
     using PageList = std::list<PageRecord>;
     using PageIterator = typename PageList::iterator;
-    using PageIndex = std::unordered_map<keyT, PageIterator>;
+    using PageIndex = std::unordered_map<KeyT, PageIterator>;
     using IndexIterator = typename PageIndex::iterator;
 
-    static_assert(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<keyT>,
+    static_assert(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<KeyT>,
                   "Pages and keys must have non-throwing destructors");
 
     PageList cache_;
@@ -45,7 +45,7 @@ private:
         cache_.erase(resident);
     }
 
-    void insertNewPage(const keyT& key, const T& page) {
+    void insertNewPage(const KeyT& key, const T& page) {
         PageList stagedPage;
         stagedPage.emplace_front(key, page);
         auto [indexedPage, wasInserted] = pageIndex_.emplace(key, stagedPage.begin());
@@ -71,7 +71,7 @@ private:
     }
 
 public:
-    explicit CacheLRU(std::size_t capacity, cacheLevel_t level = cacheLevel_t::L1)
+    explicit CacheLRU(std::size_t capacity, CacheLevel level = CacheLevel::L1)
         : Base(capacity, level) {}
 
     std::size_t getResidentCount() const noexcept { return cache_.size(); }
@@ -80,7 +80,7 @@ public:
     bool isFull() const noexcept { return getResidentCount() >= this->getSize(); }
 
 protected:
-    pageResult_t getPage(const keyT& key) override {
+    PageResult getPage(const KeyT& key) override {
         auto indexedRecord = pageIndex_.find(key);
         if (indexedRecord == pageIndex_.end()) {
             return std::nullopt;
@@ -90,7 +90,7 @@ protected:
         return std::cref(indexedRecord->second->page);
     }
 
-    const T& insert(const keyT& key, const T& page) override {
+    const T& insert(const KeyT& key, const T& page) override {
         insertNewPage(key, page);
         return cache_.front().page;
     }

@@ -19,7 +19,7 @@ void checkReadableFile(const std::string& filePath) {
     }
 }
 
-void checkCacheConfiguration(const cache::cacheSystemParams& configuration) {
+void checkCacheConfiguration(const cache::CacheSystemParams& configuration) {
     if (configuration.levels.empty() || configuration.levels.size() > 3) {
         throw std::invalid_argument("Use 1 to 3 cache levels");
     }
@@ -29,7 +29,7 @@ void checkCacheConfiguration(const cache::cacheSystemParams& configuration) {
             throw std::invalid_argument("Cache capacity must be positive");
         }
 
-        if (description.strategy == cache::cacheEviction_t::C_REF &&
+        if (description.strategy == cache::CacheEviction::C_REF &&
             configuration.levels.size() != 1) {
             throw std::invalid_argument("REF is supported only as a single-level reference");
         }
@@ -88,7 +88,7 @@ void checkCacheStatistics(const cache::CacheSystemStats& statistics, std::size_t
     }
 }
 
-cache::CacheSystemStats runCacheExperiment(const cache::cacheSystemParams& configuration,
+cache::CacheSystemStats runCacheExperiment(const cache::CacheSystemParams& configuration,
                                            const std::vector<int>& requests) {
     checkCacheConfiguration(configuration);
 
@@ -99,7 +99,7 @@ cache::CacheSystemStats runCacheExperiment(const cache::cacheSystemParams& confi
     cache::CacheSystemStats statistics{};
     std::size_t memoryLoadCount = 0;
 
-    if (configuration.levels.front().strategy == cache::cacheEviction_t::C_REF) {
+    if (configuration.levels.front().strategy == cache::CacheEviction::C_REF) {
         std::list<int> futureRequests(requests.begin(), requests.end());
         cache::CacheREF<uint32_t, int> idealCache(configuration.levels.front().size,
                                                   futureRequests);

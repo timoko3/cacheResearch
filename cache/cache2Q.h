@@ -13,24 +13,24 @@
 
 namespace cache {
 
-template <typename T, typename keyT = int>
-class Cache2Q : public Cache<T, keyT> {
+template <typename T, typename KeyT = int>
+class Cache2Q : public Cache<T, KeyT> {
 private:
-    using Base = Cache<T, keyT>;
-    using typename Base::pageResult_t;
+    using Base = Cache<T, KeyT>;
+    using typename Base::PageResult;
 
-    enum class ResidentQueue { A1in, Am };
+    enum class ResidentQueue { A1_IN, AM };
 
     struct PageRecord {
-        keyT key;
+        KeyT key;
         T page;
 
-        PageRecord(const keyT& pageKey, const T& pageValue) : key(pageKey), page(pageValue) {}
+        PageRecord(const KeyT& pageKey, const T& pageValue) : key(pageKey), page(pageValue) {}
     };
 
     using PageList = std::list<PageRecord>;
     using PageIterator = typename PageList::iterator;
-    using GhostHistory = std::list<keyT>;
+    using GhostHistory = std::list<KeyT>;
     using GhostIterator = typename GhostHistory::iterator;
 
     struct ResidentPosition {
@@ -40,13 +40,13 @@ private:
 
     // Ghosts have key iterators; residents have page iterators and queue names.
     using QueuePosition = std::variant<ResidentPosition, GhostIterator>;
-    using PageIndex = std::unordered_map<keyT, QueuePosition>;
+    using PageIndex = std::unordered_map<KeyT, QueuePosition>;
     using IndexIterator = typename PageIndex::iterator;
 
     static_assert(std::is_nothrow_assignable_v<QueuePosition&, ResidentPosition> &&
                       std::is_nothrow_assignable_v<QueuePosition&, GhostIterator>,
                   "Queue transitions must not throw");
-    static_assert(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<keyT>,
+    static_assert(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<KeyT>,
                   "Pages and keys must have non-throwing destructors");
 
     static constexpr std::size_t a1inTargetSizeDivisor = 4;
@@ -54,9 +54,9 @@ private:
 
     const std::size_t a1inTargetSize_;
     const std::size_t ghostLimit_;
-    PageList A1in_;
-    PageList Am_;
-    GhostHistory A1out_;
+    PageList a1in_;
+    PageList am_;
+    GhostHistory a1out_;
     PageIndex pageIndex_;
 
     struct EvictionPlan {
@@ -65,7 +65,7 @@ private:
     };
 
     PageList& residentQueue(ResidentQueue queue) noexcept {
-        return queue == ResidentQueue::A1in ? A1in_ : Am_;
+        return queue == ResidentQueue::A1_IN ? a1in_ : am_;
     }
 
     EvictionPlan prepareEviction(bool promotingGhost, GhostHistory& stagedHistory) {
@@ -74,17 +74,17 @@ private:
             return plan;
         }
 
-        const bool evictFromA1in = A1in_.size() > a1inTargetSize_ || Am_.empty();
+        const bool evictFromA1in = a1in_.size() > a1inTargetSize_ || am_.empty();
         if (!evictFromA1in) {
-            plan.residentToEvict = pageIndex_.find(Am_.back().key);
+            plan.residentToEvict = pageIndex_.find(am_.back().key);
             return plan;
         }
 
-        plan.residentToEvict = pageIndex_.find(A1in_.back().key);
-        stagedHistory.emplace_front(A1in_.back().key);
+        plan.residentToEvict = pageIndex_.find(a1in_.back().key);
+        stagedHistory.emplace_front(a1in_.back().key);
 
-        if (!promotingGhost && A1out_.size() >= ghostLimit_) {
-            plan.ghostToForget = pageIndex_.find(A1out_.back());
+        if (!promotingGhost && a1out_.size() >= ghostLimit_) {
+            plan.ghostToForget = pageIndex_.find(a1out_.back());
         }
         return plan;
     }
@@ -92,7 +92,7 @@ private:
     void forgetGhost(IndexIterator indexedGhost) noexcept {
         auto ghostIterator = std::get<GhostIterator>(indexedGhost->second);
         pageIndex_.erase(indexedGhost);
-        A1out_.erase(ghostIterator);
+        a1out_.erase(ghostIterator);
     }
 
     void commitEviction(const EvictionPlan& plan, GhostHistory& stagedHistory) noexcept {
@@ -104,9 +104,9 @@ private:
         }
 
         auto position = std::get<ResidentPosition>(plan.residentToEvict->second);
-        if (position.queue == ResidentQueue::A1in) {
+        if (position.queue == ResidentQueue::A1_IN) {
             auto ghostIterator = stagedHistory.begin();
-            A1out_.splice(A1out_.begin(), stagedHistory, ghostIterator);
+            a1out_.splice(a1out_.begin(), stagedHistory, ghostIterator);
             plan.residentToEvict->second = ghostIterator;
         } else {
             pageIndex_.erase(plan.residentToEvict);
@@ -114,11 +114,11 @@ private:
         residentQueue(position.queue).erase(position.iterator);
     }
 
-    const T& insertNewPage(const keyT& key, const T& page) {
+    const T& insertNewPage(const KeyT& key, const T& page) {
         PageList stagedPage;
         stagedPage.emplace_front(key, page);
         auto [indexedPage, wasInserted] =
-            pageIndex_.emplace(key, ResidentPosition{stagedPage.begin(), ResidentQueue::A1in});
+            pageIndex_.emplace(key, ResidentPosition{stagedPage.begin(), ResidentQueue::A1_IN});
         if (!wasInserted) {
             throw std::logic_error("insertNewPage requires an unknown key");
         }
@@ -133,8 +133,8 @@ private:
         }
 
         commitEviction(plan, stagedHistory);
-        A1in_.splice(A1in_.begin(), stagedPage, stagedPage.begin());
-        return A1in_.front().page;
+        a1in_.splice(a1in_.begin(), stagedPage, stagedPage.begin());
+        return a1in_.front().page;
     }
 
     const T& promoteGhostPage(IndexIterator indexedGhost, const T& page) {
@@ -147,23 +147,23 @@ private:
         commitEviction(plan, stagedHistory);
 
         auto pageIterator = stagedPage.begin();
-        Am_.splice(Am_.begin(), stagedPage, pageIterator);
-        indexedGhost->second = ResidentPosition{pageIterator, ResidentQueue::Am};
+        am_.splice(am_.begin(), stagedPage, pageIterator);
+        indexedGhost->second = ResidentPosition{pageIterator, ResidentQueue::AM};
 
-        A1out_.erase(previousGhost);
+        a1out_.erase(previousGhost);
         return pageIterator->page;
     }
 
     void recordHit(ResidentPosition& resident) {
-        if (resident.queue == ResidentQueue::Am) {
-            Am_.splice(Am_.begin(), Am_, resident.iterator);
+        if (resident.queue == ResidentQueue::AM) {
+            am_.splice(am_.begin(), am_, resident.iterator);
         }
     }
 
 public:
-    // Johnson/Shasha defaults: A1in target 25%, ghost history limit 50%.
+    // Johnson/Shasha defaults: A1_IN target 25%, ghost history limit 50%.
     // https://www.vldb.org/conf/1994/P439.PDF
-    explicit Cache2Q(std::size_t capacity, cacheLevel_t level = cacheLevel_t::L1)
+    explicit Cache2Q(std::size_t capacity, CacheLevel level = CacheLevel::L1)
         : Base(capacity, level),
           a1inTargetSize_(std::max<std::size_t>(1, capacity / a1inTargetSizeDivisor)),
           ghostLimit_(std::max<std::size_t>(1, capacity / ghostLimitDivisor)) {
@@ -172,16 +172,16 @@ public:
         }
     }
 
-    std::size_t getResidentCount() const noexcept { return A1in_.size() + Am_.size(); }
+    std::size_t getResidentCount() const noexcept { return a1in_.size() + am_.size(); }
     std::size_t getIndexedCount() const noexcept { return pageIndex_.size(); }
     std::size_t getA1inTargetSize() const noexcept { return a1inTargetSize_; }
     std::size_t getGhostLimit() const noexcept { return ghostLimit_; }
-    const PageList& getAm() const noexcept { return Am_; }
-    const PageList& getA1in() const noexcept { return A1in_; }
-    const GhostHistory& getA1out() const noexcept { return A1out_; }
+    const PageList& getAm() const noexcept { return am_; }
+    const PageList& getA1in() const noexcept { return a1in_; }
+    const GhostHistory& getA1out() const noexcept { return a1out_; }
 
 protected:
-    pageResult_t getPage(const keyT& key) override {
+    PageResult getPage(const KeyT& key) override {
         auto indexedRecord = pageIndex_.find(key);
         if (indexedRecord == pageIndex_.end()) {
             return std::nullopt;
@@ -196,7 +196,7 @@ protected:
         return std::cref(resident->iterator->page);
     }
 
-    const T& insert(const keyT& key, const T& page) override {
+    const T& insert(const KeyT& key, const T& page) override {
         auto indexedRecord = pageIndex_.find(key);
         if (indexedRecord == pageIndex_.end()) {
             return insertNewPage(key, page);

@@ -6,21 +6,21 @@
 namespace tests {
 
 TEST(CacheSystemFocused, EmptyHierarchyIsRejected) {
-    const cache::cacheSystemParams params;
+    const cache::CacheSystemParams params;
     EXPECT_THROW((cache::CacheSystem<int, int>(params)), std::invalid_argument);
 }
 
 TEST(CacheSystemFocused, LowerLevelHitDoesNotCallSlowLoader) {
-    cache::cacheSystemParams params;
+    cache::CacheSystemParams params;
     params.levels.resize(2);
 
     params.levels[0].size = 1;
-    params.levels[0].level = cache::cacheLevel_t::L1;
-    params.levels[0].strategy = cache::cacheEviction_t::C_LRU;
+    params.levels[0].level = cache::CacheLevel::L1;
+    params.levels[0].strategy = cache::CacheEviction::C_LRU;
 
     params.levels[1].size = 2;
-    params.levels[1].level = cache::cacheLevel_t::L2;
-    params.levels[1].strategy = cache::cacheEviction_t::C_LRU;
+    params.levels[1].level = cache::CacheLevel::L2;
+    params.levels[1].strategy = cache::CacheEviction::C_LRU;
 
     cache::CacheSystem<int, int> system(params);
     int slowCalls = 0;
@@ -40,12 +40,12 @@ TEST(CacheSystemFocused, LowerLevelHitDoesNotCallSlowLoader) {
     const auto stats = system.getSystemStats();
     ASSERT_EQ(stats.levels.size(), 2u);
 
-    EXPECT_EQ(stats.levels[0].level, cache::cacheLevel_t::L1);
+    EXPECT_EQ(stats.levels[0].level, cache::CacheLevel::L1);
     EXPECT_EQ(stats.levels[0].stats.amountRequests, 4u);
     EXPECT_EQ(stats.levels[0].stats.amountHits, 1u);
     EXPECT_EQ(stats.levels[0].stats.amountMisses, 3u);
 
-    EXPECT_EQ(stats.levels[1].level, cache::cacheLevel_t::L2);
+    EXPECT_EQ(stats.levels[1].level, cache::CacheLevel::L2);
     EXPECT_EQ(stats.levels[1].stats.amountRequests, 3u);
     EXPECT_EQ(stats.levels[1].stats.amountHits, 1u);
     EXPECT_EQ(stats.levels[1].stats.amountMisses, 2u);
@@ -56,20 +56,20 @@ TEST(CacheSystemFocused, LowerLevelHitDoesNotCallSlowLoader) {
 }
 
 TEST(CacheSystemFocused, ThreeLevelsUseDifferentStrategies) {
-    cache::cacheSystemParams params;
+    cache::CacheSystemParams params;
     params.levels.resize(3);
 
     params.levels[0].size = 1;
-    params.levels[0].level = cache::cacheLevel_t::L1;
-    params.levels[0].strategy = cache::cacheEviction_t::C_LFU;
+    params.levels[0].level = cache::CacheLevel::L1;
+    params.levels[0].strategy = cache::CacheEviction::C_LFU;
 
     params.levels[1].size = 2;
-    params.levels[1].level = cache::cacheLevel_t::L2;
-    params.levels[1].strategy = cache::cacheEviction_t::C_LRU;
+    params.levels[1].level = cache::CacheLevel::L2;
+    params.levels[1].strategy = cache::CacheEviction::C_LRU;
 
     params.levels[2].size = 3;
-    params.levels[2].level = cache::cacheLevel_t::L3;
-    params.levels[2].strategy = cache::cacheEviction_t::C_ARC;
+    params.levels[2].level = cache::CacheLevel::L3;
+    params.levels[2].strategy = cache::CacheEviction::C_ARC;
 
     cache::CacheSystem<int, int> system(params);
     int slowCalls = 0;
@@ -108,28 +108,28 @@ TEST(CacheSystemFocused, ThreeLevelsUseDifferentStrategies) {
 }
 
 TEST(CacheSystemFocused, FactoryCreatesEverySupportedStrategy) {
-    cache::cacheSystemParams params;
+    cache::CacheSystemParams params;
     params.levels.resize(5);
 
     params.levels[0].size = 2;
-    params.levels[0].level = cache::cacheLevel_t::L1;
-    params.levels[0].strategy = cache::cacheEviction_t::C_LRU;
+    params.levels[0].level = cache::CacheLevel::L1;
+    params.levels[0].strategy = cache::CacheEviction::C_LRU;
 
     params.levels[1].size = 2;
-    params.levels[1].level = cache::cacheLevel_t::L2;
-    params.levels[1].strategy = cache::cacheEviction_t::C_LFU;
+    params.levels[1].level = cache::CacheLevel::L2;
+    params.levels[1].strategy = cache::CacheEviction::C_LFU;
 
     params.levels[2].size = 2;
-    params.levels[2].level = cache::cacheLevel_t::L3;
-    params.levels[2].strategy = cache::cacheEviction_t::C_ARC;
+    params.levels[2].level = cache::CacheLevel::L3;
+    params.levels[2].strategy = cache::CacheEviction::C_ARC;
 
     params.levels[3].size = 4;
-    params.levels[3].level = cache::cacheLevel_t::L3;
-    params.levels[3].strategy = cache::cacheEviction_t::C_2Q;
+    params.levels[3].level = cache::CacheLevel::L3;
+    params.levels[3].strategy = cache::CacheEviction::C_2Q;
 
     params.levels[4].size = 4;
-    params.levels[4].level = cache::cacheLevel_t::L3;
-    params.levels[4].strategy = cache::cacheEviction_t::C_LIRS;
+    params.levels[4].level = cache::CacheLevel::L3;
+    params.levels[4].strategy = cache::CacheEviction::C_LIRS;
 
     cache::CacheSystem<int, int> system(params);
     int slowCalls = 0;
@@ -161,16 +161,16 @@ TEST(CacheSystemFocused, FactoryCreatesEverySupportedStrategy) {
 }
 
 TEST(CacheSystemPageTypes, StringPagesAndStringKeys) {
-    cache::cacheSystemParams params;
+    cache::CacheSystemParams params;
     params.levels.resize(2);
 
     params.levels[0].size = 1;
-    params.levels[0].level = cache::cacheLevel_t::L1;
-    params.levels[0].strategy = cache::cacheEviction_t::C_LRU;
+    params.levels[0].level = cache::CacheLevel::L1;
+    params.levels[0].strategy = cache::CacheEviction::C_LRU;
 
     params.levels[1].size = 2;
-    params.levels[1].level = cache::cacheLevel_t::L2;
-    params.levels[1].strategy = cache::cacheEviction_t::C_LFU;
+    params.levels[1].level = cache::CacheLevel::L2;
+    params.levels[1].strategy = cache::CacheEviction::C_LFU;
 
     cache::CacheSystem<std::string, std::string> system(params);
     int slowCalls = 0;
@@ -193,16 +193,16 @@ TEST(CacheSystemPageTypes, StringPagesAndStringKeys) {
 }
 
 TEST(CacheSystemPageTypes, VectorPages) {
-    cache::cacheSystemParams params;
+    cache::CacheSystemParams params;
     params.levels.resize(2);
 
     params.levels[0].size = 1;
-    params.levels[0].level = cache::cacheLevel_t::L1;
-    params.levels[0].strategy = cache::cacheEviction_t::C_LRU;
+    params.levels[0].level = cache::CacheLevel::L1;
+    params.levels[0].strategy = cache::CacheEviction::C_LRU;
 
     params.levels[1].size = 2;
-    params.levels[1].level = cache::cacheLevel_t::L2;
-    params.levels[1].strategy = cache::cacheEviction_t::C_ARC;
+    params.levels[1].level = cache::CacheLevel::L2;
+    params.levels[1].strategy = cache::CacheEviction::C_ARC;
 
     cache::CacheSystem<std::vector<int>, int> system(params);
     int slowCalls = 0;
@@ -225,16 +225,16 @@ struct TestPage {
 };
 
 TEST(CacheSystemPageTypes, UserDefinedPageType) {
-    cache::cacheSystemParams params;
+    cache::CacheSystemParams params;
     params.levels.resize(2);
 
     params.levels[0].size = 1;
-    params.levels[0].level = cache::cacheLevel_t::L1;
-    params.levels[0].strategy = cache::cacheEviction_t::C_LRU;
+    params.levels[0].level = cache::CacheLevel::L1;
+    params.levels[0].strategy = cache::CacheEviction::C_LRU;
 
     params.levels[1].size = 2;
-    params.levels[1].level = cache::cacheLevel_t::L2;
-    params.levels[1].strategy = cache::cacheEviction_t::C_LIRS;
+    params.levels[1].level = cache::CacheLevel::L2;
+    params.levels[1].strategy = cache::CacheEviction::C_LIRS;
 
     cache::CacheSystem<TestPage, int> system(params);
     int slowCalls = 0;
@@ -267,8 +267,8 @@ struct CopyCountedPage {
 };
 
 TEST(CacheSystemInterface, ReferencesPassThroughLevelsWithoutTemporaryCopies) {
-    cache::cacheSystemParams params{{{1, cache::cacheLevel_t::L1, cache::cacheEviction_t::C_LRU},
-                                     {2, cache::cacheLevel_t::L2, cache::cacheEviction_t::C_LRU}}};
+    cache::CacheSystemParams params{{{1, cache::CacheLevel::L1, cache::CacheEviction::C_LRU},
+                                     {2, cache::CacheLevel::L2, cache::CacheEviction::C_LRU}}};
     cache::CacheSystem<CopyCountedPage> system(params);
     CopyCountedPage loadedPage(0);
     int loads = 0;
@@ -278,7 +278,7 @@ TEST(CacheSystemInterface, ReferencesPassThroughLevelsWithoutTemporaryCopies) {
         return loadedPage;
     };
     static_assert(std::is_same_v<decltype(system.lookupUpdate(1, slow)), const CopyCountedPage&>);
-    static_assert(std::is_same_v<decltype(system.getStats()), const cache::cacheStats&>);
+    static_assert(std::is_same_v<decltype(system.getStats()), const cache::CacheStats&>);
     const auto& stats = system.getStats();
 
     CopyCountedPage::copies = 0;
@@ -305,15 +305,15 @@ TEST(CacheSystemInterface, ReferencesPassThroughLevelsWithoutTemporaryCopies) {
 }
 
 TEST(CacheSystemInterface, ZeroCapacityLevelsAreRejected) {
-    cache::cacheSystemParams params{{{0, cache::cacheLevel_t::L1, cache::cacheEviction_t::C_LRU},
-                                     {0, cache::cacheLevel_t::L2, cache::cacheEviction_t::C_LFU}}};
+    cache::CacheSystemParams params{{{0, cache::CacheLevel::L1, cache::CacheEviction::C_LRU},
+                                     {0, cache::CacheLevel::L2, cache::CacheEviction::C_LFU}}};
     EXPECT_THROW((cache::CacheSystem<int>(params)), std::invalid_argument);
     params.levels.front().size = 1;
     EXPECT_THROW((cache::CacheSystem<int>(params)), std::invalid_argument);
 }
 
 TEST(CacheSystemInterface, FailedLoadUpdatesStatsAndCanBeRetried) {
-    cache::cacheSystemParams params{{{1, cache::cacheLevel_t::L1, cache::cacheEviction_t::C_LRU}}};
+    cache::CacheSystemParams params{{{1, cache::CacheLevel::L1, cache::CacheEviction::C_LRU}}};
     cache::CacheSystem<int> system(params);
     EXPECT_THROW(
         system.lookupUpdate(1, [](int) -> int& { throw std::runtime_error("load failed"); }),

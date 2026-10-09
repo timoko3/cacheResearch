@@ -89,9 +89,9 @@ TEST(CacheREFTrace, HotTwoLong) {
 
 TEST(CacheREFFocused, MetadataIsPreserved) {
     std::list<int> requests{1};
-    cache::CacheREF<int, int> c(3, requests, cache::cacheLevel_t::L2);
+    cache::CacheREF<int, int> c(3, requests, cache::CacheLevel::L2);
     EXPECT_EQ(c.getSize(), 3u);
-    EXPECT_EQ(c.getLevel(), cache::cacheLevel_t::L2);
+    EXPECT_EQ(c.getLevel(), cache::CacheLevel::L2);
 }
 
 TEST(CacheREFFocused, EmptyFutureRequestListIsRejected) {

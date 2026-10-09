@@ -64,9 +64,9 @@ TEST(CacheARCTrace, HotTwoLong) {
 }
 
 TEST(CacheARCFocused, MetadataIsPreserved) {
-    cache::CacheARC<int, int> c(4, cache::cacheLevel_t::L2);
+    cache::CacheARC<int, int> c(4, cache::CacheLevel::L2);
     EXPECT_EQ(c.getSize(), 4u);
-    EXPECT_EQ(c.getLevel(), cache::cacheLevel_t::L2);
+    EXPECT_EQ(c.getLevel(), cache::CacheLevel::L2);
 }
 
 TEST(CacheARCFocused, ZeroCapacityIsRejected) {

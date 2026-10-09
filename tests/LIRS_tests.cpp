@@ -84,9 +84,9 @@ TEST(CacheLIRSTrace, HotTwoLong) {
 }
 
 TEST(CacheLIRSFocused, MetadataIsPreserved) {
-    cache::CacheLIRS<int, int> c(4, cache::cacheLevel_t::L2);
+    cache::CacheLIRS<int, int> c(4, cache::CacheLevel::L2);
     EXPECT_EQ(c.getSize(), 4u);
-    EXPECT_EQ(c.getLevel(), cache::cacheLevel_t::L2);
+    EXPECT_EQ(c.getLevel(), cache::CacheLevel::L2);
 }
 
 TEST(CacheLIRSFocused, CapacityBelowTwoIsRejected) {

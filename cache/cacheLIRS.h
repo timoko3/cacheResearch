@@ -13,24 +13,24 @@
 
 namespace cache {
 
-template <typename T, typename keyT = int>
-class CacheLIRS : public Cache<T, keyT> {
+template <typename T, typename KeyT = int>
+class CacheLIRS : public Cache<T, KeyT> {
 private:
-    using Base = Cache<T, keyT>;
-    using typename Base::pageResult_t;
+    using Base = Cache<T, KeyT>;
+    using typename Base::PageResult;
 
     enum class PageStatus { LIR, HIR };
 
     struct PageRecord {
-        keyT key;
+        KeyT key;
         T page;
 
-        PageRecord(const keyT& pageKey, const T& pageValue) : key(pageKey), page(pageValue) {}
+        PageRecord(const KeyT& pageKey, const T& pageValue) : key(pageKey), page(pageValue) {}
     };
 
     using PageList = std::list<PageRecord>;
     using PageIterator = typename PageList::iterator;
-    using KeyList = std::list<keyT>;
+    using KeyList = std::list<KeyT>;
     using KeyIterator = typename KeyList::iterator;
 
     struct PagePosition {
@@ -42,10 +42,10 @@ private:
         std::optional<KeyIterator> queueIterator;
     };
 
-    using PageIndex = std::unordered_map<keyT, PagePosition>;
+    using PageIndex = std::unordered_map<KeyT, PagePosition>;
     using IndexIterator = typename PageIndex::iterator;
 
-    static_assert(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<keyT>,
+    static_assert(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<KeyT>,
                   "Pages and keys must have non-throwing destructors");
 
     static constexpr std::size_t hirTargetSizeDivisor = 100;
@@ -57,11 +57,11 @@ private:
     KeyList queueQ_;
     PageIndex pageIndex_;
 
-    enum class AccessAction { RefreshLIR, RefreshHIR, PromoteHIR };
+    enum class AccessAction { REFRESH_LIR, REFRESH_HIR, PROMOTE_HIR };
 
     // Preparation may throw; applying a prepared plan only splices/erases nodes.
     struct AccessPlan {
-        AccessAction action = AccessAction::RefreshHIR;
+        AccessAction action = AccessAction::REFRESH_HIR;
         std::optional<IndexIterator> lirToDemote;
         std::optional<IndexIterator> hirToEvict;
         KeyList stagedStack;
@@ -71,13 +71,13 @@ private:
 
     AccessAction accessAction(const PagePosition& position) const noexcept {
         if (position.status == PageStatus::LIR) {
-            return AccessAction::RefreshLIR;
+            return AccessAction::REFRESH_LIR;
         }
         // HIR in S is promoted on reuse. During warm-up, fill vacant LIR slots.
         if (position.stackIterator || (!position.resident && lirCount_ < lirTargetSize_)) {
-            return AccessAction::PromoteHIR;
+            return AccessAction::PROMOTE_HIR;
         }
-        return AccessAction::RefreshHIR;
+        return AccessAction::REFRESH_HIR;
     }
 
     void prepareStackPrune(const PagePosition& accessed, AccessPlan& plan) {
@@ -99,21 +99,21 @@ private:
         }
     }
 
-    AccessPlan prepareAccess(const keyT& key, const PagePosition& position) {
+    AccessPlan prepareAccess(const KeyT& key, const PagePosition& position) {
         AccessPlan plan;
         plan.action = accessAction(position);
         if (!position.stackIterator) {
             plan.stagedStack.emplace_front(key);
         }
 
-        if (plan.action == AccessAction::PromoteHIR && lirCount_ >= lirTargetSize_) {
+        if (plan.action == AccessAction::PROMOTE_HIR && lirCount_ >= lirTargetSize_) {
             plan.lirToDemote = pageIndex_.find(stackS_.back());
             plan.stagedQueue.emplace_front((*plan.lirToDemote)->first);
-        } else if (plan.action == AccessAction::RefreshHIR && !position.queueIterator) {
+        } else if (plan.action == AccessAction::REFRESH_HIR && !position.queueIterator) {
             plan.stagedQueue.emplace_front(key);
         }
 
-        if (plan.action != AccessAction::RefreshHIR) {
+        if (plan.action != AccessAction::REFRESH_HIR) {
             prepareStackPrune(position, plan);
         }
         return plan;
@@ -179,22 +179,22 @@ private:
 
     void applyAccess(PagePosition& position, AccessPlan& plan) noexcept {
         moveToStackTop(position, plan.stagedStack);
-        if (plan.action == AccessAction::PromoteHIR) {
+        if (plan.action == AccessAction::PROMOTE_HIR) {
             promoteToLIR(position, plan);
         }
-        if (plan.action == AccessAction::RefreshHIR) {
+        if (plan.action == AccessAction::REFRESH_HIR) {
             moveToQueueFront(position, plan.stagedQueue);
         } else {
             pruneStack(plan);
         }
     }
 
-    void recordHit(const keyT& key, PagePosition& position) {
+    void recordHit(const KeyT& key, PagePosition& position) {
         auto plan = prepareAccess(key, position);
         applyAccess(position, plan);
     }
 
-    const T& insertPage(const keyT& key, const T& page) {
+    const T& insertPage(const KeyT& key, const T& page) {
         PageList stagedPage;
         stagedPage.emplace_front(key, page);
         auto [indexedRecord, wasInserted] = pageIndex_.try_emplace(key);
@@ -230,7 +230,7 @@ private:
 public:
     // Jiang/Zhang: resident HIR = 1%, LIR gets the remaining capacity.
     // https://xiaodongzhang1911.github.io/Zhang-papers/TR-05-11.pdf
-    explicit CacheLIRS(std::size_t capacity, cacheLevel_t level = cacheLevel_t::L1)
+    explicit CacheLIRS(std::size_t capacity, CacheLevel level = CacheLevel::L1)
         : Base(capacity, level),
           hirTargetSize_(std::max<std::size_t>(1, capacity / hirTargetSizeDivisor)),
           lirTargetSize_(capacity >= 2 ? capacity - hirTargetSize_ : 0) {
@@ -249,7 +249,7 @@ public:
     const PageList& getResidentPages() const noexcept { return residentPages_; }
 
 protected:
-    pageResult_t getPage(const keyT& key) override {
+    PageResult getPage(const KeyT& key) override {
         auto indexedRecord = pageIndex_.find(key);
         if (indexedRecord == pageIndex_.end() || !indexedRecord->second.resident) {
             return std::nullopt;
@@ -261,7 +261,7 @@ protected:
         return std::cref((*position.resident)->page);
     }
 
-    const T& insert(const keyT& key, const T& page) override { return insertPage(key, page); }
+    const T& insert(const KeyT& key, const T& page) override { return insertPage(key, page); }
 };
 
 } // namespace cache

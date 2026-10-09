@@ -13,18 +13,18 @@
 
 #include "cache.h"
 
-using Requests_t = std::vector<int>;
+using Requests = std::vector<int>;
 
 namespace {
 
 const std::array<std::string, 5> policyNames = {"LRU", "LFU", "ARC", "2Q", "LIRS"};
 
 struct Trace {
-    Requests_t requests;
+    Requests requests;
     std::size_t repetitionCount = 1;
 };
 
-using Traces_t = std::vector<Trace>;
+using Traces = std::vector<Trace>;
 
 struct Configuration {
     std::vector<std::size_t> capacities;
@@ -58,9 +58,9 @@ std::unique_ptr<cache::Cache<int, int>> makeCache(int policyIndex, std::size_t c
     }
 }
 
-Requests_t collectMissRequests(const Requests_t& requests, int policyIndex, std::size_t capacity) {
+Requests collectMissRequests(const Requests& requests, int policyIndex, std::size_t capacity) {
     auto instance = makeCache(policyIndex, capacity);
-    Requests_t misses;
+    Requests misses;
     misses.reserve(requests.size());
     int loadedPage = 0;
 
@@ -75,7 +75,7 @@ Requests_t collectMissRequests(const Requests_t& requests, int policyIndex, std:
     return misses;
 }
 
-std::size_t countMisses(const Requests_t& requests, int policyIndex, std::size_t capacity,
+std::size_t countMisses(const Requests& requests, int policyIndex, std::size_t capacity,
                         std::size_t missLimit) {
     auto instance = makeCache(policyIndex, capacity);
     std::size_t misses = 0;
@@ -96,7 +96,7 @@ std::size_t countMisses(const Requests_t& requests, int policyIndex, std::size_t
     return misses;
 }
 
-std::size_t countIdealMisses(const Requests_t& requests, std::size_t capacity) {
+std::size_t countIdealMisses(const Requests& requests, std::size_t capacity) {
     std::unordered_map<int, std::size_t> nextPositions;
     std::vector<std::size_t> nextUse(requests.size(), requests.size());
 
@@ -110,8 +110,8 @@ std::size_t countIdealMisses(const Requests_t& requests, std::size_t capacity) {
         nextPositions[requests[index]] = index;
     }
 
-    using HeapEntry_t = std::pair<std::size_t, int>;
-    std::priority_queue<HeapEntry_t> evictionQueue;
+    using HeapEntry = std::pair<std::size_t, int>;
+    std::priority_queue<HeapEntry> evictionQueue;
     std::unordered_map<int, std::size_t> residentNextUse;
     std::size_t misses = 0;
 
@@ -153,7 +153,7 @@ std::size_t countIdealMisses(const Requests_t& requests, std::size_t capacity) {
 
 class ExactSearch {
 private:
-    const Traces_t& inputTraces_;
+    const Traces& inputTraces_;
     std::size_t totalCapacity_;
     int maxLevels_;
     std::size_t theoreticalMinimum_;
@@ -163,7 +163,7 @@ private:
     std::size_t evaluatedCandidates_ = 0;
     std::size_t prunedBranches_ = 0;
 
-    std::size_t lowerBound(const Traces_t& traces, std::size_t capacity) const {
+    std::size_t lowerBound(const Traces& traces, std::size_t capacity) const {
         std::size_t result = 0;
 
         for (const auto& trace : traces) {
@@ -173,7 +173,7 @@ private:
         return result;
     }
 
-    void evaluateLastLevel(const Traces_t& traces, std::size_t capacity,
+    void evaluateLastLevel(const Traces& traces, std::size_t capacity,
                            std::vector<std::size_t>& selectedCapacities,
                            std::vector<int>& policyIndices) {
         for (int policyIndex = 0; policyIndex < static_cast<int>(policyNames.size());
@@ -206,7 +206,7 @@ private:
         }
     }
 
-    void searchAdditionalLevels(const Traces_t& traces, std::size_t remainingCapacity,
+    void searchAdditionalLevels(const Traces& traces, std::size_t remainingCapacity,
                                 int remainingLevels, std::vector<std::size_t>& selectedCapacities,
                                 std::vector<int>& policyIndices) {
         if (remainingLevels <= 1 || best_.misses == theoreticalMinimum_) {
@@ -214,7 +214,7 @@ private:
         }
 
         for (std::size_t capacity = 1; capacity < remainingCapacity; ++capacity) {
-            std::vector<Traces_t> distinctMissTraces;
+            std::vector<Traces> distinctMissTraces;
 
             for (int policyIndex = 0; policyIndex < static_cast<int>(policyNames.size());
                  ++policyIndex) {
@@ -226,7 +226,7 @@ private:
                     return;
                 }
 
-                Traces_t missTraces;
+                Traces missTraces;
 
                 for (const auto& trace : traces) {
                     missTraces.push_back(
@@ -234,7 +234,7 @@ private:
                          trace.repetitionCount});
                 }
 
-                const auto hasSameRequests = [&missTraces](const Traces_t& previous) {
+                const auto hasSameRequests = [&missTraces](const Traces& previous) {
                     for (std::size_t index = 0; index < missTraces.size(); ++index) {
                         if (previous[index].requests != missTraces[index].requests) {
                             return false;
@@ -280,7 +280,7 @@ private:
 public:
     Configuration bestSingleLevel;
 
-    ExactSearch(const Traces_t& traces, std::size_t totalCapacity, int maxLevels)
+    ExactSearch(const Traces& traces, std::size_t totalCapacity, int maxLevels)
         : inputTraces_(traces), totalCapacity_(totalCapacity), maxLevels_(maxLevels),
           theoreticalMinimum_(lowerBound(traces, totalCapacity)) {}
 
@@ -304,8 +304,8 @@ public:
     std::size_t prunedBranches() const { return prunedBranches_; }
 };
 
-std::size_t replayConfiguration(const Requests_t& requests, const Configuration& configuration) {
-    Requests_t remainingRequests = requests;
+std::size_t replayConfiguration(const Requests& requests, const Configuration& configuration) {
+    Requests remainingRequests = requests;
 
     for (std::size_t level = 0; level < configuration.capacities.size(); ++level) {
         remainingRequests = collectMissRequests(
@@ -315,7 +315,7 @@ std::size_t replayConfiguration(const Requests_t& requests, const Configuration&
     return remainingRequests.size();
 }
 
-void printConfiguration(const Configuration& configuration, const std::vector<Requests_t>& runs) {
+void printConfiguration(const Configuration& configuration, const std::vector<Requests>& runs) {
     std::cout << "{\"misses\":" << configuration.misses << ",\"capacities\":[";
 
     for (std::size_t index = 0; index < configuration.capacities.size(); ++index) {
@@ -378,8 +378,8 @@ int main(int argc, char** argv) {
             throw std::invalid_argument("Invalid trace file");
         }
 
-        std::vector<Requests_t> runs;
-        Traces_t uniqueTraces;
+        std::vector<Requests> runs;
+        Traces uniqueTraces;
 
         for (int run = 0; run < runCount; ++run) {
             int requestCount = 0;
@@ -388,7 +388,7 @@ int main(int argc, char** argv) {
                 throw std::invalid_argument("Empty or invalid trace");
             }
 
-            Requests_t requests;
+            Requests requests;
 
             for (int index = 0; index < requestCount; ++index) {
                 int key = 0;

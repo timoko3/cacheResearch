@@ -86,9 +86,9 @@ TEST(Cache2QTrace, HotTwoLong) {
 }
 
 TEST(Cache2QFocused, MetadataAndListsStartEmpty) {
-    cache::Cache2Q<int, int> c(4, cache::cacheLevel_t::L2);
+    cache::Cache2Q<int, int> c(4, cache::CacheLevel::L2);
     EXPECT_EQ(c.getSize(), 4u);
-    EXPECT_EQ(c.getLevel(), cache::cacheLevel_t::L2);
+    EXPECT_EQ(c.getLevel(), cache::CacheLevel::L2);
     EXPECT_TRUE(c.getA1in().empty());
     EXPECT_TRUE(c.getA1out().empty());
     EXPECT_TRUE(c.getAm().empty());
