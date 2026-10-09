@@ -7,7 +7,7 @@ on PATH. Formatting checks reject a different formatter version:
 python3 scripts/code_quality.py format
 python3 scripts/code_quality.py format-fix
 cmake --preset debug
-python3 scripts/code_quality.py tidy --build-dir build/Linux/debug
+python3 scripts/code_quality.py tidy --build-dir build/debug
 ```
 
 `format` is read-only and fails on formatting differences. `format-fix` applies

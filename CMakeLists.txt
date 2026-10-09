@@ -1,177 +1,131 @@
 cmake_minimum_required(VERSION 3.24)
-
-# Keep generated files out of the source tree.
-if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
-    message(FATAL_ERROR
-        "In-source builds are not supported. "
-        "Use cmake --preset debug to create a build directory for this OS.")
+# Check this project's directories, including when used by add_subdirectory.
+if(CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
+    message(FATAL_ERROR "In-source builds are not supported. Use a separate build directory.")
 endif()
 
-# Require configuration and input files without prescribing their names.
-set(empty_runtime_dirs "")
-foreach(runtime_dir IN ITEMS configs inputs)
-    file(GLOB runtime_files LIST_DIRECTORIES false CONFIGURE_DEPENDS
-        "${CMAKE_CURRENT_SOURCE_DIR}/${runtime_dir}/*")
-    if(NOT runtime_files)
-        list(APPEND empty_runtime_dirs "${runtime_dir}/")
-    endif()
-endforeach()
-if(empty_runtime_dirs)
-    list(JOIN empty_runtime_dirs ", " empty_runtime_dirs_text)
-    message(FATAL_ERROR
-        "No configuration/input files found in: ${empty_runtime_dirs_text}\n"
-        "Create these directories in the project root and add at least one file "
-        "to each. File names and extensions are unrestricted.\n"
-        "The config file contains the level count and cache strategies; "
-        "the input file contains level capacities, request count and requests.\n"
-        "See README.md, section 6, for examples.")
+project(CacheResearch VERSION 0.1.0 LANGUAGES CXX)
+
+option(CACHE_RESEARCH_BUILD_APP "Build the research application" OFF)
+option(CACHE_RESEARCH_BUILD_BENCHMARKS "Build the C++ benchmark runners" OFF)
+option(CACHE_RESEARCH_BUILD_TESTS "Build and register project tests" OFF)
+option(CACHE_RESEARCH_INSTALL "Generate installation rules for the cache library" "${PROJECT_IS_TOP_LEVEL}")
+
+# The cache library has no compiled sources or third-party dependencies.
+add_library(cache_research_cache INTERFACE)
+add_library(CacheResearch::cache ALIAS cache_research_cache)
+set_target_properties(cache_research_cache PROPERTIES EXPORT_NAME cache)
+target_compile_features(cache_research_cache INTERFACE cxx_std_17)
+target_sources(cache_research_cache INTERFACE
+    FILE_SET HEADERS
+    BASE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}"
+    FILES
+        cache.h
+        cacheSystem.h
+        cache/cache.h
+        cache/cache2Q.h
+        cache/cacheARC.h
+        cache/cacheFactory.h
+        cache/cacheLFU.h
+        cache/cacheLIRS.h
+        cache/cacheLRU.h
+        cache/cacheREF.h
+)
+
+if(CACHE_RESEARCH_INSTALL)
+    include(GNUInstallDirs)
+    include(CMakePackageConfigHelpers)
+    set(cache_research_package_dir "${CMAKE_INSTALL_LIBDIR}/cmake/CacheResearch")
+    install(TARGETS cache_research_cache EXPORT CacheResearchTargets
+        FILE_SET HEADERS DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+    )
+    install(EXPORT CacheResearchTargets
+        FILE CacheResearchTargets.cmake
+        NAMESPACE CacheResearch::
+        DESTINATION "${cache_research_package_dir}"
+    )
+    configure_package_config_file(cmake/CacheResearchConfig.cmake.in
+        "${CMAKE_CURRENT_BINARY_DIR}/CacheResearchConfig.cmake"
+        INSTALL_DESTINATION "${cache_research_package_dir}"
+    )
+    write_basic_package_version_file(
+        "${CMAKE_CURRENT_BINARY_DIR}/CacheResearchConfigVersion.cmake"
+        VERSION "${PROJECT_VERSION}"
+        COMPATIBILITY SameMinorVersion
+        ARCH_INDEPENDENT
+    )
+    install(FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/CacheResearchConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/CacheResearchConfigVersion.cmake"
+        DESTINATION "${cache_research_package_dir}"
+    )
 endif()
 
-project(CacheResearch LANGUAGES CXX)
-
-option(CACHE_RESEARCH_WARNINGS_AS_ERRORS "Treat project compiler warnings as errors" OFF)
-
-# The submodule has no CMake project of its own. Describe its target here,
-# without modifying the submodule or fetching anything during configuration.
-foreach(source IN ITEMS file.cpp file.h logger.cpp logger.h mathVector.h)
-    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/generalFunctions/${source}")
-        message(FATAL_ERROR
-            "Missing generalFunctions/${source}. Initialize the submodule with: "
-            "git submodule update --init --recursive")
-    endif()
-endforeach()
-
-add_library(general_functions STATIC
-    generalFunctions/file.cpp
-    generalFunctions/file.h
-    generalFunctions/lexer/lexer.cpp
-    generalFunctions/lexer/lexer.h
-    generalFunctions/lexer/token_stream.cpp
-    generalFunctions/lexer/token_stream.h
-    generalFunctions/lexer/token.h
-    generalFunctions/logger.cpp
-    generalFunctions/logger.h
-    generalFunctions/mathVector.h
-)
-add_library(CacheResearch::general_functions ALIAS general_functions)
-
-# Public headers use C++17 (filesystem/string_view), so consumers need it too.
-target_compile_features(general_functions PUBLIC cxx_std_17)
-target_include_directories(general_functions PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
-
-add_executable(cache_research
-    main.cpp
-
-    cache.h
-    cache/cache.h
-    cache/cache2Q.h
-    cache/cacheARC.h
-    cache/cacheFactory.h
-    cache/cacheLFU.h
-    cache/cacheLIRS.h
-    cache/cacheLRU.h
-    cache/cacheREF.h
-    cacheSystem.h
-    cacheParser.h
-)
-target_compile_features(cache_research PRIVATE cxx_std_17)
-target_link_libraries(cache_research PRIVATE CacheResearch::general_functions)
-
-# Avoid global compiler flags: these settings belong only to these targets.
-foreach(target IN ITEMS general_functions cache_research)
+# Developer settings are private; consumers inherit only headers and C++17.
+function(cache_research_configure_target target)
     set_target_properties(${target} PROPERTIES
         CXX_EXTENSIONS OFF
-        COMPILE_WARNING_AS_ERROR "${CACHE_RESEARCH_WARNINGS_AS_ERRORS}"
     )
     if(MSVC)
         target_compile_options(${target} PRIVATE /W4 /permissive- /utf-8)
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "^(GNU|Clang|AppleClang)$")
         target_compile_options(${target} PRIVATE -Wall -Wextra -Wpedantic)
     endif()
-endforeach()
+endfunction()
 
-# $<CONFIG> works with both Ninja and multi-configuration generators (VS).
-set(cache_research_runtime_dir "${CMAKE_CURRENT_BINARY_DIR}/bin/$<CONFIG>")
-set_target_properties(cache_research PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${cache_research_runtime_dir}"
-)
+# Only tools need the auxiliary submodule. Library tests need just GoogleTest.
+if(CACHE_RESEARCH_BUILD_APP OR CACHE_RESEARCH_BUILD_BENCHMARKS)
+    set(cache_research_general_sources
+        generalFunctions/file.cpp
+        generalFunctions/file.h
+        generalFunctions/logger.cpp
+        generalFunctions/logger.h
+        generalFunctions/mathVector.h
+        generalFunctions/lexer/lexer.cpp
+        generalFunctions/lexer/lexer.h
+        generalFunctions/lexer/token_stream.cpp
+        generalFunctions/lexer/token_stream.h
+        generalFunctions/lexer/token.h
+    )
+    foreach(source IN LISTS cache_research_general_sources)
+        if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
+            message(FATAL_ERROR
+                "Missing ${source}. Tools require the generalFunctions submodule. "
+                "Run git submodule update --init --recursive, or disable "
+                "CACHE_RESEARCH_BUILD_APP and CACHE_RESEARCH_BUILD_BENCHMARKS."
+            )
+        endif()
+    endforeach()
+    add_library(cache_research_general_functions STATIC ${cache_research_general_sources})
+    add_library(CacheResearch::general_functions ALIAS cache_research_general_functions)
+    target_compile_features(cache_research_general_functions PUBLIC cxx_std_17)
+    target_include_directories(cache_research_general_functions PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+    cache_research_configure_target(cache_research_general_functions)
+endif()
 
-# Refresh the runtime file even when only config.txt changed, without relinking.
-add_custom_target(cache_research_pattern
-    COMMAND "${CMAKE_COMMAND}" -E make_directory
-        "${cache_research_runtime_dir}/configs"
+if(CACHE_RESEARCH_BUILD_APP)
+    add_executable(cache_research main.cpp cacheParser.h)
+    target_link_libraries(cache_research PRIVATE
+        CacheResearch::cache CacheResearch::general_functions)
+    cache_research_configure_target(cache_research)
 
-    COMMAND "${CMAKE_COMMAND}" -E make_directory
-        "${cache_research_runtime_dir}/inputs"
+    set_target_properties(cache_research PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin/$<CONFIG>")
+endif()
 
-    COMMAND "${CMAKE_COMMAND}" -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/configs"
-        "${cache_research_runtime_dir}/configs"
+if(CACHE_RESEARCH_BUILD_BENCHMARKS)
+    add_executable(cache_exact_search cacheBenchmarks/cache_exact_search.cpp)
+    target_link_libraries(cache_exact_search PRIVATE CacheResearch::cache)
+    cache_research_configure_target(cache_exact_search)
 
-    COMMAND "${CMAKE_COMMAND}" -E copy_directory
-        "${CMAKE_CURRENT_SOURCE_DIR}/inputs"
-        "${cache_research_runtime_dir}/inputs"
+    add_executable(cache_benchmark_runner cacheBenchmarks/cache_benchmark_runner.cpp)
+    target_link_libraries(cache_benchmark_runner PRIVATE
+        CacheResearch::cache CacheResearch::general_functions)
+    cache_research_configure_target(cache_benchmark_runner)
+endif()
 
-    COMMENT "Updating runtime pattern"
-    VERBATIM
-)
-add_dependencies(cache_research cache_research_pattern)
-
-# Relative paths inside the application resolve from its runtime directory.
-add_custom_target(run
-    COMMAND "$<TARGET_FILE:cache_research>" configs/config_1.txt inputs/input_1.txt
-    WORKING_DIRECTORY "$<TARGET_FILE_DIR:cache_research>"
-    DEPENDS cache_research
-    USES_TERMINAL
-    VERBATIM
-)
-
-enable_testing()
-
-# The exact-search runner is also available through the standard CMake presets.
-add_executable(cache_exact_search cacheBenchmarks/cache_exact_search.cpp)
-target_compile_features(cache_exact_search PRIVATE cxx_std_17)
-set_target_properties(cache_exact_search PROPERTIES CXX_EXTENSIONS OFF)
-target_include_directories(cache_exact_search PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-
-# Compile each public header separately, without transitive includes from other strategies.
-add_library(cache_header_checks OBJECT
-    tests/cache_headers/base.cpp
-    tests/cache_headers/factory.cpp
-    tests/cache_headers/2Q.cpp
-    tests/cache_headers/ARC.cpp
-    tests/cache_headers/LFU.cpp
-    tests/cache_headers/LIRS.cpp
-    tests/cache_headers/LRU.cpp
-    tests/cache_headers/REF.cpp
-)
-target_compile_features(cache_header_checks PRIVATE cxx_std_17)
-set_target_properties(cache_header_checks PROPERTIES CXX_EXTENSIONS OFF)
-target_include_directories(cache_header_checks PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
-
-add_executable(cache_benchmark_runner
-    cacheBenchmarks/cache_benchmark_runner.cpp
-    generalFunctions/lexer/lexer.cpp
-)
-
-target_compile_features(cache_benchmark_runner PRIVATE cxx_std_17)
-
-target_link_libraries(cache_benchmark_runner PRIVATE
-    CacheResearch::general_functions
-)
-
-add_subdirectory(third_party/googletest)
-
-file(GLOB cache_test_sources CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/tests/*_tests.cpp"
-)
-
-add_executable(cache_tests  ${cache_test_sources} generalFunctions/lexer/lexer.cpp)
-
-target_link_libraries(cache_tests PRIVATE
-    CacheResearch::general_functions
-    GTest::gtest_main
-)
-
-include(GoogleTest)
-gtest_discover_tests(cache_tests)
+# BUILD_TESTING=OFF is a global opt-out, including for an explicitly enabled preset.
+if(CACHE_RESEARCH_BUILD_TESTS AND (NOT DEFINED BUILD_TESTING OR BUILD_TESTING))
+    enable_testing()
+    add_subdirectory(tests)
+endif()

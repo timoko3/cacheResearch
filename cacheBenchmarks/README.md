@@ -66,11 +66,11 @@ python3 cacheBenchmarks/benchmark.py generate --pattern hot_scan --seed 1 --capa
 ```sh
 cmake --preset release
 cmake --build --preset release --target cache_benchmark_runner --parallel
-python3 cacheBenchmarks/benchmark.py run cacheBenchmarks/local_data/my_case --runner build/Linux/release/cache_benchmark_runner
+python3 cacheBenchmarks/benchmark.py run cacheBenchmarks/local_data/my_case --runner build/release/cache_benchmark_runner
 ```
 
 На Windows с Ninja путь к runner:
-`build/Windows/release/cache_benchmark_runner.exe`. Для другого генератора
+`build/release/cache_benchmark_runner.exe`. Для другого генератора
 укажите фактический путь через `--runner`.
 
 Результат — читаемая сводка с запросами, попаданиями, промахами и статистикой
@@ -78,7 +78,7 @@ python3 cacheBenchmarks/benchmark.py run cacheBenchmarks/local_data/my_case --ru
 Можно запустить C++ runner напрямую:
 
 ```sh
-./build/Linux/release/cache_benchmark_runner cacheBenchmarks/local_data/my_case/config.txt cacheBenchmarks/local_data/my_case/input.txt
+./build/release/cache_benchmark_runner cacheBenchmarks/local_data/my_case/config.txt cacheBenchmarks/local_data/my_case/input.txt
 ```
 
 Старые команды `cache_benchmark.py`, `cache_research.py` и

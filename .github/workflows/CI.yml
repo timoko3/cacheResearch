@@ -13,6 +13,64 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  library-package:
+    name: Verify standalone cache package
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure and build without submodules
+        run: |
+          cmake --preset library
+          cmake --build --preset library
+      - name: Verify source and relocated installed consumers
+        run: |
+          for mode in subdirectory installed; do
+            cmake \
+              -DCACHE_RESEARCH_SOURCE_DIR="$GITHUB_WORKSPACE" \
+              -DCACHE_RESEARCH_BINARY_DIR="$GITHUB_WORKSPACE/build/library" \
+              -DCACHE_RESEARCH_GENERATOR=Ninja \
+              -DCACHE_RESEARCH_CXX_COMPILER="$(command -v c++)" \
+              -DCACHE_RESEARCH_CONFIG=Release \
+              -DCACHE_RESEARCH_MODE="$mode" \
+              -P cmake/VerifyPackage.cmake
+          done
+
+  portability:
+    name: Verify (${{ matrix.os }}, CMake ${{ matrix.cmake }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-2022
+            cmake: system
+            generator: Visual Studio 17 2022
+          - os: ubuntu-24.04
+            cmake: 3.24.3
+            generator: Ninja
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - name: Install minimum supported CMake
+        if: matrix.cmake != 'system'
+        run: |
+          python3 -m venv build/cmake-tool
+          & ./build/cmake-tool/bin/python -m pip install 'cmake==${{ matrix.cmake }}'
+          (Resolve-Path ./build/cmake-tool/bin).Path >> $env:GITHUB_PATH
+      - name: Configure complete project
+        run: |
+          cmake --version
+          cmake -S . -B build/ci -G '${{ matrix.generator }}' -DCMAKE_BUILD_TYPE=Release -DCACHE_RESEARCH_BUILD_APP=ON -DCACHE_RESEARCH_BUILD_BENCHMARKS=ON -DCACHE_RESEARCH_BUILD_TESTS=ON
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Build
+        run: cmake --build build/ci --config Release --parallel 2
+      - name: Test
+        run: ctest --test-dir build/ci -C Release --output-on-failure --no-tests=error
+
   benchmark-cli:
     name: Test benchmark CLI
     runs-on: ubuntu-24.04
@@ -83,7 +141,7 @@ jobs:
       - name: Configure compilation database
         run: cmake --preset debug
       - name: Analyze project sources
-        run: python3 scripts/code_quality.py tidy --build-dir build/Linux/debug
+        run: python3 scripts/code_quality.py tidy --build-dir build/debug
 
   build:
     name: Build (${{ matrix.preset }})
@@ -116,9 +174,9 @@ jobs:
 
       - name: Test benchmark CLI with C++ runner
         env:
-          CACHE_BENCHMARK_RUNNER: ${{ github.workspace }}/build/Linux/${{ matrix.preset }}/cache_benchmark_runner
-          CACHE_EXACT_SEARCH_RUNNER: ${{ github.workspace }}/build/Linux/${{ matrix.preset }}/cache_exact_search
+          CACHE_BENCHMARK_RUNNER: ${{ github.workspace }}/build/${{ matrix.preset }}/cache_benchmark_runner
+          CACHE_EXACT_SEARCH_RUNNER: ${{ github.workspace }}/build/${{ matrix.preset }}/cache_exact_search
         run: python3 -m unittest discover -s tests -p test_benchmark_cli.py -v
 
       - name: Run tests
-        run: ctest --test-dir build/Linux/${{ matrix.preset }} --output-on-failure --no-tests=error
+        run: ctest --preset ${{ matrix.preset }}

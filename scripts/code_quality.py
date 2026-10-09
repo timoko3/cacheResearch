@@ -41,7 +41,7 @@ def project_files():
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("check", choices=["format", "format-fix", "tidy"])
-    parser.add_argument("--build-dir", default="build/Linux/debug")
+    parser.add_argument("--build-dir", default="build/debug")
     args = parser.parse_args()
     files = project_files()
     if not files:

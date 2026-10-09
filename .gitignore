@@ -4,6 +4,8 @@
 *.json
 /cmake-build-*/
 /CMakeUserPresets.json
+# Preserve any old local GoogleTest checkout after migrating to FetchContent.
+/third_party/googletest/
 *.csv
 
 # Published reports: keep only compact evidence and figures.
