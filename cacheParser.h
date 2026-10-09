@@ -1,163 +1,119 @@
-#ifndef CACHE_CONFIG_PARSER
-#define CACHE_CONFIG_PARSER
+#pragma once
 
+#include <cstddef>
 #include <stdexcept>
 #include <string>
 #include <variant>
 #include <vector>
 
-#include "./generalFunctions/lexer.h"
+#include "./generalFunctions/lexer/lexer.h"
+#include "./generalFunctions/lexer/token.h"
+#include "./generalFunctions/lexer/token_stream.h"
 #include "cache/cache.h"
 #include "cacheSystem.h"
 
+namespace parser {
+
+const int max_cache_level = 5;
+
 template <typename keyT = int>
 class CacheParser {
-    size_t num_of_levels_ = 0;
     cache::cacheSystemParams cacheSysParams_{};
-
+    std::vector<keyT> reqList_;
     bool config_parsed_ = false;
-    std::vector<keyT> requests_;
-    Token currentToken_{};
 
 public:
     CacheParser(){};
-    ~CacheParser() = default;
 
-    void parseConfig(Lexer& configLexer) {
-        num_of_levels_ = 0;
-        cacheSysParams_.levels.clear();
+    void parseConfig(lexer::TokenStream& ts) {
         config_parsed_ = false;
+        cacheSysParams_.levels.clear();
 
-        currentToken_ = configLexer.getNextToken();
+        const lexer::Token& level_token = ts.peekToken();
 
-        if (currentToken_.type != INT) {
-            grammarError(currentToken_, configLexer, "Incorrect num of cache strategies");
+        const std::size_t count =
+            static_cast<std::size_t>(ts.expectInt("Incorrect num of cache strategies"));
+
+        if (count > max_cache_level) {
+            ts.failAtToken(level_token, "Too many cache levels");
         }
 
-        num_of_levels_ = std::get<int>(currentToken_.value);
-
-        if (num_of_levels_ > MAX_CACHE_LEVELS) {
-            grammarError(currentToken_, configLexer, "Too many cache levels");
-        }
-
-        for (size_t cur_level = cache::L1; cur_level < num_of_levels_; cur_level++) {
-            currentToken_ = configLexer.getNextToken();
-
-            if (currentToken_.type == END) {
-                grammarError(currentToken_, configLexer, "Not enought levels in config file");
+        for (std::size_t level = 0; level < count; ++level) {
+            if (!ts.isMatchType(lexer::TokenType::IDENTIFIER)) {
+                ts.failAtToken(ts.peekToken(), "Not enough cache levels");
             }
 
-            parseLevel(static_cast<cache::cacheLevel_t>(cur_level), configLexer);
+            parseLevel(ts, static_cast<cache::cacheLevel_t>(level));
         }
 
-        Token endToken = configLexer.getNextToken();
-
-        if (endToken.type != END) {
-            grammarError(endToken, configLexer, "Check num of levels not all have parsed yet");
-        }
+        ts.expectToken(lexer::TokenType::END, "Extra data after cache levels");
 
         config_parsed_ = true;
     }
 
-    void parseInput(Lexer& configInput) {
+    void parseInput(lexer::TokenStream& ts) {
         if (!config_parsed_) {
-            throw std::logic_error("parseInput call before parseConfig");
+            throw std::logic_error("parseInput called before parseConfig");
         }
 
-        if (cacheSysParams_.levels.size() != static_cast<size_t>(num_of_levels_)) {
-            throw std::logic_error("incorrect size of levels arr");
+        reqList_.clear();
+
+        for (auto& level : cacheSysParams_.levels) {
+            level.size = ts.expectInt("Incorrect size of cache level");
         }
 
-        requests_.clear();
+        const std::size_t count =
+            static_cast<std::size_t>(ts.expectInt("Incorrect amount of requests"));
 
-        for (size_t level_it = 0; level_it < num_of_levels_; ++level_it) {
-            currentToken_ = configInput.getNextToken();
-
-            if (currentToken_.type != INT) {
-                grammarError(currentToken_, configInput, "Incorrect size of cache level");
+        for (std::size_t i = 0; i < count; ++i) {
+            if (!ts.isMatchType(lexer::TokenType::INT)) {
+                ts.failAtToken(ts.peekToken(), "Not enough requests");
             }
 
-            cacheSysParams_.levels.at(level_it).size = std::get<int>(currentToken_.value);
+            reqList_.push_back(ts.expectInt("Incorrect request"));
         }
 
-        currentToken_ = configInput.getNextToken();
-
-        if (currentToken_.type != INT) {
-            grammarError(currentToken_, configInput, "Incorrect amount of requests");
-        }
-
-        size_t num_of_requests = std::get<int>(currentToken_.value);
-
-        for (size_t request_it = 0; request_it < num_of_requests; ++request_it) {
-            currentToken_ = configInput.getNextToken();
-
-            if (currentToken_.type == END) {
-                grammarError(currentToken_,
-                             configInput,
-                             "Not enough requests, check num of requests in input file");
-            }
-
-            if (currentToken_.type != INT) {
-                grammarError(currentToken_, configInput, "Incorrect request type");
-            }
-
-            requests_.push_back(std::get<int>(currentToken_.value));
-        }
-
-        Token end_token = configInput.getNextToken();
-
-        if (end_token.type != END) {
-            grammarError(end_token,
-                         configInput,
-                         "Check num of levels in config and amount of sizes in input files");
-        }
+        ts.expectToken(lexer::TokenType::END,
+                       "Extra data after requests check num of levels and num of requests");
     }
 
-    void parseAll(Lexer& configLexer, Lexer& inputLexer) {
-        parseConfig(configLexer);
-        parseInput(inputLexer);
+    void parseAll(lexer::TokenStream& config_ts, lexer::TokenStream& input_ts) {
+        parseConfig(config_ts);
+        parseInput(input_ts);
     }
 
-    cache::cacheSystemParams getCacheSysParams() const { return cacheSysParams_; }
+    const cache::cacheSystemParams& getCacheSysParams() const { return cacheSysParams_; }
 
-    std::vector<keyT> getReqList() const { return requests_; }
+    const std::vector<keyT>& getReqList() const { return reqList_; }
 
 private:
-    cache::cacheEviction_t parseStrategy(const std::string& strategy_name,
-                                           const Lexer& lexer) const {
-        if (strategy_name == "LFU")
-            return cache::C_LFU;
-        if (strategy_name == "LRU")
-            return cache::C_LRU;
-        if (strategy_name == "LIRS")
-            return cache::C_LIRS;
-        if (strategy_name == "2Q")
-            return cache::C_2Q;
-        if (strategy_name == "ARC")
-            return cache::C_ARC;
-        if (strategy_name == "REF")
-            return cache::C_REF;
+    void parseLevel(lexer::TokenStream& ts, cache::cacheLevel_t level) {
+        const lexer::Token& name_token =
+            ts.expectToken(lexer::TokenType::IDENTIFIER, "Incorrect name of cache strategy");
 
-        grammarError(currentToken_, lexer, "Unknown cache strategy");
-
-        return cache::C_UNKNOWN; // unreachable
+        cacheSysParams_.levels.push_back({0, level, strategyFromToken(name_token, ts)});
     }
 
-    void parseLevel(cache::cacheLevel_t level, const Lexer& lexer) {
-        if (currentToken_.type != IDENTIFIER) {
-            grammarError(currentToken_, lexer, "Incorrect name of cache strategy");
-        }
+    cache::cacheEviction_t strategyFromToken(const lexer::Token& token,
+                                               const lexer::TokenStream& ts) {
+        const std::string& name = std::get<std::string>(token.data);
 
-        const std::string& strategy = std::get<std::string>(currentToken_.value);
+        if (name == "LFU")
+            return cache::cacheEviction_t::C_LFU;
+        if (name == "LRU")
+            return cache::cacheEviction_t::C_LRU;
+        if (name == "LIRS")
+            return cache::cacheEviction_t::C_LIRS;
+        if (name == "2Q")
+            return cache::cacheEviction_t::C_2Q;
+        if (name == "ARC")
+            return cache::cacheEviction_t::C_ARC;
+        if (name == "REF")
+            return cache::cacheEviction_t::C_REF;
 
-        cacheSysParams_.levels.push_back({0, level, parseStrategy(strategy, lexer)});
-    }
-
-    void grammarError(const Token& token, const Lexer& lexer, const std::string& message) const {
-        throw std::runtime_error("Grammar error in " + lexer.getSrcFileName() + ":" +
-                                 std::to_string(token.line) + ":" + std::to_string(token.column) +
-                                 " " + message);
+        ts.failAtToken(token, "Unknown cache strategy");
+        return cache::cacheEviction_t::C_UNKNOWN;
     }
 };
 
-#endif
+} // namespace parser

@@ -9,6 +9,7 @@
 
 #include "cache/cacheREF.h"
 #include "cacheParser.h"
+#include "generalFunctions/file.h"
 
 void checkReadableFile(const std::string& filePath) {
     std::ifstream inputFile(filePath);
@@ -139,10 +140,14 @@ cache::CacheSystemStats runCacheExperimentFromFiles(const std::string& configPat
     checkReadableFile(configPath);
     checkReadableFile(inputPath);
 
-    Lexer configurationLexer(configPath);
-    Lexer inputLexer(inputPath);
-    CacheParser<int> parser;
-    parser.parseAll(configurationLexer, inputLexer);
+    lexer::Lexer configLexer(generalFunctions::readFile(configPath), configPath);
+    lexer::Lexer inputLexer(generalFunctions::readFile(inputPath), inputPath);
+
+    lexer::TokenStream tsConfig(configLexer.tokenize(), configPath);
+    lexer::TokenStream tsInput(inputLexer.tokenize(), inputPath);
+
+    parser::CacheParser<int> parser;
+    parser.parseAll(tsConfig, tsInput);
 
     return runCacheExperiment(parser.getCacheSysParams(), parser.getReqList());
 }

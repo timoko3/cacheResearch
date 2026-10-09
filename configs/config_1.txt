@@ -1,4 +1,4 @@
 3
 LRU
 2Q
-LFU
+LRU
