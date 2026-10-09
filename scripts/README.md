@@ -7,8 +7,23 @@ on PATH. Formatting checks reject a different formatter version:
 python3 scripts/code_quality.py format
 python3 scripts/code_quality.py format-fix
 cmake --preset debug
-python3 scripts/code_quality.py tidy --build-dir build/Linux/debug
+python3 scripts/code_quality.py tidy --build-dir build/debug
 ```
+
+To fix both naming and formatting, install PyYAML once and run:
+
+```sh
+python3 -m pip install PyYAML
+cmake --preset debug
+python3 scripts/code_quality.py style-fix
+```
+
+`style-fix` collects naming fixes from all translation units before applying
+them to tracked project files, including shared headers. It then formats the
+files and checks naming again. Conflicting fixes fail before writing; dependencies
+are not edited. Only `readability-identifier-naming` fixes are applied.
+Documentation and non-C++ references need manual updates after API renames.
+PyYAML is required only for this command; normal CI checks stay unchanged.
 
 `format` is read-only and fails on formatting differences. `format-fix` applies
 the same style. Editors should also use clang-format 18 and `--style=file`.
@@ -28,7 +43,8 @@ Clang-tidy analyzes project translation units and reports diagnostics in
 project headers. Sources declared in CMake use `compile_commands.json`;
 standalone tools use C++17 and the repository root include path.
 
-Clang-tidy runs the Clang Static Analyzer and selected defect-oriented bugprone
-checks. Naming, modernization, optional-residency contracts and exception
-policies are not enforced. Enabled diagnostics fail CI. Compiler errors remain
+Clang-tidy runs the Clang Static Analyzer, selected defect-oriented bugprone
+checks and naming checks matching [the project code style](../CODE_STYLE.md).
+Modernization, optional-residency contracts and exception policies are not
+enforced. Enabled diagnostics fail CI. Compiler errors remain
 fatal even when originating in dependencies.

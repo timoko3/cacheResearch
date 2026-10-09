@@ -1,162 +1,267 @@
 #pragma once
 
 #include <algorithm>
+#include <functional>
 #include <list>
-#include <memory>
 #include <optional>
 #include <stdexcept>
+#include <type_traits>
 #include <unordered_map>
-#include <utility>
+#include <vector>
 
 #include "cache.h"
 
 namespace cache {
 
-template <typename T, typename keyT = int>
-class CacheLIRS : public Cache<T, keyT> {
-    using Base = Cache<T, keyT>;
-    using KeyList = std::list<keyT>;
-    using KeyIt = typename KeyList::iterator;
+template <typename T, typename KeyT = int>
+class CacheLIRS : public Cache<T, KeyT> {
+private:
+    using Base = Cache<T, KeyT>;
+    using typename Base::PageResult;
 
-    enum class Status { LIR, HIR };
+    enum class PageStatus { LIR, HIR };
 
-    struct Entry {
-        Status status;
-        std::optional<T> value;
-        std::optional<KeyIt> stackIt;
-        std::optional<KeyIt> queueIt;
+    struct PageRecord {
+        KeyT key;
+        T page;
+
+        PageRecord(const KeyT& pageKey, const T& pageValue) : key(pageKey), page(pageValue) {}
     };
 
+    using PageList = std::list<PageRecord>;
+    using PageIterator = typename PageList::iterator;
+    using KeyList = std::list<KeyT>;
+    using KeyIterator = typename KeyList::iterator;
+
+    struct PagePosition {
+        // LIR: resident + S, no Q. Resident HIR: Q, optionally S.
+        // Non-resident HIR: S only; the page itself has been evicted.
+        PageStatus status = PageStatus::HIR;
+        std::optional<PageIterator> resident;
+        std::optional<KeyIterator> stackIterator;
+        std::optional<KeyIterator> queueIterator;
+    };
+
+    using PageIndex = std::unordered_map<KeyT, PagePosition>;
+    using IndexIterator = typename PageIndex::iterator;
+
+    static_assert(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<KeyT>,
+                  "Pages and keys must have non-throwing destructors");
+
+    static constexpr std::size_t hirTargetSizeDivisor = 100;
+    const std::size_t hirTargetSize_;
+    const std::size_t lirTargetSize_;
+    std::size_t lirCount_ = 0;
+    PageList residentPages_;
     KeyList stackS_;
     KeyList queueQ_;
-    std::unordered_map<keyT, Entry> hash_;
+    PageIndex pageIndex_;
 
-    size_t sizeLIR_, sizeHIR_;
-    size_t lirCount_ = 0;
+    enum class AccessAction { REFRESH_LIR, REFRESH_HIR, PROMOTE_HIR };
 
-    void moveToStackTop(const keyT& key, Entry& entry) {
-        if (entry.stackIt.has_value()) {
-            stackS_.splice(stackS_.begin(), stackS_, *entry.stackIt);
-        } else {
-            stackS_.push_front(key);
-            entry.stackIt = stackS_.begin();
+    // Preparation may throw; applying a prepared plan only splices/erases nodes.
+    struct AccessPlan {
+        AccessAction action = AccessAction::REFRESH_HIR;
+        std::optional<IndexIterator> lirToDemote;
+        std::optional<IndexIterator> hirToEvict;
+        KeyList stagedStack;
+        KeyList stagedQueue;
+        std::vector<IndexIterator> stackToPrune;
+    };
+
+    AccessAction accessAction(const PagePosition& position) const noexcept {
+        if (position.status == PageStatus::LIR) {
+            return AccessAction::REFRESH_LIR;
         }
+        // HIR in S is promoted on reuse. During warm-up, fill vacant LIR slots.
+        if (position.stackIterator || (!position.resident && lirCount_ < lirTargetSize_)) {
+            return AccessAction::PROMOTE_HIR;
+        }
+        return AccessAction::REFRESH_HIR;
     }
 
-    void moveToQueueFront(const keyT& key, Entry& entry) {
-        if (entry.queueIt.has_value()) {
-            queueQ_.splice(queueQ_.begin(), queueQ_, *entry.queueIt);
-        } else {
-            queueQ_.push_front(key);
-            entry.queueIt = queueQ_.begin();
-        }
-    }
+    void prepareStackPrune(const PagePosition& accessed, AccessPlan& plan) {
+        // Examine the future bottom of S: skip the accessed key (moving to
+        // the top) and treat the demotion victim as HIR. Stop at the next LIR.
+        auto iterator = stackS_.end();
+        while (iterator != stackS_.begin()) {
+            --iterator;
+            if (accessed.stackIterator && iterator == *accessed.stackIterator) {
+                continue;
+            }
 
-    void pruneStack() {
-        while (!stackS_.empty()) {
-            auto hit = hash_.find(stackS_.back());
-            auto& entry = hit->second;
-
-            if (entry.status == Status::LIR) {
+            auto indexedRecord = pageIndex_.find(*iterator);
+            const bool willBeDemoted = plan.lirToDemote && indexedRecord == *plan.lirToDemote;
+            if (indexedRecord->second.status == PageStatus::LIR && !willBeDemoted) {
                 break;
             }
+            plan.stackToPrune.push_back(indexedRecord);
+        }
+    }
 
-            entry.stackIt.reset();
-            stackS_.pop_back();
+    AccessPlan prepareAccess(const KeyT& key, const PagePosition& position) {
+        AccessPlan plan;
+        plan.action = accessAction(position);
+        if (!position.stackIterator) {
+            plan.stagedStack.emplace_front(key);
+        }
 
-            if (!entry.value.has_value()) {
-                hash_.erase(hit);
+        if (plan.action == AccessAction::PROMOTE_HIR && lirCount_ >= lirTargetSize_) {
+            plan.lirToDemote = pageIndex_.find(stackS_.back());
+            plan.stagedQueue.emplace_front((*plan.lirToDemote)->first);
+        } else if (plan.action == AccessAction::REFRESH_HIR && !position.queueIterator) {
+            plan.stagedQueue.emplace_front(key);
+        }
+
+        if (plan.action != AccessAction::REFRESH_HIR) {
+            prepareStackPrune(position, plan);
+        }
+        return plan;
+    }
+
+    void moveToStackTop(PagePosition& position, KeyList& stagedStack) noexcept {
+        if (position.stackIterator) {
+            stackS_.splice(stackS_.begin(), stackS_, *position.stackIterator);
+        } else {
+            auto iterator = stagedStack.begin();
+            stackS_.splice(stackS_.begin(), stagedStack, iterator);
+            position.stackIterator = iterator;
+        }
+    }
+
+    void moveToQueueFront(PagePosition& position, KeyList& stagedQueue) noexcept {
+        if (position.queueIterator) {
+            queueQ_.splice(queueQ_.begin(), queueQ_, *position.queueIterator);
+        } else {
+            auto iterator = stagedQueue.begin();
+            queueQ_.splice(queueQ_.begin(), stagedQueue, iterator);
+            position.queueIterator = iterator;
+        }
+    }
+
+    void pruneStack(const AccessPlan& plan) noexcept {
+        for (auto indexedRecord : plan.stackToPrune) {
+            auto& position = indexedRecord->second;
+            stackS_.erase(*position.stackIterator);
+            position.stackIterator.reset();
+            if (!position.resident) {
+                pageIndex_.erase(indexedRecord);
             }
         }
     }
 
-    void promoteToLIR(Entry& entry) {
-        if (entry.queueIt.has_value()) {
-            queueQ_.erase(*entry.queueIt);
-            entry.queueIt.reset();
+    void promoteToLIR(PagePosition& position, AccessPlan& plan) noexcept {
+        if (position.queueIterator) {
+            queueQ_.erase(*position.queueIterator);
+            position.queueIterator.reset();
         }
-
-        entry.status = Status::LIR;
+        position.status = PageStatus::LIR;
         ++lirCount_;
 
-        if (lirCount_ > sizeLIR_) {
-            auto& victim = hash_.at(stackS_.back());
-            moveToQueueFront(stackS_.back(), victim);
-            victim.status = Status::HIR;
+        if (plan.lirToDemote) {
+            auto& victim = (*plan.lirToDemote)->second;
+            moveToQueueFront(victim, plan.stagedQueue);
+            victim.status = PageStatus::HIR;
             --lirCount_;
         }
-
-        pruneStack();
     }
 
-    void evictHIR() {
-        auto hit = hash_.find(queueQ_.back());
-        auto& entry = hit->second;
-
-        queueQ_.pop_back();
-        entry.queueIt.reset();
-        entry.value.reset();
-
-        if (!entry.stackIt.has_value()) {
-            hash_.erase(hit);
+    void evictHIR(IndexIterator indexedRecord) noexcept {
+        auto& position = indexedRecord->second;
+        queueQ_.erase(*position.queueIterator);
+        position.queueIterator.reset();
+        residentPages_.erase(*position.resident);
+        position.resident.reset();
+        if (!position.stackIterator) {
+            pageIndex_.erase(indexedRecord);
         }
+    }
+
+    void applyAccess(PagePosition& position, AccessPlan& plan) noexcept {
+        moveToStackTop(position, plan.stagedStack);
+        if (plan.action == AccessAction::PROMOTE_HIR) {
+            promoteToLIR(position, plan);
+        }
+        if (plan.action == AccessAction::REFRESH_HIR) {
+            moveToQueueFront(position, plan.stagedQueue);
+        } else {
+            pruneStack(plan);
+        }
+    }
+
+    void recordHit(const KeyT& key, PagePosition& position) {
+        auto plan = prepareAccess(key, position);
+        applyAccess(position, plan);
+    }
+
+    const T& insertPage(const KeyT& key, const T& page) {
+        PageList stagedPage;
+        stagedPage.emplace_front(key, page);
+        auto [indexedRecord, wasInserted] = pageIndex_.try_emplace(key);
+        auto& position = indexedRecord->second;
+        if (position.resident) {
+            throw std::logic_error("insert requires a non-resident key");
+        }
+
+        AccessPlan plan;
+        try {
+            // try_emplace may rehash: obtain all other index iterators afterwards.
+            plan = prepareAccess(key, position);
+            if (getResidentCount() >= this->getSize()) {
+                plan.hirToEvict = pageIndex_.find(queueQ_.back());
+            }
+        } catch (...) {
+            if (wasInserted) {
+                pageIndex_.erase(indexedRecord);
+            }
+            throw;
+        }
+
+        if (plan.hirToEvict) {
+            evictHIR(*plan.hirToEvict);
+        }
+        auto resident = stagedPage.begin();
+        residentPages_.splice(residentPages_.begin(), stagedPage, resident);
+        position.resident = resident;
+        applyAccess(position, plan);
+        return resident->page;
     }
 
 public:
     // Jiang/Zhang: resident HIR = 1%, LIR gets the remaining capacity.
     // https://xiaodongzhang1911.github.io/Zhang-papers/TR-05-11.pdf
-    explicit CacheLIRS(size_t size, cacheLevel_t level = L1)
-        : Base(size, level), sizeLIR_(0), sizeHIR_(std::max<size_t>(1, size / 100)) {
-        if (size < 2) {
+    explicit CacheLIRS(std::size_t capacity, CacheLevel level = CacheLevel::L1)
+        : Base(capacity, level),
+          hirTargetSize_(std::max<std::size_t>(1, capacity / hirTargetSizeDivisor)),
+          lirTargetSize_(capacity >= 2 ? capacity - hirTargetSize_ : 0) {
+        if (capacity < 2) {
             throw std::invalid_argument("LIRS requires at least 2 cache slots");
         }
-
-        sizeLIR_ = size - sizeHIR_;
     }
+
+    std::size_t getResidentCount() const noexcept { return residentPages_.size(); }
+    std::size_t getIndexedCount() const noexcept { return pageIndex_.size(); }
+    std::size_t getLIRCount() const noexcept { return lirCount_; }
+    std::size_t getLIRTargetSize() const noexcept { return lirTargetSize_; }
+    std::size_t getHIRTargetSize() const noexcept { return hirTargetSize_; }
+    const KeyList& getStackS() const noexcept { return stackS_; }
+    const KeyList& getQueueQ() const noexcept { return queueQ_; }
+    const PageList& getResidentPages() const noexcept { return residentPages_; }
 
 protected:
-    const T* findAndTouch(const keyT& key) override {
-        auto hit = hash_.find(key);
-
-        if (hit == hash_.end() || !hit->second.value.has_value()) {
-            return nullptr;
+    PageResult getPage(const KeyT& key) override {
+        auto indexedRecord = pageIndex_.find(key);
+        if (indexedRecord == pageIndex_.end() || !indexedRecord->second.resident) {
+            return std::nullopt;
         }
 
-        auto& entry = hit->second;
-        const bool wasInStack = entry.stackIt.has_value();
-        moveToStackTop(key, entry);
+        auto& position = indexedRecord->second;
+        recordHit(key, position);
 
-        if (entry.status == Status::LIR) {
-            pruneStack();
-        } else if (wasInStack) {
-            promoteToLIR(entry);
-        } else {
-            moveToQueueFront(key, entry);
-        }
-
-        return std::addressof(*entry.value);
+        return std::cref((*position.resident)->page);
     }
 
-    void insert(const keyT& key, T page) override {
-        if (lirCount_ + queueQ_.size() >= this->getSize()) {
-            evictHIR();
-        }
-
-        auto result =
-            hash_.try_emplace(key, Entry{Status::HIR, std::nullopt, std::nullopt, std::nullopt});
-        auto& entry = result.first->second;
-        const bool wasInStack = entry.stackIt.has_value();
-
-        entry.value.emplace(std::move(page));
-        moveToStackTop(key, entry);
-
-        if (lirCount_ < sizeLIR_ || wasInStack) {
-            promoteToLIR(entry);
-        } else {
-            entry.status = Status::HIR;
-            moveToQueueFront(key, entry);
-        }
-    }
+    const T& insert(const KeyT& key, const T& page) override { return insertPage(key, page); }
 };
 
 } // namespace cache

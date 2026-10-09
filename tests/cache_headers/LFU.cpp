@@ -2,5 +2,9 @@
 
 int checkLFUHeader() {
     cache::CacheLFU<int> instance(2);
-    return instance.lookupUpdate(1, [](int key) { return key; });
+    int loadedPage = 0;
+    return instance.lookupUpdate(1, [&](int key) -> int& {
+        loadedPage = key;
+        return loadedPage;
+    });
 }
