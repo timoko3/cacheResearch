@@ -7,12 +7,7 @@
 #include <type_traits>
 #include <vector>
 
-#include "cache/cache.h"
-#include "cache/cache2Q.h"
-#include "cache/cacheARC.h"
-#include "cache/cacheLFU.h"
-#include "cache/cacheLIRS.h"
-#include "cache/cacheLRU.h"
+#include "cache/cacheFactory.h"
 
 namespace cache {
 
@@ -66,30 +61,7 @@ public:
         cacheSys_.reserve(params.levels.size());
 
         for (const auto& description : params.levels) {
-            switch (description.strategy) {
-                case cacheEviction_t::C_LRU:
-                    cacheSys_.push_back(
-                        std::make_unique<CacheLRU<T, keyT>>(description.size, description.level));
-                    break;
-                case cacheEviction_t::C_LFU:
-                    cacheSys_.push_back(
-                        std::make_unique<CacheLFU<T, keyT>>(description.size, description.level));
-                    break;
-                case cacheEviction_t::C_ARC:
-                    cacheSys_.push_back(
-                        std::make_unique<CacheARC<T, keyT>>(description.size, description.level));
-                    break;
-                case cacheEviction_t::C_2Q:
-                    cacheSys_.push_back(
-                        std::make_unique<Cache2Q<T, keyT>>(description.size, description.level));
-                    break;
-                case cacheEviction_t::C_LIRS:
-                    cacheSys_.push_back(
-                        std::make_unique<CacheLIRS<T, keyT>>(description.size, description.level));
-                    break;
-                default:
-                    throw std::invalid_argument("Unsupported cache strategy");
-            }
+            cacheSys_.push_back(CacheFactory<T, keyT>::make(description));
         }
     }
 

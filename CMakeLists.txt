@@ -66,6 +66,7 @@ add_executable(cache_research
     cache/cache.h
     cache/cache2Q.h
     cache/cacheARC.h
+    cache/cacheFactory.h
     cache/cacheLFU.h
     cache/cacheLIRS.h
     cache/cacheLRU.h
@@ -136,6 +137,7 @@ target_include_directories(cache_exact_search PRIVATE "${CMAKE_CURRENT_SOURCE_DI
 # Compile each public header separately, without transitive includes from other strategies.
 add_library(cache_header_checks OBJECT
     tests/cache_headers/base.cpp
+    tests/cache_headers/factory.cpp
     tests/cache_headers/2Q.cpp
     tests/cache_headers/ARC.cpp
     tests/cache_headers/LFU.cpp

@@ -4,6 +4,7 @@
 #include "cache/cache.h"
 #include "cache/cache2Q.h"
 #include "cache/cacheARC.h"
+#include "cache/cacheFactory.h"
 #include "cache/cacheLFU.h"
 #include "cache/cacheLIRS.h"
 #include "cache/cacheLRU.h"

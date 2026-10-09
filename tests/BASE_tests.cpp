@@ -10,22 +10,10 @@ namespace {
 class CacheInterface : public testing::TestWithParam<cache::cacheEviction_t> {
 protected:
     std::unique_ptr<cache::Cache<int>> makeCache(std::size_t capacity) {
-        switch (GetParam()) {
-            case cache::cacheEviction_t::C_LRU:
-                return std::make_unique<cache::CacheLRU<int>>(capacity);
-            case cache::cacheEviction_t::C_LFU:
-                return std::make_unique<cache::CacheLFU<int>>(capacity);
-            case cache::cacheEviction_t::C_ARC:
-                return std::make_unique<cache::CacheARC<int>>(capacity);
-            case cache::cacheEviction_t::C_2Q:
-                return std::make_unique<cache::Cache2Q<int>>(capacity);
-            case cache::cacheEviction_t::C_LIRS:
-                return std::make_unique<cache::CacheLIRS<int>>(capacity);
-            case cache::cacheEviction_t::C_REF:
-                return std::make_unique<cache::CacheREF<int>>(capacity, std::list<int>{7, 7});
-            default:
-                throw std::logic_error("Unsupported test strategy");
+        if (GetParam() == cache::cacheEviction_t::C_REF) {
+            return std::make_unique<cache::CacheREF<int>>(capacity, std::list<int>{7, 7});
         }
+        return cache::CacheFactory<int>::make({capacity, cache::cacheLevel_t::L1, GetParam()});
     }
 };
 
