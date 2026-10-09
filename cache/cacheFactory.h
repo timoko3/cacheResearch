@@ -35,8 +35,8 @@ public:
         };
 
         auto creator = creators.find(description.strategy);
-        if (creator == creators.end()) 
-        
+        if (creator == creators.end())
+
         {
             throw std::invalid_argument("Unsupported cache strategy");
         }
