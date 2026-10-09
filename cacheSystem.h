@@ -1,8 +1,10 @@
 #ifndef CACHE_SYSTEM_H
 #define CACHE_SYSTEM_H
 
+#include <cstddef>
 #include <memory>
 #include <stdexcept>
+#include <type_traits>
 #include <vector>
 
 #include "cache/cache.h"
@@ -32,17 +34,27 @@ struct CacheSystemStats {
 template <typename T, typename keyT = int>
 class CacheSystem {
     std::vector<std::unique_ptr<Cache<T, keyT>>> cacheSys_;
+    cacheStats stats_;
 
     template <typename F>
-    T lookupAt(size_t index, keyT key, F& slow_get_page) {
+    const T& lookupUpdate(std::size_t index, keyT key, F& slow_get_page) {
         if (index == cacheSys_.size()) {
             return slow_get_page(key);
         }
 
         return cacheSys_[index]->lookupUpdate(
-            key, [this, index, &slow_get_page](keyT requestedKey) -> T {
-                return lookupAt(index + 1, requestedKey, slow_get_page);
+            key, [this, index, &slow_get_page](keyT requestedKey) -> const T& {
+                return lookupUpdate(index + 1, requestedKey, slow_get_page);
             });
+    }
+
+    void updateStats() noexcept {
+        stats_ = {};
+        for (const auto& level : cacheSys_) {
+            stats_.amountHits += level->getStats().amountHits;
+        }
+        stats_.amountRequests = cacheSys_.front()->getStats().amountRequests;
+        stats_.amountMisses = cacheSys_.back()->getStats().amountMisses;
     }
 
 public:
@@ -55,23 +67,23 @@ public:
 
         for (const auto& description : params.levels) {
             switch (description.strategy) {
-                case C_LRU:
+                case cacheEviction_t::C_LRU:
                     cacheSys_.push_back(
                         std::make_unique<CacheLRU<T, keyT>>(description.size, description.level));
                     break;
-                case C_LFU:
+                case cacheEviction_t::C_LFU:
                     cacheSys_.push_back(
                         std::make_unique<CacheLFU<T, keyT>>(description.size, description.level));
                     break;
-                case C_ARC:
+                case cacheEviction_t::C_ARC:
                     cacheSys_.push_back(
                         std::make_unique<CacheARC<T, keyT>>(description.size, description.level));
                     break;
-                case C_2Q:
+                case cacheEviction_t::C_2Q:
                     cacheSys_.push_back(
                         std::make_unique<Cache2Q<T, keyT>>(description.size, description.level));
                     break;
-                case C_LIRS:
+                case cacheEviction_t::C_LIRS:
                     cacheSys_.push_back(
                         std::make_unique<CacheLIRS<T, keyT>>(description.size, description.level));
                     break;
@@ -82,24 +94,31 @@ public:
     }
 
     template <typename F>
-    T lookupUpdate(keyT key, F slow_get_page) {
-        return lookupAt(0, key, slow_get_page);
+    const T& lookupUpdate(keyT key, F slow_get_page) {
+        static_assert(std::is_lvalue_reference_v<decltype(slow_get_page(key))>,
+                      "The page loader must return a reference to a live page");
+        try {
+            const T& page = lookupUpdate(0, key, slow_get_page);
+            updateStats();
+            return page;
+        } catch (...) {
+            updateStats();
+            throw;
+        }
     }
 
-    CacheSystemStats getStats() const {
+    const cacheStats& getStats() const { return stats_; }
+
+    CacheSystemStats getSystemStats() const {
         CacheSystemStats result;
         result.levels.reserve(cacheSys_.size());
 
         for (const auto& level : cacheSys_) {
             const auto& stats = level->getStats();
             result.levels.push_back({level->getLevel(), stats});
-            result.total.amountHits += stats.amountHits;
         }
 
-        if (!cacheSys_.empty()) {
-            result.total.amountRequests = cacheSys_.front()->getStats().amountRequests;
-            result.total.amountMisses = cacheSys_.back()->getStats().amountMisses;
-        }
+        result.total = stats_;
 
         return result;
     }

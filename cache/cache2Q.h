@@ -153,8 +153,8 @@ private:
     }
 
     void recordHit(ResidentPosition& resident){
-        if (resident->queue == ResidentQueue::Am) {
-            Am_.splice(Am_.begin(), Am_, resident->iterator);
+        if (resident.queue == ResidentQueue::Am) {
+            Am_.splice(Am_.begin(), Am_, resident.iterator);
         }
     }
 
@@ -189,7 +189,7 @@ protected:
             return std::nullopt;
         }
 
-        recordHit(indexedRecord->second);
+        recordHit(*resident);
 
         return std::cref(resident->iterator->page);
     }

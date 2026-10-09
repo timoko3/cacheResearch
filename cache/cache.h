@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
+#include <type_traits>
 
 namespace cache {
 
@@ -45,6 +46,8 @@ public:
 
     template <typename F>
     const T& lookupUpdate(keyT key, F slow_get_page) {
+        static_assert(std::is_lvalue_reference_v<decltype(slow_get_page(key))>,
+                      "The page loader must return a reference to a live page");
         ++stats_.amountRequests;
 
         if (auto page = getPage(key)) {
@@ -53,7 +56,7 @@ public:
         }
 
         ++stats_.amountMisses;
-        T& page = slow_get_page(key);
+        const T& page = slow_get_page(key);
 
         if (size_ != 0) {
             insert(key, page);
