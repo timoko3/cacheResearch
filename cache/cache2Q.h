@@ -44,7 +44,7 @@ private:
     using IndexIterator = typename PageIndex::iterator;
 
     static_assert(std::is_nothrow_assignable_v<QueuePosition&, ResidentPosition> &&
-                  std::is_nothrow_assignable_v<QueuePosition&, GhostIterator>,
+                      std::is_nothrow_assignable_v<QueuePosition&, GhostIterator>,
                   "Queue transitions must not throw");
     static_assert(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<keyT>,
                   "Pages and keys must have non-throwing destructors");
@@ -82,7 +82,7 @@ private:
 
         plan.residentToEvict = pageIndex_.find(A1in_.back().key);
         stagedHistory.emplace_front(A1in_.back().key);
-        
+
         if (!promotingGhost && A1out_.size() >= ghostLimit_) {
             plan.ghostToForget = pageIndex_.find(A1out_.back());
         }
@@ -117,8 +117,8 @@ private:
     void insertNewPage(const keyT& key, const T& page) {
         PageList stagedPage;
         stagedPage.emplace_front(key, page);
-        auto [indexedPage, wasInserted] = pageIndex_.emplace(
-            key, ResidentPosition{stagedPage.begin(), ResidentQueue::A1in});
+        auto [indexedPage, wasInserted] =
+            pageIndex_.emplace(key, ResidentPosition{stagedPage.begin(), ResidentQueue::A1in});
         if (!wasInserted) {
             throw std::logic_error("insertNewPage requires an unknown key");
         }
@@ -152,7 +152,7 @@ private:
         A1out_.erase(previousGhost);
     }
 
-    void recordHit(ResidentPosition& resident){
+    void recordHit(ResidentPosition& resident) {
         if (resident.queue == ResidentQueue::Am) {
             Am_.splice(Am_.begin(), Am_, resident.iterator);
         }

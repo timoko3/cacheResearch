@@ -1,8 +1,8 @@
-#include "cache.h"
-#include "cache_tests_tools.h"
-
 #include <memory>
 #include <type_traits>
+
+#include "cache.h"
+#include "cache_tests_tools.h"
 
 namespace tests {
 namespace {
@@ -51,7 +51,8 @@ TEST_P(CacheInterface, MissReturnsLoaderReferenceAndHitReturnsStoredCopy) {
     EXPECT_EQ(c->getStats().amountHits, 1u);
 }
 
-INSTANTIATE_TEST_SUITE_P(AllStrategies, CacheInterface,
+INSTANTIATE_TEST_SUITE_P(
+    AllStrategies, CacheInterface,
     testing::Values(cache::cacheEviction_t::C_LRU, cache::cacheEviction_t::C_LFU,
                     cache::cacheEviction_t::C_ARC, cache::cacheEviction_t::C_2Q,
                     cache::cacheEviction_t::C_LIRS, cache::cacheEviction_t::C_REF));

@@ -1,7 +1,7 @@
+#include <type_traits>
+
 #include "cacheSystem.h"
 #include "cache_tests_tools.h"
-
-#include <type_traits>
 
 namespace tests {
 
@@ -267,10 +267,8 @@ struct CopyCountedPage {
 };
 
 TEST(CacheSystemInterface, ReferencesPassThroughLevelsWithoutTemporaryCopies) {
-    cache::cacheSystemParams params{{
-        {1, cache::cacheLevel_t::L1, cache::cacheEviction_t::C_LRU},
-        {2, cache::cacheLevel_t::L2, cache::cacheEviction_t::C_LRU}
-    }};
+    cache::cacheSystemParams params{{{1, cache::cacheLevel_t::L1, cache::cacheEviction_t::C_LRU},
+                                     {2, cache::cacheLevel_t::L2, cache::cacheEviction_t::C_LRU}}};
     cache::CacheSystem<CopyCountedPage> system(params);
     CopyCountedPage loadedPage(0);
     int loads = 0;
@@ -305,10 +303,8 @@ TEST(CacheSystemInterface, ReferencesPassThroughLevelsWithoutTemporaryCopies) {
 }
 
 TEST(CacheSystemInterface, ZeroCapacityLevelsReturnLoaderReference) {
-    cache::cacheSystemParams params{{
-        {0, cache::cacheLevel_t::L1, cache::cacheEviction_t::C_LRU},
-        {0, cache::cacheLevel_t::L2, cache::cacheEviction_t::C_LFU}
-    }};
+    cache::cacheSystemParams params{{{0, cache::cacheLevel_t::L1, cache::cacheEviction_t::C_LRU},
+                                     {0, cache::cacheLevel_t::L2, cache::cacheEviction_t::C_LFU}}};
     cache::CacheSystem<int> system(params);
     int loadedPage = 7;
     auto slow = [&](int) -> int& { return loadedPage; };
@@ -320,13 +316,11 @@ TEST(CacheSystemInterface, ZeroCapacityLevelsReturnLoaderReference) {
 }
 
 TEST(CacheSystemInterface, FailedLoadUpdatesStatsAndCanBeRetried) {
-    cache::cacheSystemParams params{{
-        {1, cache::cacheLevel_t::L1, cache::cacheEviction_t::C_LRU}
-    }};
+    cache::cacheSystemParams params{{{1, cache::cacheLevel_t::L1, cache::cacheEviction_t::C_LRU}}};
     cache::CacheSystem<int> system(params);
-    EXPECT_THROW(system.lookupUpdate(1, [](int) -> int& {
-        throw std::runtime_error("load failed");
-    }), std::runtime_error);
+    EXPECT_THROW(
+        system.lookupUpdate(1, [](int) -> int& { throw std::runtime_error("load failed"); }),
+        std::runtime_error);
     EXPECT_EQ(system.getStats().amountRequests, 1u);
     EXPECT_EQ(system.getStats().amountMisses, 1u);
     int loadedPage = 10;

@@ -184,8 +184,7 @@ private:
         }
         if (plan.action == AccessAction::RefreshHIR) {
             moveToQueueFront(position, plan.stagedQueue);
-        }
-        else {
+        } else {
             pruneStack(plan);
         }
     }
@@ -261,9 +260,7 @@ protected:
         return std::cref((*position.resident)->page);
     }
 
-    void insert(const keyT& key, const T& page) override {
-        insertPage(key, page);
-    }
+    void insert(const keyT& key, const T& page) override { insertPage(key, page); }
 };
 
 } // namespace cache

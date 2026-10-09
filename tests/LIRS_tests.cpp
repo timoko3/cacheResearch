@@ -1,7 +1,7 @@
+#include <random>
+
 #include "cache/cacheLIRS.h"
 #include "cache_tests_tools.h"
-
-#include <random>
 
 struct LIRSHashCheckedKey {
     int value;
@@ -191,8 +191,12 @@ TEST(CacheLIRS, StringKeys) {
 TEST(CacheLIRSFocused, GhostReloadPromotesAndDemotesBottomLIR) {
     cache::CacheLIRS<int> c(3);
     int loadedPage = 0;
-    auto slow = [&](int key) -> int& { loadedPage = key; return loadedPage; };
-    for (int key : {1, 2, 3, 4}) c.lookupUpdate(key, slow);
+    auto slow = [&](int key) -> int& {
+        loadedPage = key;
+        return loadedPage;
+    };
+    for (int key : {1, 2, 3, 4})
+        c.lookupUpdate(key, slow);
     EXPECT_EQ(c.getResidentCount(), 3u);
     EXPECT_EQ(c.getIndexedCount(), 4u);
 
@@ -211,8 +215,13 @@ TEST(CacheLIRSFocused, ResidentHIROutsideStackNeedsTwoHitsToPromote) {
     cache::CacheLIRS<int> c(3);
     int loadedPage = 0;
     int loads = 0;
-    auto slow = [&](int key) -> int& { ++loads; loadedPage = key; return loadedPage; };
-    for (int key : {1, 2, 3, 4, 3}) c.lookupUpdate(key, slow);
+    auto slow = [&](int key) -> int& {
+        ++loads;
+        loadedPage = key;
+        return loadedPage;
+    };
+    for (int key : {1, 2, 3, 4, 3})
+        c.lookupUpdate(key, slow);
 
     c.lookupUpdate(1, slow);
     EXPECT_EQ(c.getQueueQ(), (std::list<int>{1}));
@@ -233,7 +242,8 @@ TEST(CacheLIRS, BaseInterfaceReturnsBackingPageOnMissAndStableResidentOnHit) {
     const int& resident = base.lookupUpdate(1, slow);
     EXPECT_NE(&resident, &loadedPage);
     loadedPage = 99;
-    for (int key : {2, 3, 4, 3}) base.lookupUpdate(key, slow);
+    for (int key : {2, 3, 4, 3})
+        base.lookupUpdate(key, slow);
     EXPECT_EQ(&base.lookupUpdate(1, slow), &resident);
     EXPECT_EQ(resident, 17);
 }
@@ -243,15 +253,20 @@ struct LIRSCopiedPage {
     inline static bool failCopy = false;
     explicit LIRSCopiedPage(int pageValue) : value(pageValue) {}
     LIRSCopiedPage(const LIRSCopiedPage& other) : value(other.value) {
-        if (failCopy) throw std::runtime_error("page copy failed");
+        if (failCopy)
+            throw std::runtime_error("page copy failed");
     }
 };
 
 TEST(CacheLIRS, FailedCopyPreservesResidentsAndGhostHistory) {
     cache::CacheLIRS<LIRSCopiedPage> c(3);
     LIRSCopiedPage loadedPage(0);
-    auto slow = [&](int key) -> LIRSCopiedPage& { loadedPage.value = key; return loadedPage; };
-    for (int key : {1, 2, 3, 4}) c.lookupUpdate(key, slow);
+    auto slow = [&](int key) -> LIRSCopiedPage& {
+        loadedPage.value = key;
+        return loadedPage;
+    };
+    for (int key : {1, 2, 3, 4})
+        c.lookupUpdate(key, slow);
     const auto previousStack = c.getStackS();
     const auto previousQueue = c.getQueueQ();
     LIRSCopiedPage::failCopy = true;
@@ -273,7 +288,10 @@ TEST(CacheLIRSFocused, MixedRequestsPreserveResidentAndHistoryInvariants) {
         EXPECT_EQ(c.getHIRTargetSize(), std::max<std::size_t>(1, capacity / 100));
         EXPECT_EQ(c.getLIRTargetSize() + c.getHIRTargetSize(), capacity);
         int loadedPage = 0;
-        auto slow = [&](int key) -> int& { loadedPage = key * 10; return loadedPage; };
+        auto slow = [&](int key) -> int& {
+            loadedPage = key * 10;
+            return loadedPage;
+        };
         for (int request = 0; request < 2000; ++request) {
             int key = static_cast<int>(random() % (capacity * 3));
             ASSERT_EQ(c.lookupUpdate(key, slow), key * 10);
@@ -312,7 +330,8 @@ TEST(CacheLIRS, FailedHashPreservesStateDuringEvictionAndGhostPromotion) {
         loadedPage = key.value;
         return loadedPage;
     };
-    for (int key : {1, 2, 3, 4}) c.lookupUpdate({key}, slow);
+    for (int key : {1, 2, 3, 4})
+        c.lookupUpdate({key}, slow);
     const auto previousStack = c.getStackS();
     const auto previousQueue = c.getQueueQ();
 
@@ -349,7 +368,8 @@ TEST(CacheLIRS, FailedHashOnLIRHitKeepsStackOrder) {
         loadedPage = key.value;
         return loadedPage;
     };
-    for (int key : {1, 2, 3, 4}) c.lookupUpdate({key}, slow);
+    for (int key : {1, 2, 3, 4})
+        c.lookupUpdate({key}, slow);
     const auto previousStack = c.getStackS();
     const auto previousQueue = c.getQueueQ();
 

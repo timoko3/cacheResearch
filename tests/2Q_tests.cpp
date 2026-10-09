@@ -1,8 +1,8 @@
-#include "cache/cache2Q.h"
-#include "cache_tests_tools.h"
-
 #include <random>
 #include <type_traits>
+
+#include "cache/cache2Q.h"
+#include "cache_tests_tools.h"
 
 struct HashCheckedKey {
     int value;
@@ -118,8 +118,12 @@ TEST(Cache2QFocused, FirstInsertGoesToA1in) {
 TEST(Cache2QFocused, OverflowOfA1inCreatesGhostEntry) {
     cache::Cache2Q<int> c(4);
     int loadedPage = 0;
-    auto slow = [&](int key) -> int& { loadedPage = key; return loadedPage; };
-    for (int key : {1, 2, 3, 4}) c.lookupUpdate(key, slow);
+    auto slow = [&](int key) -> int& {
+        loadedPage = key;
+        return loadedPage;
+    };
+    for (int key : {1, 2, 3, 4})
+        c.lookupUpdate(key, slow);
     EXPECT_EQ(c.getResidentCount(), 4u);
     EXPECT_TRUE(c.getA1out().empty());
 
@@ -133,8 +137,13 @@ TEST(Cache2QFocused, GhostHitIsMissAndPromotesPageToAm) {
     cache::Cache2Q<int> c(4);
     int calls = 0;
     int loadedPage = 0;
-    auto slow = [&](int key) -> int& { ++calls; loadedPage = key * 10; return loadedPage; };
-    for (int key : {1, 2, 3, 4, 5}) c.lookupUpdate(key, slow);
+    auto slow = [&](int key) -> int& {
+        ++calls;
+        loadedPage = key * 10;
+        return loadedPage;
+    };
+    for (int key : {1, 2, 3, 4, 5})
+        c.lookupUpdate(key, slow);
 
     EXPECT_EQ(c.lookupUpdate(1, slow), 10);
     EXPECT_EQ(calls, 6);
@@ -149,8 +158,12 @@ TEST(Cache2QFocused, GhostHitIsMissAndPromotesPageToAm) {
 TEST(Cache2QFocused, AmHitMovesEntryToFront) {
     cache::Cache2Q<int> c(8);
     int loadedPage = 0;
-    auto slow = [&](int key) -> int& { loadedPage = key; return loadedPage; };
-    for (int key = 1; key <= 10; ++key) c.lookupUpdate(key, slow);
+    auto slow = [&](int key) -> int& {
+        loadedPage = key;
+        return loadedPage;
+    };
+    for (int key = 1; key <= 10; ++key)
+        c.lookupUpdate(key, slow);
     c.lookupUpdate(1, slow);
     c.lookupUpdate(2, slow);
     ASSERT_EQ(c.getAm().size(), 2u);
@@ -182,7 +195,10 @@ TEST(Cache2Q, ReloadedPageHasNewValue) {
     cache::Cache2Q<int> c(2);
     int loads = 0;
     int loadedPage = 0;
-    auto slow = [&](int) -> int& { loadedPage = ++loads; return loadedPage; };
+    auto slow = [&](int) -> int& {
+        loadedPage = ++loads;
+        return loadedPage;
+    };
     EXPECT_EQ(c.lookupUpdate(1, slow), 1);
     EXPECT_EQ(c.lookupUpdate(2, slow), 2);
     EXPECT_EQ(c.lookupUpdate(3, slow), 3);
@@ -210,11 +226,15 @@ TEST(Cache2Q, RetryFailedLoad) {
 TEST(Cache2Q, FailedGhostLoadDoesNotAffectNextRequest) {
     cache::Cache2Q<int> c(4);
     int loadedPage = 0;
-    auto slow = [&](int key) -> int& { loadedPage = key * 10; return loadedPage; };
-    for (int key : {1, 2, 3, 4, 5}) c.lookupUpdate(key, slow);
-    EXPECT_THROW(c.lookupUpdate(1, [](int) -> int& {
-        throw std::runtime_error("ghost load failed");
-    }), std::runtime_error);
+    auto slow = [&](int key) -> int& {
+        loadedPage = key * 10;
+        return loadedPage;
+    };
+    for (int key : {1, 2, 3, 4, 5})
+        c.lookupUpdate(key, slow);
+    EXPECT_THROW(
+        c.lookupUpdate(1, [](int) -> int& { throw std::runtime_error("ghost load failed"); }),
+        std::runtime_error);
 
     ASSERT_EQ(c.getA1out().size(), 1u);
     EXPECT_EQ(c.getA1out().front(), 1);
@@ -284,7 +304,8 @@ TEST(Cache2Q, FailedNewPageCopyPreservesResidentPage) {
         loadedPage.value = key;
         return loadedPage;
     };
-    for (int key : {1, 2, 3, 4}) c.lookupUpdate(key, slow);
+    for (int key : {1, 2, 3, 4})
+        c.lookupUpdate(key, slow);
 
     loadedPage.failCopy = true;
     EXPECT_THROW(c.lookupUpdate(5, slow), std::runtime_error);
@@ -330,7 +351,8 @@ TEST(Cache2Q, FailedEvictionLookupRollsBackNewIndexEntry) {
     int loadedPage = 0;
     auto slow = [&](const HashCheckedKey& key) -> int& {
         loadedPage = key.value;
-        if (key.value == 3) HashCheckedKey::failingValue = 1;
+        if (key.value == 3)
+            HashCheckedKey::failingValue = 1;
         return loadedPage;
     };
     c.lookupUpdate(HashCheckedKey{1}, slow);
@@ -359,7 +381,8 @@ TEST(Cache2Q, GhostHistoryStoresOnlyKeys) {
         loadedPage.assign(4096, key);
         return loadedPage;
     };
-    for (int key : {1, 2, 3}) c.lookupUpdate(key, slow);
+    for (int key : {1, 2, 3})
+        c.lookupUpdate(key, slow);
     ASSERT_EQ(c.getA1out().size(), 1u);
     EXPECT_EQ(c.getA1out().front(), 1);
 }
@@ -381,7 +404,8 @@ public:
           ghostLimit_(std::max<std::size_t>(1, capacity / 2)) {}
 
     bool access(int key) {
-        if (std::find(recent.begin(), recent.end(), key) != recent.end()) return true;
+        if (std::find(recent.begin(), recent.end(), key) != recent.end())
+            return true;
         auto repeatedPage = std::find(repeated.begin(), repeated.end(), key);
         if (repeatedPage != repeated.end()) {
             repeated.erase(repeatedPage);
@@ -391,12 +415,14 @@ public:
 
         auto ghost = std::find(history.begin(), history.end(), key);
         const bool promote = ghost != history.end();
-        if (promote) history.erase(ghost);
+        if (promote)
+            history.erase(ghost);
         if (recent.size() + repeated.size() == capacity_) {
             if (recent.size() > a1inTargetSize_ || repeated.empty()) {
                 history.insert(history.begin(), recent.back());
                 recent.pop_back();
-                if (history.size() > ghostLimit_) history.pop_back();
+                if (history.size() > ghostLimit_)
+                    history.pop_back();
             } else {
                 repeated.pop_back();
             }
@@ -410,7 +436,8 @@ public:
 template <typename Queue>
 std::vector<int> residentKeys(const Queue& queue) {
     std::vector<int> keys;
-    for (const auto& record : queue) keys.push_back(record.key);
+    for (const auto& record : queue)
+        keys.push_back(record.key);
     return keys;
 }
 } // namespace

@@ -95,7 +95,7 @@ private:
     }
 
     cache::cacheEviction_t strategyFromToken(const lexer::Token& token,
-                                               const lexer::TokenStream& ts) {
+                                             const lexer::TokenStream& ts) {
         const std::string& name = std::get<std::string>(token.data);
 
         if (name == "LFU")

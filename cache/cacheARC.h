@@ -1,13 +1,13 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 #include <iterator>
 #include <list>
 #include <memory>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
-#include <cassert>
 
 #include "cache.h"
 
@@ -55,8 +55,7 @@ private:
         list.erase(victim);
     }
 
-    void moveLRUToGhost(list_t& srcList, list_t& ghostList,
-                        listName_t ghostListName) {
+    void moveLRUToGhost(list_t& srcList, list_t& ghostList, listName_t ghostListName) {
         if (srcList.empty()) {
             return;
         }
@@ -75,7 +74,7 @@ private:
 
     void replacePage(bool requestedFromB2) {
         const bool evictFromT1 = !T1_.empty() && (T1_.size() > targetT1size_ ||
-                                                 (requestedFromB2 && T1_.size() == targetT1size_));
+                                                  (requestedFromB2 && T1_.size() == targetT1size_));
 
         if (evictFromT1 || T2_.empty()) {
             moveLRUToGhost(T1_, B1_, listName_t::B1);
@@ -116,18 +115,14 @@ private:
                 T2_.splice(T2_.begin(), T2_, listIt);
                 return;
             case listName_t::B1: {
-                const std::size_t addition = std::max<std::size_t>
-                                             (1, B2_.size() / B1_.size());
+                const std::size_t addition = std::max<std::size_t>(1, B2_.size() / B1_.size());
                 targetT1size_ = std::min(capacity_, targetT1size_ + addition);
                 return;
             }
             case listName_t::B2: {
-                const std::size_t subtrahend = std::max<std::size_t>
-                                               (1, B1_.size() / B2_.size());
+                const std::size_t subtrahend = std::max<std::size_t>(1, B1_.size() / B2_.size());
 
-                targetT1size_ = (subtrahend >= targetT1size_)
-                                ? 0
-                                : targetT1size_ - subtrahend;
+                targetT1size_ = (subtrahend >= targetT1size_) ? 0 : targetT1size_ - subtrahend;
                 return;
             }
             default:
@@ -164,8 +159,7 @@ protected:
         auto hit = hash_.find(key);
 
         if (hit != hash_.end() &&
-           (hit->second.listName == listName_t::B1 ||
-            hit->second.listName == listName_t::B2)) {
+            (hit->second.listName == listName_t::B1 || hit->second.listName == listName_t::B2)) {
             moveGhostPageToT2(hit, page);
             return;
         }
@@ -180,8 +174,7 @@ protected:
                 eraseLRU(T1_);
             }
         } else if (recentTotal < capacity_) {
-            const std::size_t total = T1_.size() + T2_.size() +
-                                      B1_.size() + B2_.size();
+            const std::size_t total = T1_.size() + T2_.size() + B1_.size() + B2_.size();
 
             if (total >= capacity_) {
                 if (total >= 2 * capacity_) {

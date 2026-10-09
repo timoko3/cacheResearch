@@ -227,7 +227,10 @@ TEST(CacheLRU, BaseInterfaceReturnsBackingPageOnMissAndResidentOnHit) {
     cache::Cache<int>& base = c;
     int loadedPage = 17;
     int loads = 0;
-    auto slow = [&](int) -> int& { ++loads; return loadedPage; };
+    auto slow = [&](int) -> int& {
+        ++loads;
+        return loadedPage;
+    };
 
     EXPECT_EQ(&base.lookupUpdate(1, slow), &loadedPage);
     const int& resident = base.lookupUpdate(1, slow);

@@ -208,7 +208,10 @@ TEST(CacheREF, GetOutOfRangeThrow) {
     cache::CacheREF<int, int> c(3, std::list<int>{1, 2, 3});
 
     int loadedPage = 0;
-    auto slow = [&](int key) -> int& { loadedPage = key; return loadedPage; };
+    auto slow = [&](int key) -> int& {
+        loadedPage = key;
+        return loadedPage;
+    };
 
     EXPECT_EQ(c.lookupUpdate(1, slow), 1);
     EXPECT_EQ(c.lookupUpdate(2, slow), 2);

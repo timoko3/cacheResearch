@@ -39,8 +39,7 @@ private:
     }
 
 public:
-    CacheLFU(std::size_t size, cacheLevel_t level = cacheLevel_t::L1)
-        : Base(size, level) {};
+    CacheLFU(std::size_t size, cacheLevel_t level = cacheLevel_t::L1) : Base(size, level){};
 
     ~CacheLFU() = default;
 
@@ -60,8 +59,7 @@ protected:
 
     void insert(const keyT& key, const T& page) override {
         if (isFull()) {
-            auto victim = std::min_element(cache_.begin(), cache_.end(),
-                                           compareEntriesByFreq);
+            auto victim = std::min_element(cache_.begin(), cache_.end(), compareEntriesByFreq);
             hash_.erase(victim->key);
             cache_.erase(victim);
         }

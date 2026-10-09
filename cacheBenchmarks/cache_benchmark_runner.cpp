@@ -29,7 +29,8 @@ void checkCacheConfiguration(const cache::cacheSystemParams& configuration) {
             throw std::invalid_argument("Cache capacity must be positive");
         }
 
-        if (description.strategy == cache::cacheEviction_t::C_REF && configuration.levels.size() != 1) {
+        if (description.strategy == cache::cacheEviction_t::C_REF &&
+            configuration.levels.size() != 1) {
             throw std::invalid_argument("REF is supported only as a single-level reference");
         }
     }

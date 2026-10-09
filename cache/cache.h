@@ -32,8 +32,7 @@ private:
     cacheStats stats_;
 
 public:
-    Cache(std::size_t size, cacheLevel_t level = cacheLevel_t::L1)
-        : level_(level), size_(size) {}
+    Cache(std::size_t size, cacheLevel_t level = cacheLevel_t::L1) : level_(level), size_(size) {}
 
     virtual ~Cache() = default;
 
