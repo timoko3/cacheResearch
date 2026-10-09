@@ -1,10 +1,11 @@
 #pragma once
 
-#include <iterator>
+#include <functional>
 #include <list>
-#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <type_traits>
 #include <unordered_map>
-#include <utility>
 
 #include "cache.h"
 
@@ -14,42 +15,83 @@ template <typename T, typename keyT = int>
 class CacheLRU : public Cache<T, keyT> {
 private:
     using Base = Cache<T, keyT>;
-    using Entry = std::pair<keyT, T>;
-    using List = std::list<Entry>;
-    using ListIt = typename List::iterator;
+    using typename Base::pageResult_t;
 
-    List cache_;
-    std::unordered_map<keyT, ListIt> hash_;
+    struct PageRecord {
+        keyT key;
+        T page;
 
-public:
-    explicit CacheLRU(size_t size, cacheLevel_t level = L1) : Base(size, level) {}
+        PageRecord(const keyT& pageKey, const T& pageValue) : key(pageKey), page(pageValue) {}
+    };
 
-    const List& getCache() const { return cache_; }
+    using PageList = std::list<PageRecord>;
+    using PageIterator = typename PageList::iterator;
+    using PageIndex = std::unordered_map<keyT, PageIterator>;
+    using IndexIterator = typename PageIndex::iterator;
 
-    const std::unordered_map<keyT, ListIt>& getHash() const { return hash_; }
+    static_assert(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<keyT>,
+                  "Pages and keys must have non-throwing destructors");
 
-    bool isFull() const { return cache_.size() >= this->getSize(); }
+    PageList cache_;
+    PageIndex pageIndex_;
 
-protected:
-    const T* findAndTouch(const keyT& key) override {
-        auto hit = hash_.find(key);
-
-        if (hit == hash_.end()) {
-            return nullptr;
-        }
-
-        cache_.splice(cache_.begin(), cache_, hit->second);
-        return std::addressof(hit->second->second);
+    void recordHit(PageIterator resident) noexcept {
+        cache_.splice(cache_.begin(), cache_, resident);
     }
 
-    void insert(const keyT& key, T page) override {
-        if (isFull()) {
-            hash_.erase(cache_.back().first);
-            cache_.pop_back();
+    void evictPage(IndexIterator indexedPage) noexcept {
+        auto resident = indexedPage->second;
+        pageIndex_.erase(indexedPage);
+        cache_.erase(resident);
+    }
+
+    void insertNewPage(const keyT& key, const T& page) {
+        PageList stagedPage;
+        stagedPage.emplace_front(key, page);
+        auto [indexedPage, wasInserted] = pageIndex_.emplace(key, stagedPage.begin());
+        if (!wasInserted) {
+            throw std::logic_error("insertNewPage requires an unknown key");
         }
 
-        cache_.emplace_front(key, std::move(page));
-        hash_.emplace(key, cache_.begin());
+        // Find the victim after emplace: rehashing invalidates index iterators.
+        auto residentToEvict = pageIndex_.end();
+        try {
+            if (isFull()) {
+                residentToEvict = pageIndex_.find(cache_.back().key);
+            }
+        } catch (...) {
+            pageIndex_.erase(indexedPage);
+            throw;
+        }
+
+        if (residentToEvict != pageIndex_.end()) {
+            evictPage(residentToEvict);
+        }
+        cache_.splice(cache_.begin(), stagedPage, stagedPage.begin());
+    }
+
+public:
+    explicit CacheLRU(std::size_t capacity, cacheLevel_t level = cacheLevel_t::L1)
+        : Base(capacity, level) {}
+
+    std::size_t getResidentCount() const noexcept { return cache_.size(); }
+    std::size_t getIndexedCount() const noexcept { return pageIndex_.size(); }
+    const PageList& getCache() const noexcept { return cache_; }
+    bool isFull() const noexcept { return getResidentCount() >= this->getSize(); }
+
+protected:
+    pageResult_t getPage(const keyT& key) override {
+        auto indexedRecord = pageIndex_.find(key);
+        if (indexedRecord == pageIndex_.end()) {
+            return std::nullopt;
+        }
+
+        recordHit(indexedRecord->second);
+        return std::cref(indexedRecord->second->page);
+    }
+
+    void insert(const keyT& key, const T& page) override {
+        insertNewPage(key, page);
     }
 };
 

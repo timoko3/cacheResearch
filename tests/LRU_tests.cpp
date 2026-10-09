@@ -3,6 +3,36 @@
 
 namespace tests {
 
+struct LRUCopiedPage {
+    int value;
+    inline static bool failCopy = false;
+
+    explicit LRUCopiedPage(int pageValue) : value(pageValue) {}
+    LRUCopiedPage(const LRUCopiedPage& other) : value(other.value) {
+        if (failCopy) {
+            throw std::runtime_error("page copy failed");
+        }
+    }
+};
+
+inline void lookupUpdateTest(cache::CacheLRU<uint32_t, int>& c,
+                             const std::vector<int>& requests, std::string_view expected) {
+    ASSERT_EQ(requests.size(), expected.size());
+    uint32_t loadedPage = 0;
+    for (std::size_t index = 0; index < requests.size(); ++index) {
+        bool loaderCalled = false;
+        auto slow = [&](int key) -> uint32_t& {
+            EXPECT_EQ(key, requests[index]);
+            loaderCalled = true;
+            loadedPage = hashInt(key);
+            return loadedPage;
+        };
+        EXPECT_EQ(c.lookupUpdate(requests[index], slow), hashInt(requests[index]));
+        EXPECT_EQ(loaderCalled, expected[index] == 'M') << "request index = " << index;
+    }
+    checkCacheStats(c, requests, expected);
+}
+
 TEST(CacheLRUTrace, RepeatedOne) {
     cache::CacheLRU<uint32_t, int> c(3);
     lookupUpdateTest(c, {1, 1, 1, 1}, "MHHH");
@@ -64,40 +94,46 @@ TEST(CacheLRUTrace, HotTwoLong) {
 }
 
 TEST(CacheLRUFocused, MetadataAndStartsEmpty) {
-    cache::CacheLRU<int, int> c(3, cache::L2);
+    cache::CacheLRU<int, int> c(3, cache::cacheLevel_t::L2);
     EXPECT_EQ(c.getSize(), 3u);
-    EXPECT_EQ(c.getLevel(), cache::L2);
+    EXPECT_EQ(c.getLevel(), cache::cacheLevel_t::L2);
     EXPECT_TRUE(c.getCache().empty());
-    EXPECT_TRUE(c.getHash().empty());
+    EXPECT_EQ(c.getIndexedCount(), 0u);
 }
 
 TEST(CacheLRUFocused, FirstMissInsertsAtFront) {
     cache::CacheLRU<int, int> c(3);
     int calls = 0;
-    auto slow = [&](int key) {
+    int loadedPage = 0;
+    auto slow = [&](int key) -> int& {
         ++calls;
-        return key * 10;
+        loadedPage = key * 10;
+        return loadedPage;
     };
 
     EXPECT_EQ(c.lookupUpdate(7, slow), 70);
     ASSERT_EQ(c.getCache().size(), 1u);
-    EXPECT_EQ(c.getCache().front().first, 7);
-    EXPECT_EQ(c.getCache().front().second, 70);
-    EXPECT_EQ(c.getHash().size(), 1u);
+    EXPECT_EQ(c.getCache().front().key, 7);
+    EXPECT_EQ(c.getCache().front().page, 70);
+    EXPECT_EQ(c.getIndexedCount(), 1u);
     EXPECT_EQ(calls, 1);
 }
 
 TEST(CacheLRUFocused, HitMovesEntryToFront) {
     cache::CacheLRU<int, int> c(3);
-    auto slow = [](int key) { return key * 10; };
+    int loadedPage = 0;
+    auto slow = [&](int key) -> int& {
+        loadedPage = key * 10;
+        return loadedPage;
+    };
 
     c.lookupUpdate(1, slow);
     c.lookupUpdate(2, slow);
     c.lookupUpdate(3, slow);
-    ASSERT_EQ(c.getCache().front().first, 3);
+    ASSERT_EQ(c.getCache().front().key, 3);
 
     c.lookupUpdate(1, slow);
-    EXPECT_EQ(c.getCache().front().first, 1);
+    EXPECT_EQ(c.getCache().front().key, 1);
 }
 
 TEST(CacheLRUFocused, OverflowEvictsLeastRecentlyUsed) {
@@ -112,7 +148,11 @@ TEST(CacheLRUFocused, HitProtectsPageFromNextEviction) {
 
 TEST(CacheLRUFocused, RepeatedHitsDoNotGrowCache) {
     cache::CacheLRU<int, int> c(4);
-    auto slow = [](int key) { return key; };
+    int loadedPage = 0;
+    auto slow = [&](int key) -> int& {
+        loadedPage = key;
+        return loadedPage;
+    };
 
     c.lookupUpdate(9, slow);
     for (int i = 0; i < 20; ++i) {
@@ -120,27 +160,27 @@ TEST(CacheLRUFocused, RepeatedHitsDoNotGrowCache) {
     }
 
     EXPECT_EQ(c.getCache().size(), 1u);
-    EXPECT_EQ(c.getHash().size(), 1u);
+    EXPECT_EQ(c.getIndexedCount(), 1u);
 }
 
 TEST(CacheLRUFocused, CapacityOneKeepsOnlyNewestPage) {
     cache::CacheLRU<uint32_t, int> c(1);
     lookupUpdateTest(c, {1, 1, 2, 2, 1, 1}, "MHMHMH");
     ASSERT_EQ(c.getCache().size(), 1u);
-    EXPECT_EQ(c.getCache().front().first, 1);
+    EXPECT_EQ(c.getCache().front().key, 1);
 }
 
 TEST(CacheLRUFocused, ZeroCapacityNeverCaches) {
     cache::CacheLRU<uint32_t, int> c(0);
     lookupUpdateTest(c, {5, 5, 5, 5}, "MMMM");
     EXPECT_TRUE(c.getCache().empty());
-    EXPECT_TRUE(c.getHash().empty());
+    EXPECT_EQ(c.getIndexedCount(), 0u);
 }
 
 TEST(CacheLRU, ReloadedPageHasNewValue) {
     cache::CacheLRU<int, int> c(1);
     int loads = 0;
-    auto slow = [&](int) { return ++loads; };
+    auto slow = [&](int) -> int& { return ++loads; };
 
     EXPECT_EQ(c.lookupUpdate(1, slow), 1);
     EXPECT_EQ(c.lookupUpdate(2, slow), 2);
@@ -151,13 +191,14 @@ TEST(CacheLRU, ReloadedPageHasNewValue) {
 
 TEST(CacheLRU, RetryFailedLoad) {
     cache::CacheLRU<int, int> c(3);
-    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int { throw std::runtime_error("load failed"); }),
+    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int& { throw std::runtime_error("load failed"); }),
                  std::runtime_error);
 
     int loads = 0;
-    auto slow = [&](int) {
+    int loadedPage = 420;
+    auto slow = [&](int) -> int& {
         ++loads;
-        return 420;
+        return loadedPage;
     };
     EXPECT_EQ(c.lookupUpdate(42, slow), 420);
     EXPECT_EQ(c.lookupUpdate(42, slow), 420);
@@ -167,13 +208,15 @@ TEST(CacheLRU, RetryFailedLoad) {
 TEST(CacheLRU, VectorPage) {
     cache::CacheLRU<std::vector<int>, int> c(3);
     int loads = 0;
-    auto slow = [&](int key) {
+    std::vector<int> loadedPage;
+    auto slow = [&](int key) -> std::vector<int>& {
         ++loads;
-        return std::vector<int>{key, key + 1};
+        loadedPage = {key, key + 1};
+        return loadedPage;
     };
 
     auto page = c.lookupUpdate(7, slow);
-    ASSERT_EQ(page.size(), 2);
+    ASSERT_EQ(page.size(), 2u);
     page[0] = -1;
     page[1] = -2;
     EXPECT_EQ(page, (std::vector<int>{-1, -2}));
@@ -184,15 +227,60 @@ TEST(CacheLRU, VectorPage) {
 TEST(CacheLRU, StringKeys) {
     cache::CacheLRU<int, std::string> c(3);
     int loads = 0;
-    auto slow = [&](const std::string& key) {
+    int loadedPage = 0;
+    auto slow = [&](const std::string& key) -> int& {
         ++loads;
-        return static_cast<int>(key.size());
+        loadedPage = static_cast<int>(key.size());
+        return loadedPage;
     };
 
     EXPECT_EQ(c.lookupUpdate("alpha", slow), 5);
     EXPECT_EQ(c.lookupUpdate("alpha", slow), 5);
     EXPECT_EQ(c.lookupUpdate("beta", slow), 4);
     EXPECT_EQ(loads, 2);
+}
+
+TEST(CacheLRU, BaseInterfaceReturnsBackingPageOnMissAndResidentOnHit) {
+    cache::CacheLRU<int> c(2);
+    cache::Cache<int>& base = c;
+    int loadedPage = 17;
+    int loads = 0;
+    auto slow = [&](int) -> int& { ++loads; return loadedPage; };
+
+    EXPECT_EQ(&base.lookupUpdate(1, slow), &loadedPage);
+    const int& resident = base.lookupUpdate(1, slow);
+    EXPECT_NE(&resident, &loadedPage);
+    loadedPage = 99;
+    EXPECT_EQ(resident, 17);
+    base.lookupUpdate(2, slow);
+    EXPECT_EQ(&base.lookupUpdate(1, slow), &resident);
+    EXPECT_EQ(loads, 2);
+    EXPECT_EQ(c.getResidentCount(), 2u);
+    EXPECT_EQ(c.getIndexedCount(), 2u);
+}
+
+TEST(CacheLRU, FailedCopyPreservesFullCacheAndRecency) {
+    cache::CacheLRU<LRUCopiedPage> c(2);
+    LRUCopiedPage loadedPage(0);
+    auto slow = [&](int key) -> LRUCopiedPage& {
+        loadedPage.value = key * 10;
+        return loadedPage;
+    };
+    c.lookupUpdate(1, slow);
+    c.lookupUpdate(2, slow);
+
+    LRUCopiedPage::failCopy = true;
+    EXPECT_THROW(c.lookupUpdate(3, slow), std::runtime_error);
+    LRUCopiedPage::failCopy = false;
+    ASSERT_EQ(c.getResidentCount(), 2u);
+    EXPECT_EQ(c.getIndexedCount(), 2u);
+    EXPECT_EQ(c.getCache().front().key, 2);
+    EXPECT_EQ(c.getCache().back().key, 1);
+    EXPECT_EQ(c.getCache().back().page.value, 10);
+
+    c.lookupUpdate(3, slow);
+    EXPECT_EQ(c.getCache().front().key, 3);
+    EXPECT_EQ(c.getCache().back().key, 2);
 }
 
 } // namespace tests
