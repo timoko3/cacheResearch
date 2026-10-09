@@ -13,8 +13,6 @@
 
 namespace cache {
 
-// Single-threaded, non-reentrant cache. References and queue views must not
-// outlive their backing pages or be used concurrently with mutations.
 template <typename T, typename keyT = int>
 class Cache2Q : public Cache<T, keyT> {
 private:
@@ -51,10 +49,10 @@ private:
     static_assert(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<keyT>,
                   "Pages and keys must have non-throwing destructors");
 
-    static constexpr std::size_t recentTargetDivisor = 4;
+    static constexpr std::size_t a1inTargetSizeDivisor = 4;
     static constexpr std::size_t ghostLimitDivisor = 2;
 
-    const std::size_t recentTarget_;
+    const std::size_t a1inTargetSize_;
     const std::size_t ghostLimit_;
     PageList A1in_;
     PageList Am_;
@@ -76,7 +74,7 @@ private:
             return plan;
         }
 
-        const bool evictFromA1in = A1in_.size() > recentTarget_ || Am_.empty();
+        const bool evictFromA1in = A1in_.size() > a1inTargetSize_ || Am_.empty();
         if (!evictFromA1in) {
             plan.residentToEvict = pageIndex_.find(Am_.back().key);
             return plan;
@@ -84,7 +82,7 @@ private:
 
         plan.residentToEvict = pageIndex_.find(A1in_.back().key);
         stagedHistory.emplace_front(A1in_.back().key);
-        // Promotion removes one ghost, so its replacement cannot overflow history.
+        
         if (!promotingGhost && A1out_.size() >= ghostLimit_) {
             plan.ghostToForget = pageIndex_.find(A1out_.back());
         }
@@ -128,7 +126,6 @@ private:
         GhostHistory stagedHistory;
         EvictionPlan plan{pageIndex_.end(), pageIndex_.end()};
         try {
-            // Acquire index iterators after emplace, which may rehash.
             plan = prepareEviction(false, stagedHistory);
         } catch (...) {
             pageIndex_.erase(indexedPage);
@@ -147,10 +144,18 @@ private:
         auto previousGhost = std::get<GhostIterator>(indexedGhost->second);
 
         commitEviction(plan, stagedHistory);
+
         auto pageIterator = stagedPage.begin();
         Am_.splice(Am_.begin(), stagedPage, pageIterator);
         indexedGhost->second = ResidentPosition{pageIterator, ResidentQueue::Am};
+
         A1out_.erase(previousGhost);
+    }
+
+    void recordHit(ResidentPosition& resident){
+        if (resident->queue == ResidentQueue::Am) {
+            Am_.splice(Am_.begin(), Am_, resident->iterator);
+        }
     }
 
 public:
@@ -158,7 +163,7 @@ public:
     // https://www.vldb.org/conf/1994/P439.PDF
     explicit Cache2Q(std::size_t capacity, cacheLevel_t level = cacheLevel_t::L1)
         : Base(capacity, level),
-          recentTarget_(std::max<std::size_t>(1, capacity / recentTargetDivisor)),
+          a1inTargetSize_(std::max<std::size_t>(1, capacity / a1inTargetSizeDivisor)),
           ghostLimit_(std::max<std::size_t>(1, capacity / ghostLimitDivisor)) {
         if (capacity < 2) {
             throw std::invalid_argument("2Q requires at least 2 cache slots");
@@ -167,7 +172,7 @@ public:
 
     std::size_t getResidentCount() const noexcept { return A1in_.size() + Am_.size(); }
     std::size_t getIndexedCount() const noexcept { return pageIndex_.size(); }
-    std::size_t getRecentTarget() const noexcept { return recentTarget_; }
+    std::size_t getA1inTargetSize() const noexcept { return a1inTargetSize_; }
     std::size_t getGhostLimit() const noexcept { return ghostLimit_; }
     const PageList& getAm() const noexcept { return Am_; }
     const PageList& getA1in() const noexcept { return A1in_; }
@@ -179,14 +184,13 @@ protected:
         if (indexedRecord == pageIndex_.end()) {
             return std::nullopt;
         }
-
         auto resident = std::get_if<ResidentPosition>(&indexedRecord->second);
         if (resident == nullptr) {
             return std::nullopt;
         }
-        if (resident->queue == ResidentQueue::Am) {
-            Am_.splice(Am_.begin(), Am_, resident->iterator);
-        }
+
+        recordHit(indexedRecord->second);
+
         return std::cref(resident->iterator->page);
     }
 
@@ -196,6 +200,7 @@ protected:
             insertNewPage(key, page);
             return;
         }
+
         if (std::holds_alternative<ResidentPosition>(indexedRecord->second)) {
             throw std::logic_error("insert requires a non-resident key");
         }

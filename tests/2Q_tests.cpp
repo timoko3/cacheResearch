@@ -386,7 +386,7 @@ namespace {
 // Deliberately simple linear reference model, independent of index/iterator logic.
 class Reference2Q {
     std::size_t capacity_;
-    std::size_t recentTarget_;
+    std::size_t a1inTargetSize_;
     std::size_t ghostLimit_;
 
 public:
@@ -395,7 +395,7 @@ public:
     std::vector<int> history;
 
     explicit Reference2Q(std::size_t capacity)
-        : capacity_(capacity), recentTarget_(std::max<std::size_t>(1, capacity / 4)),
+        : capacity_(capacity), a1inTargetSize_(std::max<std::size_t>(1, capacity / 4)),
           ghostLimit_(std::max<std::size_t>(1, capacity / 2)) {}
 
     bool access(int key) {
@@ -411,7 +411,7 @@ public:
         const bool promote = ghost != history.end();
         if (promote) history.erase(ghost);
         if (recent.size() + repeated.size() == capacity_) {
-            if (recent.size() > recentTarget_ || repeated.empty()) {
+            if (recent.size() > a1inTargetSize_ || repeated.empty()) {
                 history.insert(history.begin(), recent.back());
                 recent.pop_back();
                 if (history.size() > ghostLimit_) history.pop_back();
