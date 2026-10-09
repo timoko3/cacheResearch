@@ -1,27 +1,39 @@
 # Focus on defects rather than imposing another naming/style convention.
+InheritParentConfig: false
 Checks: >-
   -*,
   clang-analyzer-*,
   bugprone-assert-side-effect,
+  bugprone-assignment-in-if-condition,
+  bugprone-bool-pointer-implicit-conversion,
   bugprone-branch-clone,
+  bugprone-copy-constructor-init,
   bugprone-dangling-handle,
   bugprone-fold-init-type,
   bugprone-inaccurate-erase,
+  bugprone-incorrect-roundings,
   bugprone-infinite-loop,
   bugprone-integer-division,
   bugprone-macro-parentheses,
   bugprone-macro-repeated-side-effects,
   bugprone-misplaced-widening-cast,
   bugprone-move-forwarding-reference,
+  bugprone-multiple-new-in-one-expression,
+  bugprone-not-null-terminated-result,
+  bugprone-redundant-branch-condition,
+  bugprone-signed-char-misuse,
   bugprone-sizeof-*,
   bugprone-string-*,
   bugprone-suspicious-*,
+  bugprone-stringview-nullptr,
   bugprone-swapped-arguments,
+  bugprone-terminating-continue,
   bugprone-undefined-memory-manipulation,
+  bugprone-unused-raii,
   bugprone-use-after-move
 # Optional residency and exception propagation need a separate contract review;
 # do not enable every bugprone check indiscriminately.
 WarningsAsErrors: '*'
-HeaderFilterRegex: '(^|/)(cache\.h|cache/.*\.h|cacheParser\.h|cacheSystem\.h|tests/.*\.h)$'
+HeaderFilterRegex: '(^|[/\\])(cache\.h|cacheParser\.h|cacheSystem\.h|(cache|tests|cacheBenchmarks)[/\\].*\.(h|hh|hpp|hxx))$'
 SystemHeaders: false
 FormatStyle: file

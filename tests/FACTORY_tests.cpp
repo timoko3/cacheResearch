@@ -22,9 +22,11 @@ TEST(CacheFactory, PreservesDescriptionAndSupportsStringKeys) {
 }
 
 TEST(CacheFactory, RejectsUnsupportedStrategies) {
-    for (auto strategy : {cache::cacheEviction_t::C_REF,
-                          cache::cacheEviction_t::C_UNKNOWN,
-                          static_cast<cache::cacheEviction_t>(-1)}) {
+    // This scoped enum has an int underlying type; deliberately test an unnamed value.
+    // NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
+    const auto unnamedStrategy = static_cast<cache::cacheEviction_t>(-1);
+    for (auto strategy :
+         {cache::cacheEviction_t::C_REF, cache::cacheEviction_t::C_UNKNOWN, unnamedStrategy}) {
         EXPECT_THROW(cache::CacheFactory<int>::make({4, cache::cacheLevel_t::L1, strategy}),
                      std::invalid_argument);
     }
