@@ -1,3 +1,5 @@
 #include "cache.h"
 
-static_assert(sizeof(cache::CacheLRU<int>) > 0);
+cache::CacheLRU<int> checkUmbrellaHeader() {
+    return cache::CacheLRU<int>(2);
+}
