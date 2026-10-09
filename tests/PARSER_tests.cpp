@@ -69,29 +69,29 @@ TEST(CacheParserValid, ParsesConfigAndInput) {
 
     ASSERT_EQ(params.levels.size(), 3u);
 
-    EXPECT_EQ(params.levels[0].level, cache::L1);
-    EXPECT_EQ(params.levels[0].size, 4);
-    EXPECT_EQ(params.levels[0].strategy, cache::C_LRU);
+    EXPECT_EQ(params.levels[0].level, cache::cacheLevel_t::L1);
+    EXPECT_EQ(params.levels[0].size, 4u);
+    EXPECT_EQ(params.levels[0].strategy, cache::cacheEviction_t::C_LRU);
 
-    EXPECT_EQ(params.levels[1].level, cache::L2);
-    EXPECT_EQ(params.levels[1].size, 8);
-    EXPECT_EQ(params.levels[1].strategy, cache::C_LFU);
+    EXPECT_EQ(params.levels[1].level, cache::cacheLevel_t::L2);
+    EXPECT_EQ(params.levels[1].size, 8u);
+    EXPECT_EQ(params.levels[1].strategy, cache::cacheEviction_t::C_LFU);
 
-    EXPECT_EQ(params.levels[2].level, cache::L3);
-    EXPECT_EQ(params.levels[2].size, 16);
-    EXPECT_EQ(params.levels[2].strategy, cache::C_ARC);
+    EXPECT_EQ(params.levels[2].level, cache::cacheLevel_t::L3);
+    EXPECT_EQ(params.levels[2].size, 16u);
+    EXPECT_EQ(params.levels[2].strategy, cache::cacheEviction_t::C_ARC);
 
     EXPECT_EQ(parser.getReqList(), (std::vector<int>{1, 2, 3, 2, 1}));
 }
 
 TEST(CacheParserValid, ParsesEverySupportedStrategy) {
     const std::vector<std::pair<std::string, cache::cacheEviction_t>> strategies{
-        {"LFU", cache::C_LFU},
-        {"LRU", cache::C_LRU},
-        {"LIRS", cache::C_LIRS},
-        {"2Q", cache::C_2Q},
-        {"ARC", cache::C_ARC},
-        {"REF", cache::C_REF},
+        {"LFU", cache::cacheEviction_t::C_LFU},
+        {"LRU", cache::cacheEviction_t::C_LRU},
+        {"LIRS", cache::cacheEviction_t::C_LIRS},
+        {"2Q", cache::cacheEviction_t::C_2Q},
+        {"ARC", cache::cacheEviction_t::C_ARC},
+        {"REF", cache::cacheEviction_t::C_REF},
     };
 
     for (const auto& [name, expected] : strategies) {
@@ -107,7 +107,7 @@ TEST(CacheParserValid, ParsesEverySupportedStrategy) {
         const auto params = parser.getCacheSysParams();
 
         ASSERT_EQ(params.levels.size(), 1u);
-        EXPECT_EQ(params.levels[0].level, cache::L1);
+        EXPECT_EQ(params.levels[0].level, cache::cacheLevel_t::L1);
         EXPECT_EQ(params.levels[0].strategy, expected);
     }
 }
@@ -124,7 +124,7 @@ TEST(CacheParserValid, TwoQIsParsedAsIdentifier) {
     const auto params = parser.getCacheSysParams();
 
     ASSERT_EQ(params.levels.size(), 1u);
-    EXPECT_EQ(params.levels[0].strategy, cache::C_2Q);
+    EXPECT_EQ(params.levels[0].strategy, cache::cacheEviction_t::C_2Q);
 }
 
 TEST(CacheParserValid, ZeroRequestsAreAllowed) {
@@ -144,7 +144,7 @@ TEST(CacheParserValid, ZeroRequestsAreAllowed) {
 
     const auto params = parser.getCacheSysParams();
     ASSERT_EQ(params.levels.size(), 1u);
-    EXPECT_EQ(params.levels[0].size, 8);
+    EXPECT_EQ(params.levels[0].size, 8u);
 }
 
 TEST(CacheParserValid, WhitespaceIsIgnored) {
@@ -164,10 +164,10 @@ TEST(CacheParserValid, WhitespaceIsIgnored) {
     const auto params = parser.getCacheSysParams();
     ASSERT_EQ(params.levels.size(), 2u);
 
-    EXPECT_EQ(params.levels[0].strategy, cache::C_LRU);
-    EXPECT_EQ(params.levels[1].strategy, cache::C_2Q);
-    EXPECT_EQ(params.levels[0].size, 4);
-    EXPECT_EQ(params.levels[1].size, 8);
+    EXPECT_EQ(params.levels[0].strategy, cache::cacheEviction_t::C_LRU);
+    EXPECT_EQ(params.levels[1].strategy, cache::cacheEviction_t::C_2Q);
+    EXPECT_EQ(params.levels[0].size, 4u);
+    EXPECT_EQ(params.levels[1].size, 8u);
 
     EXPECT_EQ(parser.getReqList(), (std::vector<int>{1, 2, 3}));
 }
@@ -340,8 +340,8 @@ TEST(CacheParserReuse, ParseConfigReplacesPreviousLevels) {
     const auto params = parser.getCacheSysParams();
 
     ASSERT_EQ(params.levels.size(), 1u);
-    EXPECT_EQ(params.levels[0].level, cache::L1);
-    EXPECT_EQ(params.levels[0].strategy, cache::C_ARC);
+    EXPECT_EQ(params.levels[0].level, cache::cacheLevel_t::L1);
+    EXPECT_EQ(params.levels[0].strategy, cache::cacheEviction_t::C_ARC);
 }
 
 TEST(CacheParserReuse, ParseInputReplacesPreviousRequests) {
@@ -370,7 +370,7 @@ TEST(CacheParserReuse, ParseInputReplacesPreviousRequests) {
 
     const auto params = parser.getCacheSysParams();
     ASSERT_EQ(params.levels.size(), 1u);
-    EXPECT_EQ(params.levels[0].size, 16);
+    EXPECT_EQ(params.levels[0].size, 16u);
 }
 
 } // namespace tests

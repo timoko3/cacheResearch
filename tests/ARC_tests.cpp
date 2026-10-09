@@ -64,13 +64,14 @@ TEST(CacheARCTrace, HotTwoLong) {
 }
 
 TEST(CacheARCFocused, MetadataIsPreserved) {
-    cache::CacheARC<int, int> c(4, cache::L2);
+    cache::CacheARC<int, int> c(4, cache::cacheLevel_t::L2);
     EXPECT_EQ(c.getSize(), 4u);
-    EXPECT_EQ(c.getLevel(), cache::L2);
+    EXPECT_EQ(c.getLevel(), cache::cacheLevel_t::L2);
 }
 
-TEST(CacheARCFocused, ZeroCapacityIsRejected) {
-    EXPECT_THROW((cache::CacheARC<int, int>(0)), std::invalid_argument);
+TEST(CacheARCFocused, ZeroCapacityNeverCaches) {
+    cache::CacheARC<uint32_t, int> c(0);
+    lookupUpdateTest(c, {7, 7, 7}, "MMM");
 }
 
 TEST(CacheARCFocused, RepeatedResidentAccessesAreHits) {
@@ -106,7 +107,7 @@ TEST(CacheARCFocused, ReloadedGhostKeepsNewVersionOnNextHit) {
 TEST(CacheARC, ReloadedPageHasNewValue) {
     cache::CacheARC<int, int> c(2);
     int loads = 0;
-    auto slow = [&](int) { return ++loads; };
+    auto slow = [&](int) -> int& { return ++loads; };
 
     EXPECT_EQ(c.lookupUpdate(1, slow), 1);
     EXPECT_EQ(c.lookupUpdate(2, slow), 2);
@@ -119,13 +120,14 @@ TEST(CacheARC, ReloadedPageHasNewValue) {
 
 TEST(CacheARC, RetryFailedLoad) {
     cache::CacheARC<int, int> c(3);
-    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int { throw std::runtime_error("load failed"); }),
+    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int& { throw std::runtime_error("load failed"); }),
                  std::runtime_error);
 
     int loads = 0;
-    auto slow = [&](int) {
+    int loadedPage = 420;
+    auto slow = [&](int) -> int& {
         ++loads;
-        return 420;
+        return loadedPage;
     };
     EXPECT_EQ(c.lookupUpdate(42, slow), 420);
     EXPECT_EQ(c.lookupUpdate(42, slow), 420);
@@ -135,13 +137,15 @@ TEST(CacheARC, RetryFailedLoad) {
 TEST(CacheARC, VectorPage) {
     cache::CacheARC<std::vector<int>, int> c(3);
     int loads = 0;
-    auto slow = [&](int key) {
+    std::vector<int> loadedPage;
+    auto slow = [&](int key) -> std::vector<int>& {
         ++loads;
-        return std::vector<int>{key, key + 1};
+        loadedPage = {key, key + 1};
+        return loadedPage;
     };
 
     auto page = c.lookupUpdate(7, slow);
-    ASSERT_EQ(page.size(), 2);
+    ASSERT_EQ(page.size(), 2u);
     page[0] = -1;
     page[1] = -2;
     EXPECT_EQ(page, (std::vector<int>{-1, -2}));
@@ -152,9 +156,11 @@ TEST(CacheARC, VectorPage) {
 TEST(CacheARC, StringKeys) {
     cache::CacheARC<int, std::string> c(3);
     int loads = 0;
-    auto slow = [&](const std::string& key) {
+    int loadedPage = 0;
+    auto slow = [&](const std::string& key) -> int& {
         ++loads;
-        return static_cast<int>(key.size());
+        loadedPage = static_cast<int>(key.size());
+        return loadedPage;
     };
 
     EXPECT_EQ(c.lookupUpdate("alpha", slow), 5);

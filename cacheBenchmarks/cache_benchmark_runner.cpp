@@ -28,7 +28,7 @@ void checkCacheConfiguration(const cache::cacheSystemParams& configuration) {
             throw std::invalid_argument("Cache capacity must be positive");
         }
 
-        if (description.strategy == cache::C_REF && configuration.levels.size() != 1) {
+        if (description.strategy == cache::cacheEviction_t::C_REF && configuration.levels.size() != 1) {
             throw std::invalid_argument("REF is supported only as a single-level reference");
         }
     }
@@ -42,9 +42,11 @@ template <typename CacheType>
 std::size_t processRequests(CacheType& cacheInstance, const std::vector<int>& requests) {
     std::size_t memoryLoadCount = 0;
 
-    auto slowGetPage = [&](int requestedKey) {
+    uint32_t loadedPage = 0;
+    auto slowGetPage = [&](int requestedKey) -> uint32_t& {
         ++memoryLoadCount;
-        return generatePageValue(requestedKey);
+        loadedPage = generatePageValue(requestedKey);
+        return loadedPage;
     };
 
     for (const int requestedKey : requests) {
@@ -95,7 +97,7 @@ cache::CacheSystemStats runCacheExperiment(const cache::cacheSystemParams& confi
     cache::CacheSystemStats statistics{};
     std::size_t memoryLoadCount = 0;
 
-    if (configuration.levels.front().strategy == cache::C_REF) {
+    if (configuration.levels.front().strategy == cache::cacheEviction_t::C_REF) {
         std::list<int> futureRequests(requests.begin(), requests.end());
         cache::CacheREF<uint32_t, int> idealCache(configuration.levels.front().size,
                                                   futureRequests);
@@ -107,7 +109,7 @@ cache::CacheSystemStats runCacheExperiment(const cache::cacheSystemParams& confi
         cache::CacheSystem<uint32_t, int> cacheSystem(configuration);
 
         memoryLoadCount = processRequests(cacheSystem, requests);
-        statistics = cacheSystem.getStats();
+        statistics = cacheSystem.getSystemStats();
     }
 
     checkCacheStatistics(statistics, requests.size(), memoryLoadCount, configuration.levels.size());

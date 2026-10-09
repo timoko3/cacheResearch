@@ -63,11 +63,13 @@ Requests_t collectMissRequests(const Requests_t& requests, int policyIndex, std:
     auto instance = makeCache(policyIndex, capacity);
     Requests_t misses;
     misses.reserve(requests.size());
+    int loadedPage = 0;
 
     for (int key : requests) {
-        instance->lookupUpdate(key, [&misses](int requestedKey) {
+        instance->lookupUpdate(key, [&misses, &loadedPage](int requestedKey) -> int& {
             misses.push_back(requestedKey);
-            return requestedKey;
+            loadedPage = requestedKey;
+            return loadedPage;
         });
     }
 
@@ -78,11 +80,13 @@ std::size_t countMisses(const Requests_t& requests, int policyIndex, std::size_t
                         std::size_t missLimit) {
     auto instance = makeCache(policyIndex, capacity);
     std::size_t misses = 0;
+    int loadedPage = 0;
 
     for (int key : requests) {
-        instance->lookupUpdate(key, [&misses](int requestedKey) {
+        instance->lookupUpdate(key, [&misses, &loadedPage](int requestedKey) -> int& {
             ++misses;
-            return requestedKey;
+            loadedPage = requestedKey;
+            return loadedPage;
         });
 
         if (misses >= missLimit) {

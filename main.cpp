@@ -8,8 +8,6 @@
 #include "cacheParser.h"
 #include "cacheSystem.h"
 
-int slowGetPage(int key);
-
 int main(const int argc, const char** argv) {
     std::vector<std::string> args(argv + 1, argv + argc);
     const std::string configFile = argv[1];
@@ -27,19 +25,21 @@ int main(const int argc, const char** argv) {
 
     cache::CacheSystem<int> cacheSystem(cacheSysParams);
 
+    int loadedPage = 0;
+    auto slowGetPage = [&](int key) -> int& {
+        loadedPage = key;
+        return loadedPage;
+    };
+
     for (int request : requests) {
         cacheSystem.lookupUpdate(request, slowGetPage);
     }
 
     auto stats = cacheSystem.getStats();
 
-    std::cout << "Requests: " << stats.total.amountRequests << '\n';
-    std::cout << "Hits:     " << stats.total.amountHits << '\n';
-    std::cout << "Misses:   " << stats.total.amountMisses << '\n';
+    std::cout << "Requests: " << stats.amountRequests << '\n';
+    std::cout << "Hits:     " << stats.amountHits << '\n';
+    std::cout << "Misses:   " << stats.amountMisses << '\n';
 
     return 0;
-}
-
-int slowGetPage(int key) {
-    return key;
 }

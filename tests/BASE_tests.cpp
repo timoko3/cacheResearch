@@ -1,0 +1,69 @@
+#include "cache.h"
+#include "cache_tests_tools.h"
+
+#include <memory>
+#include <type_traits>
+
+namespace tests {
+namespace {
+
+class CacheInterface : public testing::TestWithParam<cache::cacheEviction_t> {
+protected:
+    std::unique_ptr<cache::Cache<int>> makeCache(std::size_t capacity) {
+        switch (GetParam()) {
+            case cache::cacheEviction_t::C_LRU:
+                return std::make_unique<cache::CacheLRU<int>>(capacity);
+            case cache::cacheEviction_t::C_LFU:
+                return std::make_unique<cache::CacheLFU<int>>(capacity);
+            case cache::cacheEviction_t::C_ARC:
+                return std::make_unique<cache::CacheARC<int>>(capacity);
+            case cache::cacheEviction_t::C_2Q:
+                return std::make_unique<cache::Cache2Q<int>>(capacity);
+            case cache::cacheEviction_t::C_LIRS:
+                return std::make_unique<cache::CacheLIRS<int>>(capacity);
+            case cache::cacheEviction_t::C_REF:
+                return std::make_unique<cache::CacheREF<int>>(capacity, std::list<int>{7, 7});
+            default:
+                throw std::logic_error("Unsupported test strategy");
+        }
+    }
+};
+
+TEST_P(CacheInterface, MissReturnsLoaderReferenceAndHitReturnsStoredCopy) {
+    auto c = makeCache(3);
+    int loadedPage = 70;
+    int loads = 0;
+    auto slow = [&](int key) -> int& {
+        EXPECT_EQ(key, 7);
+        ++loads;
+        return loadedPage;
+    };
+    static_assert(std::is_same_v<decltype(c->lookupUpdate(7, slow)), const int&>);
+
+    EXPECT_EQ(&c->lookupUpdate(7, slow), &loadedPage);
+    loadedPage = 99;
+    const int& resident = c->lookupUpdate(7, slow);
+    EXPECT_NE(&resident, &loadedPage);
+    EXPECT_EQ(resident, 70);
+    EXPECT_EQ(loads, 1);
+    EXPECT_EQ(c->getStats().amountRequests, 2u);
+    EXPECT_EQ(c->getStats().amountMisses, 1u);
+    EXPECT_EQ(c->getStats().amountHits, 1u);
+}
+
+INSTANTIATE_TEST_SUITE_P(AllStrategies, CacheInterface,
+    testing::Values(cache::cacheEviction_t::C_LRU, cache::cacheEviction_t::C_LFU,
+                    cache::cacheEviction_t::C_ARC, cache::cacheEviction_t::C_2Q,
+                    cache::cacheEviction_t::C_LIRS, cache::cacheEviction_t::C_REF));
+
+TEST_P(CacheInterface, AcceptsLoaderReturningConstReference) {
+    auto c = makeCache(3);
+    const int loadedPage = 70;
+    auto slow = [&](int) -> const int& { return loadedPage; };
+    EXPECT_EQ(&c->lookupUpdate(7, slow), &loadedPage);
+    EXPECT_EQ(c->lookupUpdate(7, slow), 70);
+    EXPECT_EQ(c->getStats().amountHits, 1u);
+}
+
+} // namespace
+} // namespace tests

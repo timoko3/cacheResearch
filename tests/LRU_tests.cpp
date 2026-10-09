@@ -15,24 +15,6 @@ struct LRUCopiedPage {
     }
 };
 
-inline void lookupUpdateTest(cache::CacheLRU<uint32_t, int>& c,
-                             const std::vector<int>& requests, std::string_view expected) {
-    ASSERT_EQ(requests.size(), expected.size());
-    uint32_t loadedPage = 0;
-    for (std::size_t index = 0; index < requests.size(); ++index) {
-        bool loaderCalled = false;
-        auto slow = [&](int key) -> uint32_t& {
-            EXPECT_EQ(key, requests[index]);
-            loaderCalled = true;
-            loadedPage = hashInt(key);
-            return loadedPage;
-        };
-        EXPECT_EQ(c.lookupUpdate(requests[index], slow), hashInt(requests[index]));
-        EXPECT_EQ(loaderCalled, expected[index] == 'M') << "request index = " << index;
-    }
-    checkCacheStats(c, requests, expected);
-}
-
 TEST(CacheLRUTrace, RepeatedOne) {
     cache::CacheLRU<uint32_t, int> c(3);
     lookupUpdateTest(c, {1, 1, 1, 1}, "MHHH");

@@ -25,24 +25,6 @@ struct hash<HashCheckedKey> {
 namespace tests {
 
 // The base cache loader contract returns a reference to a live backing page.
-inline void lookupUpdateTest(cache::Cache2Q<uint32_t, int>& c,
-                             const std::vector<int>& requests, std::string_view expected) {
-    ASSERT_EQ(requests.size(), expected.size());
-    uint32_t loadedPage = 0;
-    for (std::size_t index = 0; index < requests.size(); ++index) {
-        bool loaderCalled = false;
-        auto slow = [&](int key) -> uint32_t& {
-            EXPECT_EQ(key, requests[index]);
-            loaderCalled = true;
-            loadedPage = hashInt(key);
-            return loadedPage;
-        };
-        EXPECT_EQ(c.lookupUpdate(requests[index], slow), hashInt(requests[index]));
-        EXPECT_EQ(loaderCalled, expected[index] == 'M') << "request index = " << index;
-    }
-    checkCacheStats(c, requests, expected);
-}
-
 TEST(Cache2QTrace, RepeatedOne) {
     cache::Cache2Q<uint32_t, int> c(4);
     lookupUpdateTest(c, {1, 1, 1, 1}, "MHHH");
