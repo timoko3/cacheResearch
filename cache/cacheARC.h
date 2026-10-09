@@ -83,7 +83,7 @@ private:
         }
     }
 
-    void moveGhostPageToT2(hashIt_t hit, const T& page) {
+    const T& moveGhostPageToT2(hashIt_t hit, const T& page) {
         const bool wasInB2 = hit->second.listName == listName_t::B2;
 
         auto pageIt = hit->second.listIt;
@@ -99,6 +99,7 @@ private:
 
         hit->second.listIt = pageIt;
         hit->second.listName = listName_t::T2;
+        return *pageIt->page;
     }
 
     void recordHit(pageLoc_t& pageLoc) {
@@ -155,13 +156,12 @@ protected:
         return std::cref(*storedPage);
     }
 
-    void insert(const keyT& key, const T& page) override {
+    const T& insert(const keyT& key, const T& page) override {
         auto hit = hash_.find(key);
 
         if (hit != hash_.end() &&
             (hit->second.listName == listName_t::B1 || hit->second.listName == listName_t::B2)) {
-            moveGhostPageToT2(hit, page);
-            return;
+            return moveGhostPageToT2(hit, page);
         }
 
         const std::size_t recentTotal = T1_.size() + B1_.size();
@@ -186,6 +186,7 @@ protected:
 
         T1_.push_front(entry_t{key, std::optional<T>{page}});
         hash_.emplace(key, pageLoc_t{T1_.begin(), listName_t::T1});
+        return *T1_.front().page;
     }
 };
 

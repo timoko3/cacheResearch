@@ -88,7 +88,7 @@ protected:
         return std::cref(hit->second->page);
     }
 
-    void insert(const keyT& key, const T& page) override {
+    const T& insert(const keyT& key, const T& page) override {
         if (isFull()) {
             auto victimIt = findVictim();
             hash_.erase(victimIt->key);
@@ -97,6 +97,7 @@ protected:
 
         cache_.push_front({key, page});
         hash_.emplace(key, cache_.begin());
+        return cache_.front().page;
     }
 };
 

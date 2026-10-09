@@ -145,13 +145,18 @@ TEST(Cache2QFocused, GhostHitIsMissAndPromotesPageToAm) {
     for (int key : {1, 2, 3, 4, 5})
         c.lookupUpdate(key, slow);
 
-    EXPECT_EQ(c.lookupUpdate(1, slow), 10);
+    const int& restored = c.lookupUpdate(1, slow);
+    EXPECT_EQ(restored, 10);
+    EXPECT_NE(&restored, &loadedPage);
     EXPECT_EQ(calls, 6);
     ASSERT_EQ(c.getAm().size(), 1u);
+    EXPECT_EQ(&restored, &c.getAm().front().page);
     EXPECT_EQ(c.getAm().front().key, 1);
     EXPECT_EQ(c.getA1out().front(), 2);
     EXPECT_EQ(c.getResidentCount(), 4u);
-    EXPECT_EQ(c.lookupUpdate(1, slow), 10);
+    loadedPage = 99;
+    EXPECT_EQ(restored, 10);
+    EXPECT_EQ(&c.lookupUpdate(1, slow), &restored);
     EXPECT_EQ(calls, 6);
 }
 

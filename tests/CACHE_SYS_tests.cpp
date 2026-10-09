@@ -282,19 +282,21 @@ TEST(CacheSystemInterface, ReferencesPassThroughLevelsWithoutTemporaryCopies) {
     const auto& stats = system.getStats();
 
     CopyCountedPage::copies = 0;
-    EXPECT_EQ(&system.lookupUpdate(1, slow), &loadedPage);
+    const auto& inserted = system.lookupUpdate(1, slow);
+    EXPECT_NE(&inserted, &loadedPage);
     EXPECT_EQ(CopyCountedPage::copies, 2); // One stored copy per level.
     const auto& topPage = system.lookupUpdate(1, slow);
+    EXPECT_EQ(&topPage, &inserted);
     EXPECT_NE(&topPage, &loadedPage);
     EXPECT_EQ(CopyCountedPage::copies, 2);
     system.lookupUpdate(2, slow); // Evicts key 1 from L1, but keeps it in L2.
 
     const int copiesBeforePromotion = CopyCountedPage::copies;
-    const auto& lowerPage = system.lookupUpdate(1, slow);
-    EXPECT_NE(&lowerPage, &loadedPage);
-    EXPECT_EQ(lowerPage.value, 1);
+    const auto& promotedPage = system.lookupUpdate(1, slow);
+    EXPECT_NE(&promotedPage, &loadedPage);
+    EXPECT_EQ(promotedPage.value, 1);
     EXPECT_EQ(CopyCountedPage::copies, copiesBeforePromotion + 1); // Only refill L1.
-    EXPECT_NE(&system.lookupUpdate(1, slow), &lowerPage);
+    EXPECT_EQ(&system.lookupUpdate(1, slow), &promotedPage);
     EXPECT_EQ(CopyCountedPage::copies, copiesBeforePromotion + 1);
     EXPECT_EQ(loads, 2);
     EXPECT_EQ(stats.amountRequests, 5u);
@@ -302,17 +304,12 @@ TEST(CacheSystemInterface, ReferencesPassThroughLevelsWithoutTemporaryCopies) {
     EXPECT_EQ(stats.amountMisses, 2u);
 }
 
-TEST(CacheSystemInterface, ZeroCapacityLevelsReturnLoaderReference) {
+TEST(CacheSystemInterface, ZeroCapacityLevelsAreRejected) {
     cache::cacheSystemParams params{{{0, cache::cacheLevel_t::L1, cache::cacheEviction_t::C_LRU},
                                      {0, cache::cacheLevel_t::L2, cache::cacheEviction_t::C_LFU}}};
-    cache::CacheSystem<int> system(params);
-    int loadedPage = 7;
-    auto slow = [&](int) -> int& { return loadedPage; };
-    EXPECT_EQ(&system.lookupUpdate(1, slow), &loadedPage);
-    EXPECT_EQ(&system.lookupUpdate(1, slow), &loadedPage);
-    EXPECT_EQ(system.getStats().amountRequests, 2u);
-    EXPECT_EQ(system.getStats().amountMisses, 2u);
-    EXPECT_EQ(system.getStats().amountHits, 0u);
+    EXPECT_THROW((cache::CacheSystem<int>(params)), std::invalid_argument);
+    params.levels.front().size = 1;
+    EXPECT_THROW((cache::CacheSystem<int>(params)), std::invalid_argument);
 }
 
 TEST(CacheSystemInterface, FailedLoadUpdatesStatsAndCanBeRetried) {
@@ -325,7 +322,7 @@ TEST(CacheSystemInterface, FailedLoadUpdatesStatsAndCanBeRetried) {
     EXPECT_EQ(system.getStats().amountMisses, 1u);
     int loadedPage = 10;
     auto slow = [&](int) -> int& { return loadedPage; };
-    EXPECT_EQ(&system.lookupUpdate(1, slow), &loadedPage);
+    EXPECT_NE(&system.lookupUpdate(1, slow), &loadedPage);
     EXPECT_EQ(system.lookupUpdate(1, slow), 10);
     EXPECT_EQ(system.getStats().amountRequests, 3u);
     EXPECT_EQ(system.getStats().amountHits, 1u);

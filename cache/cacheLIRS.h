@@ -194,7 +194,7 @@ private:
         applyAccess(position, plan);
     }
 
-    void insertPage(const keyT& key, const T& page) {
+    const T& insertPage(const keyT& key, const T& page) {
         PageList stagedPage;
         stagedPage.emplace_front(key, page);
         auto [indexedRecord, wasInserted] = pageIndex_.try_emplace(key);
@@ -224,6 +224,7 @@ private:
         residentPages_.splice(residentPages_.begin(), stagedPage, resident);
         position.resident = resident;
         applyAccess(position, plan);
+        return resident->page;
     }
 
 public:
@@ -260,7 +261,7 @@ protected:
         return std::cref((*position.resident)->page);
     }
 
-    void insert(const keyT& key, const T& page) override { insertPage(key, page); }
+    const T& insert(const keyT& key, const T& page) override { return insertPage(key, page); }
 };
 
 } // namespace cache

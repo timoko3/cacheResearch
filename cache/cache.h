@@ -3,6 +3,7 @@
 #include <cstddef>
 #include <functional>
 #include <optional>
+#include <stdexcept>
 #include <type_traits>
 
 namespace cache {
@@ -32,7 +33,11 @@ private:
     cacheStats stats_;
 
 public:
-    Cache(std::size_t size, cacheLevel_t level = cacheLevel_t::L1) : level_(level), size_(size) {}
+    Cache(std::size_t size, cacheLevel_t level = cacheLevel_t::L1) : level_(level), size_(size) {
+        if (size == 0) {
+            throw std::invalid_argument("Cache capacity must be positive");
+        }
+    }
 
     virtual ~Cache() = default;
 
@@ -45,8 +50,11 @@ public:
 
     template <typename F>
     const T& lookupUpdate(keyT key, F slow_get_page) {
-        static_assert(std::is_lvalue_reference_v<decltype(slow_get_page(key))>,
-                      "The page loader must return a reference to a live page");
+        using LoaderResult = decltype(slow_get_page(key));
+        static_assert(std::is_same_v<LoaderResult, T&> ||
+                          std::is_same_v<LoaderResult, const T&>,
+                      "The loader must return T& or const T&");
+
         ++stats_.amountRequests;
 
         if (auto page = getPage(key)) {
@@ -57,11 +65,7 @@ public:
         ++stats_.amountMisses;
         const T& page = slow_get_page(key);
 
-        if (size_ != 0) {
-            insert(key, page);
-        }
-
-        return page;
+        return insert(key, page);
     }
 
 protected:
@@ -71,7 +75,8 @@ protected:
     // or std::nullopt on a miss (including ghost entries).
     virtual pageResult_t getPage(const keyT& key) = 0;
 
-    virtual void insert(const keyT& key, const T& page) = 0;
+    // Returns the stored copy, valid until its eviction or cache destruction.
+    virtual const T& insert(const keyT& key, const T& page) = 0;
 };
 
 } // namespace cache

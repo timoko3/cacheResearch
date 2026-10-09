@@ -99,9 +99,8 @@ TEST(CacheLFUFocused, CapacityOneEvictsOldKey) {
     lookupUpdateTest(c, {1, 1, 2, 2, 1}, "MHMHM");
 }
 
-TEST(CacheLFUFocused, ZeroCapacityNeverCaches) {
-    cache::CacheLFU<uint32_t, int> c(0);
-    lookupUpdateTest(c, {3, 3, 3}, "MMM");
+TEST(CacheLFUFocused, ZeroCapacityIsRejected) {
+    EXPECT_THROW((cache::CacheLFU<uint32_t, int>(0)), std::invalid_argument);
 }
 
 TEST(CacheLFU, ReloadedPageHasNewValue) {

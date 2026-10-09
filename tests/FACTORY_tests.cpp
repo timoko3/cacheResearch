@@ -15,7 +15,7 @@ TEST(CacheFactory, PreservesDescriptionAndSupportsStringKeys) {
         EXPECT_EQ(c->getLevel(), cache::cacheLevel_t::L4);
         int loadedPage = 70;
         auto slow = [&](const std::string&) -> int& { return loadedPage; };
-        EXPECT_EQ(&c->lookupUpdate("page", slow), &loadedPage);
+        EXPECT_NE(&c->lookupUpdate("page", slow), &loadedPage);
         EXPECT_EQ(c->lookupUpdate("page", slow), 70);
         EXPECT_EQ(c->getStats().amountHits, 1u);
     }

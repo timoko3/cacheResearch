@@ -127,11 +127,10 @@ TEST(CacheREFFocused, CapacityOneBehavesAsSingleSlotOptimalCache) {
     lookupUpdateTest(c, requests, "MHMHM");
 }
 
-TEST(CacheREFFocused, ZeroCapacityNeverCaches) {
+TEST(CacheREFFocused, ZeroCapacityIsRejected) {
     const std::vector<int> requests{1, 1, 1};
     std::list<int> future(requests.begin(), requests.end());
-    cache::CacheREF<uint32_t, int> c(0, future);
-    lookupUpdateTest(c, requests, "MMM");
+    EXPECT_THROW((cache::CacheREF<uint32_t, int>(0, future)), std::invalid_argument);
 }
 
 TEST(CacheREFFocused, MixedOptimalTraceHasExpectedStatistics) {

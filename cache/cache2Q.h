@@ -114,7 +114,7 @@ private:
         residentQueue(position.queue).erase(position.iterator);
     }
 
-    void insertNewPage(const keyT& key, const T& page) {
+    const T& insertNewPage(const keyT& key, const T& page) {
         PageList stagedPage;
         stagedPage.emplace_front(key, page);
         auto [indexedPage, wasInserted] =
@@ -134,9 +134,10 @@ private:
 
         commitEviction(plan, stagedHistory);
         A1in_.splice(A1in_.begin(), stagedPage, stagedPage.begin());
+        return A1in_.front().page;
     }
 
-    void promoteGhostPage(IndexIterator indexedGhost, const T& page) {
+    const T& promoteGhostPage(IndexIterator indexedGhost, const T& page) {
         PageList stagedPage;
         stagedPage.emplace_front(indexedGhost->first, page);
         GhostHistory stagedHistory;
@@ -150,6 +151,7 @@ private:
         indexedGhost->second = ResidentPosition{pageIterator, ResidentQueue::Am};
 
         A1out_.erase(previousGhost);
+        return pageIterator->page;
     }
 
     void recordHit(ResidentPosition& resident) {
@@ -194,17 +196,16 @@ protected:
         return std::cref(resident->iterator->page);
     }
 
-    void insert(const keyT& key, const T& page) override {
+    const T& insert(const keyT& key, const T& page) override {
         auto indexedRecord = pageIndex_.find(key);
         if (indexedRecord == pageIndex_.end()) {
-            insertNewPage(key, page);
-            return;
+            return insertNewPage(key, page);
         }
 
         if (std::holds_alternative<ResidentPosition>(indexedRecord->second)) {
             throw std::logic_error("insert requires a non-resident key");
         }
-        promoteGhostPage(indexedRecord, page);
+        return promoteGhostPage(indexedRecord, page);
     }
 };
 

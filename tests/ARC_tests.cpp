@@ -69,9 +69,8 @@ TEST(CacheARCFocused, MetadataIsPreserved) {
     EXPECT_EQ(c.getLevel(), cache::cacheLevel_t::L2);
 }
 
-TEST(CacheARCFocused, ZeroCapacityNeverCaches) {
-    cache::CacheARC<uint32_t, int> c(0);
-    lookupUpdateTest(c, {7, 7, 7}, "MMM");
+TEST(CacheARCFocused, ZeroCapacityIsRejected) {
+    EXPECT_THROW((cache::CacheARC<uint32_t, int>(0)), std::invalid_argument);
 }
 
 TEST(CacheARCFocused, RepeatedResidentAccessesAreHits) {
@@ -92,6 +91,32 @@ TEST(CacheARCFocused, HitPromotesAndProtectsPage) {
 TEST(CacheARCFocused, GhostHitReloadsThenBecomesResidentHit) {
     cache::CacheARC<uint32_t, int> c(2);
     lookupUpdateTest(c, {1, 2, 1, 3, 2, 2}, "MMHMMH");
+}
+
+TEST(CacheARCFocused, BothGhostQueuesReturnStoredCopyOnReload) {
+    cache::CacheARC<int> c(2);
+    int buffer = 0;
+    auto slow = [&](int key) -> int& {
+        buffer = key * 10;
+        return buffer;
+    };
+    for (int key : {1, 2, 1, 3})
+        c.lookupUpdate(key, slow);
+
+    const int& fromB1 = c.lookupUpdate(2, slow);
+    EXPECT_NE(&fromB1, &buffer);
+    buffer = 99;
+    EXPECT_EQ(fromB1, 20);
+    EXPECT_EQ(&c.lookupUpdate(2, slow), &fromB1);
+
+    const int& fromB2 = c.lookupUpdate(1, slow);
+    EXPECT_NE(&fromB2, &buffer);
+    buffer = 99;
+    EXPECT_EQ(fromB2, 10);
+    EXPECT_EQ(&c.lookupUpdate(1, slow), &fromB2);
+    EXPECT_EQ(c.getStats().amountRequests, 8u);
+    EXPECT_EQ(c.getStats().amountMisses, 5u);
+    EXPECT_EQ(c.getStats().amountHits, 3u);
 }
 
 TEST(CacheARCFocused, MixedTraceHasExactStats) {

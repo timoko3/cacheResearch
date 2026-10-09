@@ -90,7 +90,10 @@ protected:
         return std::cref(indexedRecord->second->page);
     }
 
-    void insert(const keyT& key, const T& page) override { insertNewPage(key, page); }
+    const T& insert(const keyT& key, const T& page) override {
+        insertNewPage(key, page);
+        return cache_.front().page;
+    }
 };
 
 } // namespace cache

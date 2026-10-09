@@ -57,7 +57,7 @@ protected:
         return std::cref(hitIt->page);
     }
 
-    void insert(const keyT& key, const T& page) override {
+    const T& insert(const keyT& key, const T& page) override {
         if (isFull()) {
             auto victim = std::min_element(cache_.begin(), cache_.end(), compareEntriesByFreq);
             hash_.erase(victim->key);
@@ -68,6 +68,7 @@ protected:
         Entry_t newEntry = {key, page, kInitialFrequency};
         cache_.push_back(newEntry);
         hash_.emplace(key, std::prev(cache_.end()));
+        return cache_.back().page;
     }
 };
 

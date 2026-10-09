@@ -152,11 +152,8 @@ TEST(CacheLRUFocused, CapacityOneKeepsOnlyNewestPage) {
     EXPECT_EQ(c.getCache().front().key, 1);
 }
 
-TEST(CacheLRUFocused, ZeroCapacityNeverCaches) {
-    cache::CacheLRU<uint32_t, int> c(0);
-    lookupUpdateTest(c, {5, 5, 5, 5}, "MMMM");
-    EXPECT_TRUE(c.getCache().empty());
-    EXPECT_EQ(c.getIndexedCount(), 0u);
+TEST(CacheLRUFocused, ZeroCapacityIsRejected) {
+    EXPECT_THROW((cache::CacheLRU<uint32_t, int>(0)), std::invalid_argument);
 }
 
 TEST(CacheLRU, ReloadedPageHasNewValue) {
@@ -222,7 +219,7 @@ TEST(CacheLRU, StringKeys) {
     EXPECT_EQ(loads, 2);
 }
 
-TEST(CacheLRU, BaseInterfaceReturnsBackingPageOnMissAndResidentOnHit) {
+TEST(CacheLRU, BaseInterfaceReturnsSameResidentOnMissAndHit) {
     cache::CacheLRU<int> c(2);
     cache::Cache<int>& base = c;
     int loadedPage = 17;
@@ -232,8 +229,9 @@ TEST(CacheLRU, BaseInterfaceReturnsBackingPageOnMissAndResidentOnHit) {
         return loadedPage;
     };
 
-    EXPECT_EQ(&base.lookupUpdate(1, slow), &loadedPage);
+    const int& inserted = base.lookupUpdate(1, slow);
     const int& resident = base.lookupUpdate(1, slow);
+    EXPECT_EQ(&resident, &inserted);
     EXPECT_NE(&resident, &loadedPage);
     loadedPage = 99;
     EXPECT_EQ(resident, 17);

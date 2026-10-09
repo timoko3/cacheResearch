@@ -200,7 +200,11 @@ TEST(CacheLIRSFocused, GhostReloadPromotesAndDemotesBottomLIR) {
     EXPECT_EQ(c.getResidentCount(), 3u);
     EXPECT_EQ(c.getIndexedCount(), 4u);
 
-    c.lookupUpdate(3, slow);
+    const int& restored = c.lookupUpdate(3, slow);
+    EXPECT_NE(&restored, &loadedPage);
+    EXPECT_EQ(&restored, &c.getResidentPages().front().page);
+    loadedPage = 99;
+    EXPECT_EQ(restored, 3);
     EXPECT_EQ(c.getStackS(), (std::list<int>{3, 4, 2}));
     EXPECT_EQ(c.getQueueQ(), (std::list<int>{1}));
     EXPECT_EQ(c.getLIRCount(), 2u);
@@ -233,13 +237,14 @@ TEST(CacheLIRSFocused, ResidentHIROutsideStackNeedsTwoHitsToPromote) {
     EXPECT_EQ(loads, 5);
 }
 
-TEST(CacheLIRS, BaseInterfaceReturnsBackingPageOnMissAndStableResidentOnHit) {
+TEST(CacheLIRS, BaseInterfaceReturnsSameStableResidentOnMissAndHit) {
     cache::CacheLIRS<int> c(3);
     cache::Cache<int>& base = c;
     int loadedPage = 17;
     auto slow = [&](int) -> int& { return loadedPage; };
-    EXPECT_EQ(&base.lookupUpdate(1, slow), &loadedPage);
+    const int& inserted = base.lookupUpdate(1, slow);
     const int& resident = base.lookupUpdate(1, slow);
+    EXPECT_EQ(&resident, &inserted);
     EXPECT_NE(&resident, &loadedPage);
     loadedPage = 99;
     for (int key : {2, 3, 4, 3})
