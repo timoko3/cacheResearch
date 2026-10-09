@@ -1,7 +1,7 @@
 # C++ quality checks
 
-Run from the repository root with Python 3, clang-format 18.1.3 and clang-tidy 18
-on PATH. Formatting checks reject a different formatter version:
+Run from the repository root with Python 3, clang-format 18 and clang-tidy 18
+on PATH. Formatting checks require major version 18; patch versions may differ:
 
 ```sh
 python3 scripts/code_quality.py format

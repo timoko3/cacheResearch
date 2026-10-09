@@ -1,4 +1,8 @@
 if(NOT TARGET GTest::gtest_main)
+    find_package(GTest 1.17 CONFIG QUIET)
+endif()
+
+if(NOT TARGET GTest::gtest_main)
     include(FetchContent)
     # GoogleTest is a private test dependency, not part of our installation.
     set(INSTALL_GTEST OFF)

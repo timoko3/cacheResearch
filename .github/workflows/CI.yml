@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-      - name: Configure and build without submodules
+      - name: Configure and build standalone library
         run: |
           cmake --preset library
           cmake --build --preset library
@@ -53,8 +53,6 @@ jobs:
         shell: pwsh
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: recursive
       - name: Install minimum supported CMake
         if: matrix.cmake != 'system'
         run: |
@@ -134,8 +132,6 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: recursive
       - name: Install clang-tidy 18
         run: sudo apt-get update && sudo apt-get install --yes clang-tidy-18 ninja-build
       - name: Configure compilation database
@@ -155,10 +151,8 @@ jobs:
           - release
 
     steps:
-      - name: Checkout repository and submodules
+      - name: Checkout repository
         uses: actions/checkout@v7
-        with:
-          submodules: recursive
 
       - name: Show tool versions
         run: |

@@ -3,13 +3,13 @@
 #include <variant>
 #include <vector>
 
-#include "./generalFunctions/file.h"
-#include "./generalFunctions/lexer/lexer.h"
-#include "./generalFunctions/lexer/token.h"
-#include "./generalFunctions/lexer/token_stream.h"
 #include "cache.h"
 #include "cacheParser.h"
 #include "cacheSystem.h"
+#include "file.h"
+#include "lexer/lexer.h"
+#include "lexer/token.h"
+#include "lexer/token_stream.h"
 
 void printTokenArr(std::vector<lexer::Token> tokenArr);
 

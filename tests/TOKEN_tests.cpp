@@ -3,7 +3,7 @@
 
 #include <gtest/gtest.h>
 
-#include "generalFunctions/lexer/token.h"
+#include "lexer/token.h"
 
 namespace tests {
 

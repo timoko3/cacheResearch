@@ -1,0 +1,45 @@
+{
+  "nodes": {
+    "general-functions": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1791499036,
+        "narHash": "sha256-qaan8WsWD+TmQP4Ze2iCFlPTSWzriMDG0ZclhrSzUTU=",
+        "owner": "timoko3",
+        "repo": "generalFunctions",
+        "rev": "dc31aef3c60cb88428c6aa7b150edbc36028508e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "timoko3",
+        "repo": "generalFunctions",
+        "rev": "dc31aef3c60cb88428c6aa7b150edbc36028508e",
+        "type": "github"
+      }
+    },
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1791426274,
+        "narHash": "sha256-MWhktfFtFE8Jl7bf9Pkp7TR5MSdYCjCswSo0Gkb4ywc=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "7c8764b7c7b09b34f632464276218ef9090eaa11",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixos-26.05",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "general-functions": "general-functions",
+        "nixpkgs": "nixpkgs"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

@@ -6,6 +6,8 @@
 /CMakeUserPresets.json
 # Preserve any old local GoogleTest checkout after migrating to FetchContent.
 /third_party/googletest/
+# Preserve old local sources after removing the generalFunctions submodule.
+/generalFunctions/
 *.csv
 
 # Published reports: keep only compact evidence and figures.
@@ -21,3 +23,7 @@ __pycache__/
 !/cacheBenchmarks/reports/hierarchy/optimal_strategies_by_pattern.csv
 !/cacheBenchmarks/reports/unrestricted/results.json
 !/cacheBenchmarks/reports/unrestricted/validation.csv
+
+# Local symlink created by nix build.
+/result
+/result-*

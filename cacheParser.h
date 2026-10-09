@@ -6,11 +6,11 @@
 #include <variant>
 #include <vector>
 
-#include "./generalFunctions/lexer/lexer.h"
-#include "./generalFunctions/lexer/token.h"
-#include "./generalFunctions/lexer/token_stream.h"
 #include "cache/cache.h"
 #include "cacheSystem.h"
+#include "lexer/lexer.h"
+#include "lexer/token.h"
+#include "lexer/token_stream.h"
 
 namespace parser {
 
@@ -23,7 +23,7 @@ class CacheParser {
     bool configParsed_ = false;
 
 public:
-    CacheParser(){};
+    CacheParser() {};
 
     void parseConfig(lexer::TokenStream& ts) {
         configParsed_ = false;

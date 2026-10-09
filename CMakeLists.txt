@@ -73,25 +73,44 @@ function(cache_research_configure_target target)
     endif()
 endfunction()
 
-# Only tools need the auxiliary submodule. Library tests need just GoogleTest.
+# Only tools need generalFunctions sources. Library tests need just GoogleTest.
 if(CACHE_RESEARCH_BUILD_APP OR CACHE_RESEARCH_BUILD_BENCHMARKS)
+    set(cache_research_general_default "")
+    if(DEFINED ENV{GENERAL_FUNCTIONS_SOURCE_DIR})
+        set(cache_research_general_default "$ENV{GENERAL_FUNCTIONS_SOURCE_DIR}")
+    endif()
+    set(CACHE_RESEARCH_GENERAL_FUNCTIONS_SOURCE_DIR "${cache_research_general_default}"
+        CACHE PATH "Path to generalFunctions sources (empty downloads the pinned archive)")
+    set(cache_research_general_dir "${CACHE_RESEARCH_GENERAL_FUNCTIONS_SOURCE_DIR}")
+    if(NOT cache_research_general_dir)
+        include(FetchContent)
+        FetchContent_Declare(generalfunctions
+            URL https://codeload.github.com/timoko3/generalFunctions/tar.gz/dc31aef3c60cb88428c6aa7b150edbc36028508e
+            URL_HASH SHA256=96c500d80057f398875894dd79226001e857e9e0b291c4c29ca1bd0ae47156c1
+            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+            TIMEOUT 60
+            INACTIVITY_TIMEOUT 30
+        )
+        FetchContent_MakeAvailable(generalfunctions)
+        set(cache_research_general_dir "${generalfunctions_SOURCE_DIR}")
+    endif()
     set(cache_research_general_sources
-        generalFunctions/file.cpp
-        generalFunctions/file.h
-        generalFunctions/logger.cpp
-        generalFunctions/logger.h
-        generalFunctions/mathVector.h
-        generalFunctions/lexer/lexer.cpp
-        generalFunctions/lexer/lexer.h
-        generalFunctions/lexer/token_stream.cpp
-        generalFunctions/lexer/token_stream.h
-        generalFunctions/lexer/token.h
+        file.cpp
+        file.h
+        lexer/lexer.cpp
+        lexer/lexer.h
+        lexer/token_stream.cpp
+        lexer/token_stream.h
+        lexer/token.h
     )
+    list(TRANSFORM cache_research_general_sources
+        PREPEND "${cache_research_general_dir}/")
     foreach(source IN LISTS cache_research_general_sources)
-        if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
+        if(NOT EXISTS "${source}")
             message(FATAL_ERROR
-                "Missing ${source}. Tools require the generalFunctions submodule. "
-                "Run git submodule update --init --recursive, or disable "
+                "Missing ${source}. Tools require generalFunctions sources. "
+                "Set CACHE_RESEARCH_GENERAL_FUNCTIONS_SOURCE_DIR, enter nix develop, "
+                "allow FetchContent to download it, or disable "
                 "CACHE_RESEARCH_BUILD_APP and CACHE_RESEARCH_BUILD_BENCHMARKS."
             )
         endif()
@@ -99,7 +118,8 @@ if(CACHE_RESEARCH_BUILD_APP OR CACHE_RESEARCH_BUILD_BENCHMARKS)
     add_library(cache_research_general_functions STATIC ${cache_research_general_sources})
     add_library(CacheResearch::general_functions ALIAS cache_research_general_functions)
     target_compile_features(cache_research_general_functions PUBLIC cxx_std_17)
-    target_include_directories(cache_research_general_functions PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_include_directories(cache_research_general_functions PUBLIC
+        "${cache_research_general_dir}")
     cache_research_configure_target(cache_research_general_functions)
 endif()
 
@@ -111,6 +131,9 @@ if(CACHE_RESEARCH_BUILD_APP)
 
     set_target_properties(cache_research PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin/$<CONFIG>")
+    if(CACHE_RESEARCH_INSTALL)
+        install(TARGETS cache_research RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+    endif()
 endif()
 
 if(CACHE_RESEARCH_BUILD_BENCHMARKS)
