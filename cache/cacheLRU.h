@@ -53,20 +53,16 @@ private:
             throw std::logic_error("insertNewPage requires an unknown key");
         }
 
-        // Find the victim after emplace: rehashing invalidates index iterators.
-        auto residentToEvict = pageIndex_.end();
         try {
             if (isFull()) {
-                residentToEvict = pageIndex_.find(cache_.back().key);
+                auto residentToEvict = pageIndex_.find(cache_.back().key);
+                evictPage(residentToEvict);
             }
         } catch (...) {
             pageIndex_.erase(indexedPage);
             throw;
         }
 
-        if (residentToEvict != pageIndex_.end()) {
-            evictPage(residentToEvict);
-        }
         cache_.splice(cache_.begin(), stagedPage, stagedPage.begin());
     }
 

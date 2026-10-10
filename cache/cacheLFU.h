@@ -58,16 +58,30 @@ protected:
     }
 
     const T& insert(const KeyT& key, const T& page) override {
-        if (isFull()) {
-            auto victim = std::min_element(cache_.begin(), cache_.end(), compareEntriesByFreq);
-            hash_.erase(victim->key);
-            cache_.erase(victim);
-        }
+        PageList stagedPage;
 
         constexpr std::size_t initialFrequency = 1;
-        Entry newEntry = {key, page, initialFrequency};
-        cache_.push_back(newEntry);
-        hash_.emplace(key, std::prev(cache_.end()));
+        stagedPage.push_back(Entry{key, page, initialFrequency});
+
+        auto [indexedPage, wasInserted] = hash_.emplace(key, stagedPage.begin());
+        if (!wasInserted) {
+            throw std::logic_error("insert requires an unknown key");
+        }
+
+        try {
+            if (isFull()) {
+                auto victim = std::min_element(cache_.begin(), cache_.end(),
+                                               compareEntriesByFreq);
+
+                hash_.erase(victim->key);
+                cache_.erase(victim);
+            }
+        } catch (...) {
+            hash_.erase(indexedPage);
+            throw;
+        }
+
+        cache_.splice(cache_.end(), stagedPage);
         return cache_.back().page;
     }
 };
