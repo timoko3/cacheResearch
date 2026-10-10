@@ -13,53 +13,54 @@ namespace cache {
 template <typename T, typename KeyT = int>
 class CacheREF : public Cache<T, KeyT> {
 private:
-    struct Entry {
+    struct PageRecord {
         KeyT key;
         T page;
     };
 
     using Base = Cache<T, KeyT>;
     using typename Base::PageResult;
-    using CacheList = std::list<Entry>;
+    using PageList = std::list<PageRecord>;
     using RequestList = std::list<KeyT>;
-    using CacheIterator = typename CacheList::iterator;
+    using PageIterator = typename PageList::iterator;
     using RequestIterator = typename RequestList::iterator;
-    using HashTable = std::unordered_map<KeyT, CacheIterator>;
+    using PageIndex = std::unordered_map<KeyT, PageIterator>;
     using Distance = typename RequestList::difference_type;
 
-    HashTable hash_;
-    CacheList cache_;
+    PageIndex pageIndex_;
+    PageList cache_;
     RequestList requests_;
-    RequestIterator curRec_;
+    RequestIterator currentRequest_;
 
     bool isFull() const { return cache_.size() >= this->getSize(); };
 
-    CacheIterator findVictim() {
-        CacheIterator victimIt = cache_.begin();
-        Distance maxDist = 0;
+    PageIterator findResidentToEvict() {
+        PageIterator residentToEvict = cache_.begin();
+        Distance maxDistance = 0;
 
-        for (auto cacheIt = cache_.begin(); cacheIt != cache_.end(); ++cacheIt) {
-            Distance distToNext = requests_.size();
+        for (auto pageIterator = cache_.begin(); pageIterator != cache_.end(); ++pageIterator) {
+            Distance distanceToNextRequest = requests_.size();
 
-            for (auto reqIt = curRec_; reqIt != requests_.end(); ++reqIt) {
-                if (*reqIt == cacheIt->key) {
-                    distToNext = std::distance(curRec_, reqIt);
+            for (auto requestIterator = currentRequest_; requestIterator != requests_.end();
+                 ++requestIterator) {
+                if (*requestIterator == pageIterator->key) {
+                    distanceToNextRequest = std::distance(currentRequest_, requestIterator);
                     break;
                 }
             }
 
-            if (distToNext >= maxDist) {
-                maxDist = distToNext;
-                victimIt = cacheIt;
+            if (distanceToNextRequest >= maxDistance) {
+                maxDistance = distanceToNextRequest;
+                residentToEvict = pageIterator;
             }
         }
 
-        return victimIt;
+        return residentToEvict;
     };
 
 public:
-    CacheREF(std::size_t size, RequestList reqs)
-        : Base(size), requests_(reqs), curRec_(requests_.begin()) {
+    CacheREF(std::size_t capacity, RequestList requests)
+        : Base(capacity), requests_(requests), currentRequest_(requests_.begin()) {
         if (requests_.empty()) {
             throw std::invalid_argument("Array with requests are empty");
         }
@@ -69,42 +70,42 @@ public:
 
 protected:
     virtual PageResult getPage(const KeyT& key) override {
-        if (curRec_ == requests_.end()) {
+        if (currentRequest_ == requests_.end()) {
             throw std::out_of_range("Request sequence exhausted");
         }
 
-        if (*curRec_ != key) {
+        if (*currentRequest_ != key) {
             throw std::invalid_argument("Request does not match the supplied sequence");
         }
 
-        ++curRec_;
+        ++currentRequest_;
 
-        auto hit = hash_.find(key);
+        auto indexedRecord = pageIndex_.find(key);
 
-        if (hit == hash_.end()) {
+        if (indexedRecord == pageIndex_.end()) {
             return std::nullopt;
         }
 
-        return std::cref(hit->second->page);
+        return std::cref(indexedRecord->second->page);
     }
 
     const T& insert(const KeyT& key, const T& page) override {
-        CacheList stagedPage;
+        PageList stagedPage;
         stagedPage.push_front({key, page});
 
-        auto [indexedPageIt, wasIndexed] = hash_.emplace(key, stagedPage.begin());
-        if (!wasIndexed) {
+        auto [indexedPage, wasInserted] = pageIndex_.emplace(key, stagedPage.begin());
+        if (!wasInserted) {
             throw std::logic_error("insert requires an unknown key");
         }
 
         try {
             if (isFull()) {
-                auto victimIt = findVictim();
-                hash_.erase(victimIt->key);
-                cache_.erase(victimIt);
+                auto residentToEvict = findResidentToEvict();
+                pageIndex_.erase(residentToEvict->key);
+                cache_.erase(residentToEvict);
             }
         } catch (...) {
-            hash_.erase(indexedPageIt);
+            pageIndex_.erase(indexedPage);
             throw;
         }
 
