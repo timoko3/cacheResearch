@@ -9,7 +9,7 @@
 
 #include "cache/cacheREF.h"
 #include "cacheParser.h"
-#include "generalFunctions/file.h"
+#include "file.h"
 
 void checkReadableFile(const std::string& filePath) {
     std::ifstream inputFile(filePath);
@@ -19,7 +19,7 @@ void checkReadableFile(const std::string& filePath) {
     }
 }
 
-void checkCacheConfiguration(const cache::cacheSystemParams& configuration) {
+void checkCacheConfiguration(const cache::CacheSystemParams& configuration) {
     if (configuration.levels.empty() || configuration.levels.size() > 3) {
         throw std::invalid_argument("Use 1 to 3 cache levels");
     }
@@ -29,7 +29,8 @@ void checkCacheConfiguration(const cache::cacheSystemParams& configuration) {
             throw std::invalid_argument("Cache capacity must be positive");
         }
 
-        if (description.strategy == cache::C_REF && configuration.levels.size() != 1) {
+        if (description.strategy == cache::CacheEviction::C_REF &&
+            configuration.levels.size() != 1) {
             throw std::invalid_argument("REF is supported only as a single-level reference");
         }
     }
@@ -43,9 +44,11 @@ template <typename CacheType>
 std::size_t processRequests(CacheType& cacheInstance, const std::vector<int>& requests) {
     std::size_t memoryLoadCount = 0;
 
-    auto slowGetPage = [&](int requestedKey) {
+    uint32_t loadedPage = 0;
+    auto slowGetPage = [&](int requestedKey) -> uint32_t& {
         ++memoryLoadCount;
-        return generatePageValue(requestedKey);
+        loadedPage = generatePageValue(requestedKey);
+        return loadedPage;
     };
 
     for (const int requestedKey : requests) {
@@ -85,7 +88,7 @@ void checkCacheStatistics(const cache::CacheSystemStats& statistics, std::size_t
     }
 }
 
-cache::CacheSystemStats runCacheExperiment(const cache::cacheSystemParams& configuration,
+cache::CacheSystemStats runCacheExperiment(const cache::CacheSystemParams& configuration,
                                            const std::vector<int>& requests) {
     checkCacheConfiguration(configuration);
 
@@ -96,7 +99,7 @@ cache::CacheSystemStats runCacheExperiment(const cache::cacheSystemParams& confi
     cache::CacheSystemStats statistics{};
     std::size_t memoryLoadCount = 0;
 
-    if (configuration.levels.front().strategy == cache::C_REF) {
+    if (configuration.levels.front().strategy == cache::CacheEviction::C_REF) {
         std::list<int> futureRequests(requests.begin(), requests.end());
         cache::CacheREF<uint32_t, int> idealCache(configuration.levels.front().size,
                                                   futureRequests);
@@ -108,7 +111,7 @@ cache::CacheSystemStats runCacheExperiment(const cache::cacheSystemParams& confi
         cache::CacheSystem<uint32_t, int> cacheSystem(configuration);
 
         memoryLoadCount = processRequests(cacheSystem, requests);
-        statistics = cacheSystem.getStats();
+        statistics = cacheSystem.getSystemStats();
     }
 
     checkCacheStatistics(statistics, requests.size(), memoryLoadCount, configuration.levels.size());

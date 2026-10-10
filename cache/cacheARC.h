@@ -1,10 +1,10 @@
 #pragma once
 
 #include <algorithm>
+#include <cassert>
 #include <iterator>
 #include <list>
 #include <memory>
-#include <optional>
 #include <stdexcept>
 #include <unordered_map>
 #include <utility>
@@ -13,38 +13,38 @@
 
 namespace cache {
 
-template <typename T, typename keyT = int>
-class CacheARC : public Cache<T, keyT> {
+template <typename T, typename KeyT = int>
+class CacheARC : public Cache<T, KeyT> {
 private:
-    enum listName_t { NO_LIST, T1, T2, B1, B2 };
+    enum class ListName { NO_LIST, T1, T2, B1, B2 };
 
-    using Base = Cache<T, keyT>;
-
-    struct entry_t {
-        keyT key;
-        std::optional<T> value;
+    struct Entry {
+        KeyT key;
+        std::optional<T> page;
     };
 
-    using list_t = std::list<entry_t>;
-    using listIt_t = typename list_t::iterator;
+    using Base = Cache<T, KeyT>;
+    using typename Base::PageResult;
+    using PageList = std::list<Entry>;
+    using PageIterator = typename PageList::iterator;
 
-    struct pageLoc_t {
-        listIt_t listIt;
-        listName_t listName;
+    struct PageLocation {
+        PageIterator listIt;
+        ListName listName;
     };
 
-    using hash_t = std::unordered_map<keyT, pageLoc_t>;
-    using hashIt_t = typename hash_t::iterator;
+    using PageIndex = std::unordered_map<KeyT, PageLocation>;
+    using IndexIterator = typename PageIndex::iterator;
 
-    list_t T1_, T2_;
-    list_t B1_, B2_;
+    PageList t1_, t2_;
+    PageList b1_, b2_;
 
-    hash_t hash_;
+    PageIndex hash_;
 
-    size_t capacity_;
-    size_t targetT1size_ = 0;
+    std::size_t capacity_;
+    std::size_t targetT1size_ = 0;
 
-    void eraseLRU(list_t& list) {
+    void eraseLRU(PageList& list) {
         if (list.empty()) {
             return;
         }
@@ -55,14 +55,14 @@ private:
         list.erase(victim);
     }
 
-    void moveLRUToGhost(list_t& srcList, list_t& ghostList, listName_t ghostListName) {
+    void moveLRUToGhost(PageList& srcList, PageList& ghostList, ListName ghostListName) {
         if (srcList.empty()) {
             return;
         }
 
         auto victim = std::prev(srcList.end());
 
-        victim->value.reset();
+        victim->page.reset();
 
         ghostList.splice(ghostList.begin(), srcList, victim);
 
@@ -73,114 +73,120 @@ private:
     }
 
     void replacePage(bool requestedFromB2) {
-        const bool evictFromT1 = !T1_.empty() && (T1_.size() > targetT1size_ ||
-                                                  (requestedFromB2 && T1_.size() == targetT1size_));
+        const bool evictFromT1 = !t1_.empty() && (t1_.size() > targetT1size_ ||
+                                                  (requestedFromB2 && t1_.size() == targetT1size_));
 
-        if (evictFromT1 || T2_.empty()) {
-            moveLRUToGhost(T1_, B1_, B1);
+        if (evictFromT1 || t2_.empty()) {
+            moveLRUToGhost(t1_, b1_, ListName::B1);
         } else {
-            moveLRUToGhost(T2_, B2_, B2);
+            moveLRUToGhost(t2_, b2_, ListName::B2);
         }
     }
 
-    void moveGhostPageToT2(hashIt_t hit, T page) {
-        const bool wasInB2 = hit->second.listName == B2;
+    const T& moveGhostPageToT2(IndexIterator hit, const T& page) {
+        const bool wasInB2 = hit->second.listName == ListName::B2;
 
         auto pageIt = hit->second.listIt;
 
         replacePage(wasInB2);
-        pageIt->value.emplace(std::move(page));
+        pageIt->page.emplace(page);
 
         if (wasInB2) {
-            T2_.splice(T2_.begin(), B2_, pageIt);
+            t2_.splice(t2_.begin(), b2_, pageIt);
         } else {
-            T2_.splice(T2_.begin(), B1_, pageIt);
+            t2_.splice(t2_.begin(), b1_, pageIt);
         }
 
         hit->second.listIt = pageIt;
-        hit->second.listName = T2;
+        hit->second.listName = ListName::T2;
+        return *pageIt->page;
+    }
+
+    void recordHit(PageLocation& pageLoc) {
+        PageIterator listIt = pageLoc.listIt;
+
+        switch (pageLoc.listName) {
+            case ListName::T1:
+                assert(listIt->page.has_value());
+                t2_.splice(t2_.begin(), t1_, listIt);
+                pageLoc.listName = ListName::T2;
+                return;
+            case ListName::T2:
+                assert(listIt->page.has_value());
+                t2_.splice(t2_.begin(), t2_, listIt);
+                return;
+            case ListName::B1: {
+                const std::size_t addition = std::max<std::size_t>(1, b2_.size() / b1_.size());
+                targetT1size_ = std::min(capacity_, targetT1size_ + addition);
+                return;
+            }
+            case ListName::B2: {
+                const std::size_t subtrahend = std::max<std::size_t>(1, b1_.size() / b2_.size());
+
+                targetT1size_ = (subtrahend >= targetT1size_) ? 0 : targetT1size_ - subtrahend;
+                return;
+            }
+            default:
+                assert(false && "Unexpected listName in recordHit");
+                return;
+        }
     }
 
 public:
-    explicit CacheARC(size_t capacity, cacheLevel level = L1)
-        : Base(capacity, level), capacity_(capacity) {
-        if (capacity == 0) {
-            throw std::invalid_argument("ARC cache capacity must be greater than zero");
-        }
-    }
+    CacheARC(std::size_t capacity, CacheLevel level = CacheLevel::L1)
+        : Base(capacity, level), capacity_(capacity) {}
 
 protected:
-    const T* findAndTouch(const keyT& key) override {
+    PageResult getPage(const KeyT& key) override {
         auto hit = hash_.find(key);
 
         if (hit == hash_.end()) {
-            return nullptr;
+            return std::nullopt;
         }
 
-        auto& location = hit->second;
-        auto current = location.listIt;
+        auto& pageLoc = hit->second;
+        recordHit(pageLoc);
 
-        switch (location.listName) {
-            case T1:
-                T2_.splice(T2_.begin(), T1_, current);
-                location.listIt = current;
-                location.listName = T2;
-                return std::addressof(*current->value);
+        const auto& storedPage = pageLoc.listIt->page;
 
-            case T2:
-                T2_.splice(T2_.begin(), T2_, current);
-                location.listIt = current;
-                return std::addressof(*current->value);
-
-            case B1: {
-                const size_t addition = std::max<size_t>(1, B2_.size() / B1_.size());
-                targetT1size_ = std::min(capacity_, targetT1size_ + addition);
-                return nullptr;
-            }
-
-            case B2: {
-                const size_t subtrahend = std::max<size_t>(1, B1_.size() / B2_.size());
-                targetT1size_ = (subtrahend >= targetT1size_) ? 0 : targetT1size_ - subtrahend;
-                return nullptr;
-            }
-
-            case NO_LIST:
-                return nullptr;
+        if (!storedPage.has_value()) {
+            return std::nullopt;
         }
 
-        return nullptr;
+        return std::cref(*storedPage);
     }
 
-    void insert(const keyT& key, T page) override {
+    const T& insert(const KeyT& key, const T& page) override {
         auto hit = hash_.find(key);
 
-        if (hit != hash_.end() && (hit->second.listName == B1 || hit->second.listName == B2)) {
-            moveGhostPageToT2(hit, std::move(page));
-            return;
+        if (hit != hash_.end() &&
+            (hit->second.listName == ListName::B1 || hit->second.listName == ListName::B2)) {
+            return moveGhostPageToT2(hit, page);
         }
 
-        const size_t recentTotal = T1_.size() + B1_.size();
+        const std::size_t recentTotal = t1_.size() + b1_.size();
 
         if (recentTotal == capacity_) {
-            if (T1_.size() < capacity_) {
-                eraseLRU(B1_);
+            if (t1_.size() < capacity_) {
+                eraseLRU(b1_);
                 replacePage(false);
             } else {
-                eraseLRU(T1_);
+                eraseLRU(t1_);
             }
         } else if (recentTotal < capacity_) {
-            const size_t total = T1_.size() + T2_.size() + B1_.size() + B2_.size();
+            const std::size_t total = t1_.size() + t2_.size() + b1_.size() + b2_.size();
 
             if (total >= capacity_) {
                 if (total >= 2 * capacity_) {
-                    eraseLRU(B2_);
+                    eraseLRU(b2_);
                 }
                 replacePage(false);
             }
         }
 
-        T1_.push_front(entry_t{key, std::optional<T>{std::move(page)}});
-        hash_.emplace(key, pageLoc_t{T1_.begin(), T1});
+        t1_.push_front(Entry{key, std::optional<T>{page}});
+        hash_.emplace(key, PageLocation{t1_.begin(), ListName::T1});
+        return *t1_.front().page;
     }
 };
 

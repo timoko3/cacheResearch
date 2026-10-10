@@ -15,6 +15,8 @@
   - [5. Сборка и запуск тестов](#5-сборка-и-запуск-тестов)
   - [6. Запуск собственной системы](#6-запуск-собственной-системы)
 
+Кодстайл C++ и правила именования: [CODE_STYLE.md](CODE_STYLE.md).
+
 ## Описание проекта
 
 Данный проект посвящен исследованию алгоритмов кеширования **LRU (least recently used), LFU (least frequently used), ARC (adaptive replacement cache), 2Q (two queue) и LIRS (low-inference recency set)**, а также многоуровневых систем, включающих данные алгоритмы с целью нахождения оптимальной системы при различных паттернах использования.
@@ -164,12 +166,15 @@
 В примерах Python запускается командой `python`; если в системе используется
 `python3`, замените её во всех командах.
 
-Инициализируйте подмодули и установите библиотеку графиков:
+Инициализируйте подмодуль `generalFunctions` и установите библиотеку графиков:
 
 ```sh
 git submodule update --init --recursive
 python -m pip install matplotlib
 ```
+
+GoogleTest 1.18.0 загружается автоматически через CMake `FetchContent`
+при конфигурации с включёнными тестами; для первой загрузки требуется сеть.
 
 ### 2. Сборка бенчмарков
 
@@ -184,7 +189,7 @@ cmake --build --preset release --target cache_benchmark_runner cache_exact_searc
 **Windows, PowerShell:**
 
 ```powershell
-$buildDir = "build/Windows/release"
+$buildDir = "build/release"
 $runner = "$buildDir/cache_benchmark_runner.exe"
 $exact = "$buildDir/cache_exact_search.exe"
 ```
@@ -192,14 +197,14 @@ $exact = "$buildDir/cache_exact_search.exe"
 **Linux, Bash:**
 
 ```bash
-buildDir="build/Linux/release"
+buildDir="build/release"
 runner="$buildDir/cache_benchmark_runner"
 exact="$buildDir/cache_exact_search"
 ```
 
 Дальнейшие команды с `"$runner"`, `"$exact"` и `"$buildDir"` работают
 с этими переменными. Если сборка уже находится в другом каталоге, например
-`build/Windows/research`, укажите его в переменных.
+`build/research`, укажите его в переменных.
 
 ### 3. Запуск экспериментов
 
@@ -315,32 +320,17 @@ python cacheBenchmarks/cache_research.py --mode software --runner "$runner" --tr
 
 #### Сборка тестов
 
-**Windows, PowerShell:**
+Команды одинаковы на Windows и Linux:
 
-```powershell
-cmake --preset debug
-cmake --build --preset debug
-```
-
-**Linux, Bash:**
-
-```bash
+```sh
 cmake --preset debug
 cmake --build --preset debug
 ```
 
 #### Запуск всех тестов
 
-**Windows, PowerShell:**
-
-```powershell
-ctest --test-dir build/Windows/debug --output-on-failure
-```
-
-**Linux, Bash:**
-
-```bash
-ctest --test-dir build/Linux/debug --output-on-failure
+```sh
+ctest --preset debug
 ```
 
 #### Запуск конкретной группы тестов
@@ -350,13 +340,13 @@ ctest --test-dir build/Linux/debug --output-on-failure
 **Windows, PowerShell:**
 
 ```powershell
-& ".\build\Windows\debug\cache_tests.exe" --gtest_filter="CacheREF*"
+& ".\build\debug\tests\cache_tests.exe" --gtest_filter="CacheREF*"
 ```
 
 **Linux, Bash:**
 
 ```bash
-"./build/Linux/debug/cache_tests" --gtest_filter="CacheREF*"
+"./build/debug/tests/cache_tests" --gtest_filter="CacheREF*"
 ```
 
 ### 6. Запуск собственной системы

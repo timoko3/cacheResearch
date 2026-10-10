@@ -6,53 +6,53 @@
 #include <variant>
 #include <vector>
 
-#include "./generalFunctions/lexer/lexer.h"
-#include "./generalFunctions/lexer/token.h"
-#include "./generalFunctions/lexer/token_stream.h"
 #include "cache/cache.h"
 #include "cacheSystem.h"
+#include "lexer/lexer.h"
+#include "lexer/token.h"
+#include "lexer/token_stream.h"
 
 namespace parser {
 
-const int max_cache_level = 5;
+const int maxCacheLevel = 5;
 
-template <typename keyT = int>
+template <typename KeyT = int>
 class CacheParser {
-    cache::cacheSystemParams cacheSysParams_{};
-    std::vector<keyT> reqList_;
-    bool config_parsed_ = false;
+    cache::CacheSystemParams cacheSysParams_{};
+    std::vector<KeyT> reqList_;
+    bool configParsed_ = false;
 
 public:
     CacheParser(){};
 
     void parseConfig(lexer::TokenStream& ts) {
-        config_parsed_ = false;
+        configParsed_ = false;
         cacheSysParams_.levels.clear();
 
-        const lexer::Token& level_token = ts.peekToken();
+        const lexer::Token& levelToken = ts.peekToken();
 
         const std::size_t count =
             static_cast<std::size_t>(ts.expectInt("Incorrect num of cache strategies"));
 
-        if (count > max_cache_level) {
-            ts.failAtToken(level_token, "Too many cache levels");
+        if (count > maxCacheLevel) {
+            ts.failAtToken(levelToken, "Too many cache levels");
         }
 
-        for (std::size_t level = cache::L1; level < count; ++level) {
+        for (std::size_t level = 0; level < count; ++level) {
             if (!ts.isMatchType(lexer::TokenType::IDENTIFIER)) {
                 ts.failAtToken(ts.peekToken(), "Not enough cache levels");
             }
 
-            parseLevel(ts, static_cast<cache::cacheLevel>(level));
+            parseLevel(ts, static_cast<cache::CacheLevel>(level));
         }
 
         ts.expectToken(lexer::TokenType::END, "Extra data after cache levels");
 
-        config_parsed_ = true;
+        configParsed_ = true;
     }
 
     void parseInput(lexer::TokenStream& ts) {
-        if (!config_parsed_) {
+        if (!configParsed_) {
             throw std::logic_error("parseInput called before parseConfig");
         }
 
@@ -77,42 +77,42 @@ public:
                        "Extra data after requests check num of levels and num of requests");
     }
 
-    void parseAll(lexer::TokenStream& config_ts, lexer::TokenStream& input_ts) {
-        parseConfig(config_ts);
-        parseInput(input_ts);
+    void parseAll(lexer::TokenStream& configTs, lexer::TokenStream& inputTs) {
+        parseConfig(configTs);
+        parseInput(inputTs);
     }
 
-    const cache::cacheSystemParams& getCacheSysParams() const { return cacheSysParams_; }
+    const cache::CacheSystemParams& getCacheSysParams() const { return cacheSysParams_; }
 
-    const std::vector<keyT>& getReqList() const { return reqList_; }
+    const std::vector<KeyT>& getReqList() const { return reqList_; }
 
 private:
-    void parseLevel(lexer::TokenStream& ts, cache::cacheLevel level) {
-        const lexer::Token& name_token =
+    void parseLevel(lexer::TokenStream& ts, cache::CacheLevel level) {
+        const lexer::Token& nameToken =
             ts.expectToken(lexer::TokenType::IDENTIFIER, "Incorrect name of cache strategy");
 
-        cacheSysParams_.levels.push_back({0, level, strategyFromToken(name_token, ts)});
+        cacheSysParams_.levels.push_back({0, level, strategyFromToken(nameToken, ts)});
     }
 
-    cache::cacheEvictionType strategyFromToken(const lexer::Token& token,
-                                               const lexer::TokenStream& ts) {
+    cache::CacheEviction strategyFromToken(const lexer::Token& token,
+                                           const lexer::TokenStream& ts) {
         const std::string& name = std::get<std::string>(token.data);
 
         if (name == "LFU")
-            return cache::C_LFU;
+            return cache::CacheEviction::C_LFU;
         if (name == "LRU")
-            return cache::C_LRU;
+            return cache::CacheEviction::C_LRU;
         if (name == "LIRS")
-            return cache::C_LIRS;
+            return cache::CacheEviction::C_LIRS;
         if (name == "2Q")
-            return cache::C_2Q;
+            return cache::CacheEviction::C_2Q;
         if (name == "ARC")
-            return cache::C_ARC;
+            return cache::CacheEviction::C_ARC;
         if (name == "REF")
-            return cache::C_REF;
+            return cache::CacheEviction::C_REF;
 
         ts.failAtToken(token, "Unknown cache strategy");
-        return cache::C_UNKNOWN;
+        return cache::CacheEviction::C_UNKNOWN;
     }
 };
 

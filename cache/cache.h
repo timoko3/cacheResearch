@@ -1,70 +1,81 @@
 #pragma once
 
-#include <stddef.h>
-
-#define MAX_CACHE_LEVELS 5
+#include <cstddef>
+#include <functional>
+#include <optional>
+#include <stdexcept>
+#include <type_traits>
 
 namespace cache {
 
-enum cacheLevel { L1, L2, L3, L4, L5 };
+enum class CacheLevel { L1, L2, L3, L4, L5 };
 
-enum cacheEvictionType { C_LRU, C_LFU, C_ARC, C_LIRS, C_2Q, C_REF, C_UNKNOWN };
+enum class CacheEviction { C_LRU, C_LFU, C_ARC, C_LIRS, C_2Q, C_REF, C_UNKNOWN };
 
-struct cacheDescription {
-    size_t size;
-    cacheLevel level;
-    cacheEvictionType strategy;
+struct CacheDescription {
+    std::size_t size;
+    CacheLevel level;
+    CacheEviction strategy;
 };
 
 struct CacheStats {
-    size_t amountRequests = 0;
-    size_t amountHits = 0;
-    size_t amountMisses = 0;
+    std::size_t amountRequests = 0;
+    std::size_t amountHits = 0;
+    std::size_t amountMisses = 0;
 };
 
-template <typename T, typename keyT = int>
+template <typename T, typename KeyT = int>
 class Cache {
-    cacheLevel level_;
-    size_t size_;
+private:
+    CacheLevel level_;
+    std::size_t size_;
 
     CacheStats stats_;
 
 public:
-    explicit Cache(size_t size, cacheLevel level = L1) : level_(level), size_(size) {}
+    Cache(std::size_t size, CacheLevel level = CacheLevel::L1) : level_(level), size_(size) {
+        if (size == 0) {
+            throw std::invalid_argument("Cache capacity must be positive");
+        }
+    }
 
     virtual ~Cache() = default;
-
-    cacheLevel getLevel() const { return level_; }
-    size_t getSize() const { return size_; }
-    const CacheStats& getStats() const { return stats_; }
-
-    template <typename F>
-    T lookupUpdate(keyT key, F slow_get_page) {
-        ++stats_.amountRequests;
-
-        if (const T* page = findAndTouch(key)) {
-            ++stats_.amountHits;
-            return *page;
-        }
-
-        ++stats_.amountMisses;
-        T page = slow_get_page(key);
-
-        if (size_ != 0) {
-            insert(key, page);
-        }
-
-        return page;
-    }
 
     Cache(const Cache&) = delete;
     Cache& operator=(const Cache&) = delete;
 
-protected:
-    // Returns a resident page, or nullptr on a miss (including ghost entries).
-    virtual const T* findAndTouch(const keyT& key) = 0;
+    CacheLevel getLevel() const { return level_; }
+    std::size_t getSize() const { return size_; }
+    const CacheStats& getStats() const { return stats_; }
 
-    virtual void insert(const keyT& key, T page) = 0;
+    template <typename F>
+    const T& lookupUpdate(KeyT key, F slowGetPage) {
+        using LoaderResult = decltype(slowGetPage(key));
+        static_assert(std::is_same_v<LoaderResult, T&> || std::is_same_v<LoaderResult, const T&>,
+                      "The loader must return T& or const T&");
+
+        ++stats_.amountRequests;
+
+        if (auto page = getPage(key)) {
+            ++stats_.amountHits;
+            return page->get();
+        }
+
+        ++stats_.amountMisses;
+        const T& page = slowGetPage(key);
+
+        return insert(key, page);
+    }
+
+protected:
+    using PageResult = std::optional<std::reference_wrapper<const T>>;
+
+    // Returns a resident page reference,
+    // or std::nullopt on a miss (including ghost entries).
+    virtual PageResult getPage(const KeyT& key) = 0;
+
+    // Returns the stored copy, valid until its eviction or cache destruction.
+    virtual const T& insert(const KeyT& key, const T& page) = 0;
 };
 
 } // namespace cache

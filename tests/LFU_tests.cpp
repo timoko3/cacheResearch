@@ -64,9 +64,9 @@ TEST(CacheLFUTrace, HotTwoLong) {
 }
 
 TEST(CacheLFUFocused, MetadataIsPreserved) {
-    cache::CacheLFU<int, int> c(5, cache::L2);
+    cache::CacheLFU<int, int> c(5, cache::CacheLevel::L2);
     EXPECT_EQ(c.getSize(), 5u);
-    EXPECT_EQ(c.getLevel(), cache::L2);
+    EXPECT_EQ(c.getLevel(), cache::CacheLevel::L2);
 }
 
 TEST(CacheLFUFocused, FirstMissThenHitUpdatesStats) {
@@ -99,15 +99,14 @@ TEST(CacheLFUFocused, CapacityOneEvictsOldKey) {
     lookupUpdateTest(c, {1, 1, 2, 2, 1}, "MHMHM");
 }
 
-TEST(CacheLFUFocused, ZeroCapacityNeverCaches) {
-    cache::CacheLFU<uint32_t, int> c(0);
-    lookupUpdateTest(c, {3, 3, 3}, "MMM");
+TEST(CacheLFUFocused, ZeroCapacityIsRejected) {
+    EXPECT_THROW((cache::CacheLFU<uint32_t, int>(0)), std::invalid_argument);
 }
 
 TEST(CacheLFU, ReloadedPageHasNewValue) {
     cache::CacheLFU<int, int> c(1);
     int loads = 0;
-    auto slow = [&](int) { return ++loads; };
+    auto slow = [&](int) -> int& { return ++loads; };
 
     EXPECT_EQ(c.lookupUpdate(1, slow), 1);
     EXPECT_EQ(c.lookupUpdate(2, slow), 2);
@@ -118,13 +117,14 @@ TEST(CacheLFU, ReloadedPageHasNewValue) {
 
 TEST(CacheLFU, RetryFailedLoad) {
     cache::CacheLFU<int, int> c(3);
-    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int { throw std::runtime_error("load failed"); }),
+    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int& { throw std::runtime_error("load failed"); }),
                  std::runtime_error);
 
     int loads = 0;
-    auto slow = [&](int) {
+    int loadedPage = 420;
+    auto slow = [&](int) -> int& {
         ++loads;
-        return 420;
+        return loadedPage;
     };
     EXPECT_EQ(c.lookupUpdate(42, slow), 420);
     EXPECT_EQ(c.lookupUpdate(42, slow), 420);
@@ -134,13 +134,15 @@ TEST(CacheLFU, RetryFailedLoad) {
 TEST(CacheLFU, VectorPage) {
     cache::CacheLFU<std::vector<int>, int> c(3);
     int loads = 0;
-    auto slow = [&](int key) {
+    std::vector<int> loadedPage;
+    auto slow = [&](int key) -> std::vector<int>& {
         ++loads;
-        return std::vector<int>{key, key + 1};
+        loadedPage = {key, key + 1};
+        return loadedPage;
     };
 
     auto page = c.lookupUpdate(7, slow);
-    ASSERT_EQ(page.size(), 2);
+    ASSERT_EQ(page.size(), 2u);
     page[0] = -1;
     page[1] = -2;
     EXPECT_EQ(page, (std::vector<int>{-1, -2}));
@@ -151,9 +153,11 @@ TEST(CacheLFU, VectorPage) {
 TEST(CacheLFU, StringKeys) {
     cache::CacheLFU<int, std::string> c(3);
     int loads = 0;
-    auto slow = [&](const std::string& key) {
+    int loadedPage = 0;
+    auto slow = [&](const std::string& key) -> int& {
         ++loads;
-        return static_cast<int>(key.size());
+        loadedPage = static_cast<int>(key.size());
+        return loadedPage;
     };
 
     EXPECT_EQ(c.lookupUpdate("alpha", slow), 5);
