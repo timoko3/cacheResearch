@@ -12,14 +12,9 @@ namespace tests {
 
 namespace {
 
-lexer::Lexer::TokenArr_t lex(const std::string& source) {
-    lexer::Lexer lx(source);
-    return lx.tokenize();
-}
-
-bool hasEnd(const lexer::Lexer::TokenArr_t& tokens) {
-    for (const auto& token : tokens) {
-        if (token.type == lexer::TokenType::END) {
+bool hasEnd(const lexer::Lexer::TokenArr_t& tokenArr) {
+    for (std::size_t i = 0; i < tokenArr.size(); ++i) {
+        if (tokenArr.at(i).type == lexer::TokenType::END) {
             return true;
         }
     }
@@ -30,256 +25,282 @@ bool hasEnd(const lexer::Lexer::TokenArr_t& tokens) {
 } // namespace
 
 TEST(LexerValid, EmptyInputGivesOnlyEnd) {
-    const auto tokens = lex("");
+    lexer::Lexer lx("");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 1u);
-    EXPECT_EQ(tokens[0].type, lexer::TokenType::END);
-    EXPECT_EQ(tokens[0].line, 1u);
-    EXPECT_EQ(tokens[0].col, 1u);
+    ASSERT_EQ(tokenArr.size(), 1u);
+    EXPECT_EQ(tokenArr.at(0).type, lexer::TokenType::END);
+    EXPECT_EQ(tokenArr.at(0).line, 1u);
+    EXPECT_EQ(tokenArr.at(0).col, 1u);
 }
 
 TEST(LexerValid, SpacesOnlyGiveOnlyEnd) {
-    const auto tokens = lex("   \n \t");
+    lexer::Lexer lx("   \n \t");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 1u);
-    EXPECT_EQ(tokens[0].type, lexer::TokenType::END);
-    EXPECT_EQ(tokens[0].line, 2u);
-    EXPECT_EQ(tokens[0].col, 3u);
+    ASSERT_EQ(tokenArr.size(), 1u);
+    EXPECT_EQ(tokenArr.at(0).type, lexer::TokenType::END);
+    EXPECT_EQ(tokenArr.at(0).line, 2u);
+    EXPECT_EQ(tokenArr.at(0).col, 3u);
 }
 
 TEST(LexerValid, ParsesInts) {
-    const auto tokens = lex("1 2 3");
+    lexer::Lexer lx("1 2 3");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 4u);
+    ASSERT_EQ(tokenArr.size(), 4u);
 
     for (std::size_t i = 0; i < 3; ++i) {
-        EXPECT_EQ(tokens[i].type, lexer::TokenType::INT);
-        EXPECT_EQ(std::get<int>(tokens[i].data), static_cast<int>(i) + 1);
+        EXPECT_EQ(tokenArr.at(i).type, lexer::TokenType::INT);
+        EXPECT_EQ(std::get<int>(tokenArr.at(i).data), static_cast<int>(i) + 1);
     }
 
-    EXPECT_EQ(tokens[3].type, lexer::TokenType::END);
+    EXPECT_EQ(tokenArr.at(3).type, lexer::TokenType::END);
 }
 
 TEST(LexerValid, ParsesIdentifiers) {
-    const auto tokens = lex("LRU LFU");
+    lexer::Lexer lx("LRU LFU");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 3u);
+    ASSERT_EQ(tokenArr.size(), 3u);
 
-    EXPECT_EQ(tokens[0].type, lexer::TokenType::IDENTIFIER);
-    EXPECT_EQ(std::get<std::string>(tokens[0].data), "LRU");
+    EXPECT_EQ(tokenArr.at(0).type, lexer::TokenType::IDENTIFIER);
+    EXPECT_EQ(std::get<std::string>(tokenArr.at(0).data), "LRU");
 
-    EXPECT_EQ(tokens[1].type, lexer::TokenType::IDENTIFIER);
-    EXPECT_EQ(std::get<std::string>(tokens[1].data), "LFU");
+    EXPECT_EQ(tokenArr.at(1).type, lexer::TokenType::IDENTIFIER);
+    EXPECT_EQ(std::get<std::string>(tokenArr.at(1).data), "LFU");
 
-    EXPECT_EQ(tokens[2].type, lexer::TokenType::END);
+    EXPECT_EQ(tokenArr.at(2).type, lexer::TokenType::END);
 }
 
 TEST(LexerValid, ParsesMixedIntsAndIdentifiers) {
-    const auto tokens = lex("3 LRU 42 ARC");
+    lexer::Lexer lx("3 LRU 42 ARC");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 5u);
+    ASSERT_EQ(tokenArr.size(), 5u);
 
-    EXPECT_EQ(tokens[0].type, lexer::TokenType::INT);
-    EXPECT_EQ(std::get<int>(tokens[0].data), 3);
+    EXPECT_EQ(tokenArr.at(0).type, lexer::TokenType::INT);
+    EXPECT_EQ(std::get<int>(tokenArr.at(0).data), 3);
 
-    EXPECT_EQ(tokens[1].type, lexer::TokenType::IDENTIFIER);
-    EXPECT_EQ(std::get<std::string>(tokens[1].data), "LRU");
+    EXPECT_EQ(tokenArr.at(1).type, lexer::TokenType::IDENTIFIER);
+    EXPECT_EQ(std::get<std::string>(tokenArr.at(1).data), "LRU");
 
-    EXPECT_EQ(tokens[2].type, lexer::TokenType::INT);
-    EXPECT_EQ(std::get<int>(tokens[2].data), 42);
+    EXPECT_EQ(tokenArr.at(2).type, lexer::TokenType::INT);
+    EXPECT_EQ(std::get<int>(tokenArr.at(2).data), 42);
 
-    EXPECT_EQ(tokens[3].type, lexer::TokenType::IDENTIFIER);
-    EXPECT_EQ(std::get<std::string>(tokens[3].data), "ARC");
+    EXPECT_EQ(tokenArr.at(3).type, lexer::TokenType::IDENTIFIER);
+    EXPECT_EQ(std::get<std::string>(tokenArr.at(3).data), "ARC");
 
-    EXPECT_EQ(tokens[4].type, lexer::TokenType::END);
+    EXPECT_EQ(tokenArr.at(4).type, lexer::TokenType::END);
 }
 
 TEST(LexerValid, ZeroAndLeadingZeros) {
-    const auto tokens = lex("0 007");
+    lexer::Lexer lx("0 007");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 3u);
-    EXPECT_EQ(std::get<int>(tokens[0].data), 0);
-    EXPECT_EQ(std::get<int>(tokens[1].data), 7);
+    ASSERT_EQ(tokenArr.size(), 3u);
+    EXPECT_EQ(std::get<int>(tokenArr.at(0).data), 0);
+    EXPECT_EQ(std::get<int>(tokenArr.at(1).data), 7);
 }
 
 TEST(LexerValid, IntMaxIsInt) {
-    const auto tokens = lex(std::to_string(std::numeric_limits<int>::max()));
+    lexer::Lexer lx(std::to_string(std::numeric_limits<int>::max()));
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 2u);
-    EXPECT_EQ(tokens[0].type, lexer::TokenType::INT);
-    EXPECT_EQ(std::get<int>(tokens[0].data), std::numeric_limits<int>::max());
+    ASSERT_EQ(tokenArr.size(), 2u);
+    EXPECT_EQ(tokenArr.at(0).type, lexer::TokenType::INT);
+    EXPECT_EQ(std::get<int>(tokenArr.at(0).data), std::numeric_limits<int>::max());
+    EXPECT_EQ(tokenArr.at(1).type, lexer::TokenType::END);
 }
 
 TEST(LexerValid, IntWithoutTrailingSpace) {
-    const auto tokens = lex("7");
+    lexer::Lexer lx("7");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 2u);
-    EXPECT_EQ(tokens[0].type, lexer::TokenType::INT);
-    EXPECT_EQ(std::get<int>(tokens[0].data), 7);
-    EXPECT_EQ(tokens[1].type, lexer::TokenType::END);
+    ASSERT_EQ(tokenArr.size(), 2u);
+    EXPECT_EQ(tokenArr.at(0).type, lexer::TokenType::INT);
+    EXPECT_EQ(std::get<int>(tokenArr.at(0).data), 7);
+    EXPECT_EQ(tokenArr.at(1).type, lexer::TokenType::END);
 }
 
 TEST(LexerValid, DigitsFollowedByLettersAreIdentifier) {
-    const auto tokens = lex("2Q 12abc");
+    lexer::Lexer lx("2Q 12abc");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 3u);
+    ASSERT_EQ(tokenArr.size(), 3u);
 
-    EXPECT_EQ(tokens[0].type, lexer::TokenType::IDENTIFIER);
-    EXPECT_EQ(std::get<std::string>(tokens[0].data), "2Q");
+    EXPECT_EQ(tokenArr.at(0).type, lexer::TokenType::IDENTIFIER);
+    EXPECT_EQ(std::get<std::string>(tokenArr.at(0).data), "2Q");
 
-    EXPECT_EQ(tokens[1].type, lexer::TokenType::IDENTIFIER);
-    EXPECT_EQ(std::get<std::string>(tokens[1].data), "12abc");
+    EXPECT_EQ(tokenArr.at(1).type, lexer::TokenType::IDENTIFIER);
+    EXPECT_EQ(std::get<std::string>(tokenArr.at(1).data), "12abc");
 }
 
 TEST(LexerValid, IdentifierWithDigitsInside) {
-    const auto tokens = lex("abc123 a1b2");
+    lexer::Lexer lx("abc123 a1b2");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 3u);
-    EXPECT_EQ(std::get<std::string>(tokens[0].data), "abc123");
-    EXPECT_EQ(std::get<std::string>(tokens[1].data), "a1b2");
+    ASSERT_EQ(tokenArr.size(), 3u);
+    EXPECT_EQ(std::get<std::string>(tokenArr.at(0).data), "abc123");
+    EXPECT_EQ(std::get<std::string>(tokenArr.at(1).data), "a1b2");
 }
 
 TEST(LexerValid, LongIdentifier) {
-    const std::string name(100, 'a');
-    const auto tokens = lex(name);
+    std::string longString = std::string(100, 'a');
+    lexer::Lexer lx(longString);
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 2u);
-    EXPECT_EQ(std::get<std::string>(tokens[0].data), name);
+    ASSERT_EQ(tokenArr.size(), 2u);
+    EXPECT_EQ(std::get<std::string>(tokenArr.at(0).data), longString);
 }
 
 TEST(LexerValid, TrailingSpacesDoNotAddTokens) {
-    EXPECT_EQ(lex("1 2 ").size(), 3u);
-    EXPECT_EQ(lex("1 2\n").size(), 3u);
-    EXPECT_EQ(lex("1 2 \n\t ").size(), 3u);
+    lexer::Lexer lx("1 2 ");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
+
+    EXPECT_EQ(tokenArr.size(), 3u);
+
+    lx = lexer::Lexer("1 2\n");
+    tokenArr = lx.tokenize();
+
+    EXPECT_EQ(tokenArr.size(), 3u);
+
+    lx = lexer::Lexer("1 2 \n\t ");
+    tokenArr = lx.tokenize();
+
+    EXPECT_EQ(tokenArr.size(), 3u);
 }
 
 TEST(LexerValid, DifferentWhitespaceSeparatesTokens) {
-    const auto tokens = lex("1\t2\n3\r\n4  5");
+    lexer::Lexer lx("1\t2\n3\r\n4  5");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 6u);
+    ASSERT_EQ(tokenArr.size(), 6u);
 
     for (std::size_t i = 0; i < 5; ++i) {
-        EXPECT_EQ(std::get<int>(tokens[i].data), static_cast<int>(i) + 1);
+        EXPECT_EQ(std::get<int>(tokenArr.at(i).data), static_cast<int>(i) + 1);
     }
 }
 
 TEST(LexerValid, ConfigLikeInput) {
-    const auto tokens = lex("3\nLRU\nLFU\nARC\n");
+    lexer::Lexer lx("3\nLRU\nLFU\nARC\n");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 5u);
-    EXPECT_EQ(std::get<int>(tokens[0].data), 3);
-    EXPECT_EQ(std::get<std::string>(tokens[1].data), "LRU");
-    EXPECT_EQ(std::get<std::string>(tokens[2].data), "LFU");
-    EXPECT_EQ(std::get<std::string>(tokens[3].data), "ARC");
-    EXPECT_EQ(tokens[4].type, lexer::TokenType::END);
+    ASSERT_EQ(tokenArr.size(), 5u);
+    EXPECT_EQ(std::get<int>(tokenArr.at(0).data), 3);
+    EXPECT_EQ(std::get<std::string>(tokenArr.at(1).data), "LRU");
+    EXPECT_EQ(std::get<std::string>(tokenArr.at(2).data), "LFU");
+    EXPECT_EQ(std::get<std::string>(tokenArr.at(3).data), "ARC");
+    EXPECT_EQ(tokenArr.at(4).type, lexer::TokenType::END);
 }
 
 TEST(LexerPosition, TokensStoreStartPosition) {
-    const auto tokens = lex("12 ab\n7");
+    lexer::Lexer lx("12 ab\n7");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 4u);
+    ASSERT_EQ(tokenArr.size(), 4u);
 
-    EXPECT_EQ(tokens[0].line, 1u);
-    EXPECT_EQ(tokens[0].col, 1u);
+    EXPECT_EQ(tokenArr.at(0).line, 1u);
+    EXPECT_EQ(tokenArr.at(0).col, 1u);
 
-    EXPECT_EQ(tokens[1].line, 1u);
-    EXPECT_EQ(tokens[1].col, 4u);
+    EXPECT_EQ(tokenArr.at(1).line, 1u);
+    EXPECT_EQ(tokenArr.at(1).col, 4u);
 
-    EXPECT_EQ(tokens[2].line, 2u);
-    EXPECT_EQ(tokens[2].col, 1u);
+    EXPECT_EQ(tokenArr.at(2).line, 2u);
+    EXPECT_EQ(tokenArr.at(2).col, 1u);
 
-    EXPECT_EQ(tokens[3].type, lexer::TokenType::END);
-    EXPECT_EQ(tokens[3].line, 2u);
-    EXPECT_EQ(tokens[3].col, 2u);
+    EXPECT_EQ(tokenArr.at(3).type, lexer::TokenType::END);
+    EXPECT_EQ(tokenArr.at(3).line, 2u);
+    EXPECT_EQ(tokenArr.at(3).col, 2u);
 }
 
 TEST(LexerPosition, EmptyLinesIncreaseLine) {
-    const auto tokens = lex("\n\n  x");
+    lexer::Lexer lx("\n\n  x");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 2u);
+    ASSERT_EQ(tokenArr.size(), 2u);
 
-    EXPECT_EQ(tokens[0].line, 3u);
-    EXPECT_EQ(tokens[0].col, 3u);
+    EXPECT_EQ(tokenArr.at(0).line, 3u);
+    EXPECT_EQ(tokenArr.at(0).col, 3u);
 
-    EXPECT_EQ(tokens[1].line, 3u);
-    EXPECT_EQ(tokens[1].col, 4u);
+    EXPECT_EQ(tokenArr.at(1).line, 3u);
+    EXPECT_EQ(tokenArr.at(1).col, 4u);
 }
 
 TEST(LexerPosition, EndAfterTrailingNewline) {
-    const auto tokens = lex("1\n");
+    lexer::Lexer lx("1\n");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 2u);
-    EXPECT_EQ(tokens[1].type, lexer::TokenType::END);
-    EXPECT_EQ(tokens[1].line, 2u);
-    EXPECT_EQ(tokens[1].col, 1u);
+    ASSERT_EQ(tokenArr.size(), 2u);
+    EXPECT_EQ(tokenArr.at(1).type, lexer::TokenType::END);
+    EXPECT_EQ(tokenArr.at(1).line, 2u);
+    EXPECT_EQ(tokenArr.at(1).col, 1u);
 }
 
 TEST(LexerErrors, UnknownSymbolAfterIdentifier) {
-    const auto tokens = lex("abc$");
+    lexer::Lexer lx("abc$");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 2u);
+    ASSERT_EQ(tokenArr.size(), 2u);
 
-    EXPECT_EQ(tokens[0].type, lexer::TokenType::IDENTIFIER);
-    EXPECT_EQ(std::get<std::string>(tokens[0].data), "abc");
+    EXPECT_EQ(tokenArr.at(0).type, lexer::TokenType::IDENTIFIER);
+    EXPECT_EQ(std::get<std::string>(tokenArr.at(0).data), "abc");
 
-    EXPECT_EQ(tokens[1].type, lexer::TokenType::ERROR);
-    EXPECT_EQ(tokens[1].line, 1u);
-    EXPECT_EQ(tokens[1].col, 4u);
+    EXPECT_EQ(tokenArr.at(1).type, lexer::TokenType::ERROR);
+    EXPECT_EQ(tokenArr.at(1).line, 1u);
+    EXPECT_EQ(tokenArr.at(1).col, 4u);
 }
 
 TEST(LexerErrors, UnknownSymbolAtStart) {
-    const auto tokens = lex("$");
+    lexer::Lexer lx("$");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_FALSE(tokens.empty());
-    EXPECT_EQ(tokens.back().type, lexer::TokenType::ERROR);
-    EXPECT_FALSE(hasEnd(tokens));
+    ASSERT_FALSE(tokenArr.empty());
+    EXPECT_EQ(tokenArr.back().type, lexer::TokenType::ERROR);
+    EXPECT_FALSE(hasEnd(tokenArr));
 }
 
 TEST(LexerErrors, LexingStopsAfterError) {
-    const auto tokens = lex("ab ; cd 5");
+    lexer::Lexer lx("ab ; cd 5");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_FALSE(tokens.empty());
-    EXPECT_EQ(tokens.back().type, lexer::TokenType::ERROR);
-    EXPECT_FALSE(hasEnd(tokens));
+    ASSERT_FALSE(tokenArr.empty());
+    EXPECT_EQ(tokenArr.back().type, lexer::TokenType::ERROR);
+    EXPECT_FALSE(hasEnd(tokenArr));
 
-    for (const auto& token : tokens) {
-        if (token.type == lexer::TokenType::IDENTIFIER) {
-            EXPECT_NE(std::get<std::string>(token.data), "cd");
+    for (std::size_t i = 0; i < tokenArr.size(); ++i) {
+        if (tokenArr.at(i).type == lexer::TokenType::IDENTIFIER) {
+            EXPECT_NE(std::get<std::string>(tokenArr.at(i).data), "cd");
         }
 
-        EXPECT_NE(token.type, lexer::TokenType::INT);
+        EXPECT_NE(tokenArr.at(i).type, lexer::TokenType::INT);
     }
-}
-
-TEST(LexerErrors, ErrorMessageIsString) {
-    const auto tokens = lex("ab;");
-
-    ASSERT_FALSE(tokens.empty());
-    ASSERT_EQ(tokens.back().type, lexer::TokenType::ERROR);
-    EXPECT_TRUE(std::holds_alternative<std::string>(tokens.back().data));
 }
 
 TEST(LexerErrors, IntOverflowIsNotInt) {
     for (const std::string source : {"2147483648", "99999999999999999999"}) {
         SCOPED_TRACE(source);
 
-        const auto tokens = lex(source);
+        lexer::Lexer lx(source);
+        lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-        ASSERT_FALSE(tokens.empty());
-        EXPECT_NE(tokens[0].type, lexer::TokenType::INT);
+        ASSERT_FALSE(tokenArr.empty());
+        EXPECT_NE(tokenArr.at(0).type, lexer::TokenType::INT);
     }
 }
 
 TEST(LexerErrors, NonAsciiByteIsError) {
-    const auto tokens = lex("ab\xFF");
+    lexer::Lexer lx("ab\xFF");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_FALSE(tokens.empty());
-    EXPECT_EQ(tokens.back().type, lexer::TokenType::ERROR);
-    EXPECT_FALSE(hasEnd(tokens));
+    ASSERT_FALSE(tokenArr.empty());
+    EXPECT_EQ(tokenArr.back().type, lexer::TokenType::ERROR);
+    EXPECT_FALSE(hasEnd(tokenArr));
 }
 
 TEST(LexerFileName, DefaultName) {
     lexer::Lexer lx("1 2 3");
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
     EXPECT_EQ(lx.getFileName(), "unknown_file");
 }
@@ -296,21 +317,21 @@ TEST(LexerLifetime, LexerOwnsSourceBuffer) {
 
     source = "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz";
 
-    const auto tokens = lx.tokenize();
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 3u);
-    EXPECT_EQ(std::get<int>(tokens[0].data), 10);
-    EXPECT_EQ(std::get<int>(tokens[1].data), 20);
+    ASSERT_EQ(tokenArr.size(), 3u);
+    EXPECT_EQ(std::get<int>(tokenArr.at(0).data), 10);
+    EXPECT_EQ(std::get<int>(tokenArr.at(1).data), 20);
 }
 
 TEST(LexerLifetime, WorksWithTemporaryString) {
     lexer::Lexer lx(std::string("5 LRU"));
 
-    const auto tokens = lx.tokenize();
+    lexer::Lexer::TokenArr_t tokenArr = lx.tokenize();
 
-    ASSERT_EQ(tokens.size(), 3u);
-    EXPECT_EQ(std::get<int>(tokens[0].data), 5);
-    EXPECT_EQ(std::get<std::string>(tokens[1].data), "LRU");
+    ASSERT_EQ(tokenArr.size(), 3u);
+    EXPECT_EQ(std::get<int>(tokenArr.at(0).data), 5);
+    EXPECT_EQ(std::get<std::string>(tokenArr.at(1).data), "LRU");
 }
 
 } // namespace tests
