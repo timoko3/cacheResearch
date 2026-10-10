@@ -167,10 +167,10 @@ TEST(TokenStreamValid, ExpectTokenReturnsConsumedToken) {
     std::vector<lexer::Token> tokenArr{createIdentToken("LRU", 2, 5), createEndToken(2, 6)};
     lexer::TokenStream ts(tokenArr);
 
-    const lexer::Token& Token = ts.expectToken(lexer::TokenType::IDENTIFIER, "need ident");
+    const lexer::Token& token = ts.expectToken(lexer::TokenType::IDENTIFIER, "need ident");
 
-    EXPECT_EQ(Token.type, lexer::TokenType::IDENTIFIER);
-    EXPECT_EQ(std::get<std::string>(Token.data), "LRU");
+    EXPECT_EQ(token.type, lexer::TokenType::IDENTIFIER);
+    EXPECT_EQ(std::get<std::string>(token.data), "LRU");
     EXPECT_TRUE(ts.atEnd());
 }
 
