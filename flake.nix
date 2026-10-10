@@ -14,6 +14,7 @@
       llvm = pkgs.llvmPackages_18;
       python = pkgs.python3.withPackages (packages: [ packages.pyyaml ]);
       gtest = pkgs.gtest.override { stdenv = llvm.stdenv; };
+      library = pkgs.callPackage ./nix/library.nix { src = self; };
       package = llvm.stdenv.mkDerivation {
         pname = "cache-research";
         version = "0.1.0";
@@ -41,7 +42,12 @@
     in
     {
       packages.${system}.default = package;
+      packages.${system}.library = library;
       checks.${system}.default = package;
+      checks.${system}.library = library;
+      overlays.default = final: prev: {
+        cache-research-library = final.callPackage ./nix/library.nix { src = self; };
+      };
       devShells.${system}.default = (pkgs.mkShell.override { stdenv = llvm.stdenv; }) {
         inputsFrom = [ package ];
         GENERAL_FUNCTIONS_SOURCE_DIR = "${general-functions}";
