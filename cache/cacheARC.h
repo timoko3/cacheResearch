@@ -44,43 +44,65 @@ private:
     std::size_t capacity_;
     std::size_t targetT1size_ = 0;
 
-    void eraseLRU(PageList& list) {
-        if (list.empty()) {
-            return;
-        }
-
-        auto victim = std::prev(list.end());
-
-        hash_.erase(victim->key);
-        list.erase(victim);
-    }
-
-    void moveLRUToGhost(PageList& srcList, PageList& ghostList, ListName ghostListName) {
-        if (srcList.empty()) {
-            return;
-        }
-
-        auto victim = std::prev(srcList.end());
-
-        victim->page.reset();
-
-        ghostList.splice(ghostList.begin(), srcList, victim);
-
-        auto& location = hash_.at(victim->key);
-
-        location.listIt = victim;
-        location.listName = ghostListName;
-    }
-
-    void replacePage(bool requestedFromB2) {
+    IndexIterator findReplacement(bool requestedFromB2) {
         const bool evictFromT1 = !t1_.empty() && (t1_.size() > targetT1size_ ||
                                                   (requestedFromB2 && t1_.size() == targetT1size_));
 
-        if (evictFromT1 || t2_.empty()) {
-            moveLRUToGhost(t1_, b1_, ListName::B1);
-        } else {
-            moveLRUToGhost(t2_, b2_, ListName::B2);
+        auto& source = (evictFromT1 || t2_.empty()) ? t1_ : t2_;
+        if (source.empty()) {
+            return hash_.end();
         }
+
+        return hash_.find(source.back().key);
+    }
+
+    void replacePage(IndexIterator indexedVictim) noexcept {
+        if (indexedVictim == hash_.end()) {
+            return;
+        }
+
+        auto& location = indexedVictim->second;
+        const bool fromT1 = location.listName == ListName::T1;
+
+        auto& source = fromT1 ? t1_ : t2_;
+        auto& ghost = fromT1 ? b1_ : b2_;
+
+        location.listIt->page.reset();
+        ghost.splice(ghost.begin(), source, location.listIt);
+        location.listName = fromT1 ? ListName::B1 : ListName::B2;
+    }
+
+    void eraseVictim() {
+        PageList* listToErase = nullptr;
+        bool needsReplacement = false;
+
+        const std::size_t recentTotal = t1_.size() + b1_.size();
+        if (recentTotal == capacity_) {
+            if (t1_.size() < capacity_) {
+                listToErase = &b1_;
+                needsReplacement = true;
+            } else {
+                listToErase = &t1_;
+            }
+        } else if (recentTotal < capacity_) {
+            const std::size_t total = t1_.size() + t2_.size() + b1_.size() + b2_.size();
+
+            if (total >= capacity_) {
+                if (total >= 2 * capacity_) {
+                    listToErase = &b2_;
+                }
+                needsReplacement = true;
+            }
+        }
+
+        auto indexedReplacement = needsReplacement ? findReplacement(false) : hash_.end();
+
+        if (listToErase && !listToErase->empty()) {
+            hash_.erase(listToErase->back().key);
+            listToErase->pop_back();
+        }
+
+        replacePage(indexedReplacement);
     }
 
     const T& moveGhostPageToT2(IndexIterator hit, const T& page) {
@@ -88,8 +110,13 @@ private:
 
         auto pageIt = hit->second.listIt;
 
-        replacePage(wasInB2);
         pageIt->page.emplace(page);
+        try {
+            replacePage(findReplacement(wasInB2));
+        } catch (...) {
+            pageIt->page.reset();
+            throw;
+        }
 
         if (wasInB2) {
             t2_.splice(t2_.begin(), b2_, pageIt);
@@ -164,28 +191,23 @@ protected:
             return moveGhostPageToT2(hit, page);
         }
 
-        const std::size_t recentTotal = t1_.size() + b1_.size();
+        PageList stagedPage;
+        stagedPage.push_front(Entry{key, std::optional<T>{page}});
 
-        if (recentTotal == capacity_) {
-            if (t1_.size() < capacity_) {
-                eraseLRU(b1_);
-                replacePage(false);
-            } else {
-                eraseLRU(t1_);
-            }
-        } else if (recentTotal < capacity_) {
-            const std::size_t total = t1_.size() + t2_.size() + b1_.size() + b2_.size();
-
-            if (total >= capacity_) {
-                if (total >= 2 * capacity_) {
-                    eraseLRU(b2_);
-                }
-                replacePage(false);
-            }
+        auto [indexedPage, wasIndexed] =
+            hash_.emplace(key, PageLocation{stagedPage.begin(), ListName::T1});
+        if (!wasIndexed) {
+            throw std::logic_error("insert requires an unknown key");
         }
 
-        t1_.push_front(Entry{key, std::optional<T>{page}});
-        hash_.emplace(key, PageLocation{t1_.begin(), ListName::T1});
+        try {
+            eraseVictim();
+        } catch (...) {
+            hash_.erase(indexedPage);
+            throw;
+        }
+
+        t1_.splice(t1_.begin(), stagedPage);
         return *t1_.front().page;
     }
 };

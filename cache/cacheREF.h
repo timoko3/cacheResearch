@@ -89,14 +89,26 @@ protected:
     }
 
     const T& insert(const KeyT& key, const T& page) override {
-        if (isFull()) {
-            auto victimIt = findVictim();
-            hash_.erase(victimIt->key);
-            cache_.erase(victimIt);
+        CacheList stagedPage;
+        stagedPage.push_front({key, page});
+
+        auto [indexedPageIt, wasIndexed] = hash_.emplace(key, stagedPage.begin());
+        if (!wasIndexed) {
+            throw std::logic_error("insert requires an unknown key");
         }
 
-        cache_.push_front({key, page});
-        hash_.emplace(key, cache_.begin());
+        try {
+            if (isFull()) {
+                auto victimIt = findVictim();
+                hash_.erase(victimIt->key);
+                cache_.erase(victimIt);
+            }
+        } catch (...) {
+            hash_.erase(indexedPageIt);
+            throw;
+        }
+
+        cache_.splice(cache_.begin(), stagedPage);
         return cache_.front().page;
     }
 };
