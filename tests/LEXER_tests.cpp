@@ -13,7 +13,7 @@ namespace tests {
 namespace {
 
 bool hasEnd(const lexer::Lexer::TokenArr_t& tokenArr) {
-    for (int i = 0; i < tokenArr.size(); ++i) {
+    for (std::size_t i = 0; i < tokenArr.size(); ++i) {
         if (tokenArr.at(i).type == lexer::TokenType::END) {
             return true;
         }
@@ -268,7 +268,7 @@ TEST(LexerErrors, LexingStopsAfterError) {
     EXPECT_EQ(tokenArr.back().type, lexer::TokenType::ERROR);
     EXPECT_FALSE(hasEnd(tokenArr));
 
-    for (int i = 0; i < tokenArr.size(); ++i) {
+    for (std::size_t i = 0; i < tokenArr.size(); ++i) {
         if (tokenArr.at(i).type == lexer::TokenType::IDENTIFIER) {
             EXPECT_NE(std::get<std::string>(tokenArr.at(i).data), "cd");
         }
