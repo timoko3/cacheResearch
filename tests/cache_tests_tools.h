@@ -1,5 +1,4 @@
-#ifndef CACHE_TESTS_TOOLS_H
-#define CACHE_TESTS_TOOLS_H
+#pragma once
 
 #include <algorithm>
 #include <cstddef>
@@ -85,5 +84,3 @@ void lookupUpdateTest(CacheT& cache, const std::vector<int>& requests, std::stri
 }
 
 } // namespace tests
-
-#endif /* CACHE_TESTS_TOOLS_H */

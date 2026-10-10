@@ -1,5 +1,4 @@
-#ifndef CACHE_SYSTEM_H
-#define CACHE_SYSTEM_H
+#pragma once
 
 #include <cstddef>
 #include <memory>
@@ -102,5 +101,3 @@ public:
 };
 
 } // namespace cache
-
-#endif /* CACHE_SYSTEM_H */
