@@ -45,27 +45,6 @@ private:
         cache_.erase(resident);
     }
 
-    void insertNewPage(const KeyT& key, const T& page) {
-        PageList stagedPage;
-        stagedPage.emplace_front(key, page);
-        auto [indexedPage, wasInserted] = pageIndex_.emplace(key, stagedPage.begin());
-        if (!wasInserted) {
-            throw std::logic_error("insertNewPage requires an unknown key");
-        }
-
-        try {
-            if (isFull()) {
-                auto residentToEvict = pageIndex_.find(cache_.back().key);
-                evictPage(residentToEvict);
-            }
-        } catch (...) {
-            pageIndex_.erase(indexedPage);
-            throw;
-        }
-
-        cache_.splice(cache_.begin(), stagedPage, stagedPage.begin());
-    }
-
 public:
     explicit CacheLRU(std::size_t capacity, CacheLevel level = CacheLevel::L1)
         : Base(capacity, level) {}
@@ -87,7 +66,24 @@ protected:
     }
 
     const T& insert(const KeyT& key, const T& page) override {
-        insertNewPage(key, page);
+        PageList stagedPage;
+        stagedPage.emplace_front(key, page);
+        auto [indexedPage, wasInserted] = pageIndex_.emplace(key, stagedPage.begin());
+        if (!wasInserted) {
+            throw std::logic_error("insertNewPage requires an unknown key");
+        }
+
+        try {
+            if (isFull()) {
+                auto residentToEvict = pageIndex_.find(cache_.back().key);
+                evictPage(residentToEvict);
+            }
+        } catch (...) {
+            pageIndex_.erase(indexedPage);
+            throw;
+        }
+
+        cache_.splice(cache_.begin(), stagedPage, stagedPage.begin());        
         return cache_.front().page;
     }
 };

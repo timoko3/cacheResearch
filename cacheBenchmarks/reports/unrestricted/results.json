@@ -1591,6 +1591,42 @@
     "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
   },
   {
+    "total": 290,
+    "reference_misses": 2635,
+    "evaluated": 7145,
+    "pruned": 15,
+    "single": {
+      "misses": 4519,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "2Q"
+      ],
+      "misses_by_run": [
+        4519
+      ]
+    },
+    "best": {
+      "misses": 4517,
+      "capacities": [
+        4,
+        286
+      ],
+      "policies": [
+        "LFU",
+        "2Q"
+      ],
+      "misses_by_run": [
+        4517
+      ]
+    },
+    "pattern": "uniform",
+    "runner_sha256": "94600da5eead0b76f63bee28bcbe5e15a23c9e39e809a1b38fb501270daecc04",
+    "execution_platform": "Windows",
+    "input_sha256": "243955acc440af9099ee0204bf8bb4d713a36e1af292607f3b7d5885bc4261f1"
+  },
+  {
     "total": 8,
     "reference_misses": 3694,
     "evaluated": 280,
@@ -1626,8 +1662,8 @@
   {
     "total": 16,
     "reference_misses": 3089,
-    "evaluated": 5790,
-    "pruned": 1027,
+    "evaluated": 5405,
+    "pruned": 1104,
     "single": {
       "misses": 3680,
       "capacities": [
@@ -1641,22 +1677,37 @@
       ]
     },
     "best": {
-      "misses": 3622,
+      "misses": 3625,
       "capacities": [
-        10,
-        6
+        8,
+        8
       ],
       "policies": [
         "LFU",
-        "2Q"
+        "LFU"
       ],
       "misses_by_run": [
-        3622
+        3625
       ]
     },
     "pattern": "popular",
     "execution_platform": "Windows",
-    "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+    "runner_sha256": "94600da5eead0b76f63bee28bcbe5e15a23c9e39e809a1b38fb501270daecc04",
+    "result_refresh": {
+      "date": "2026-10-10",
+      "reason": "2Q now uses all free resident slots",
+      "backup": "C:\\MIPT\\proga\\vlados\\cacheResearch\\cacheBenchmarks\\local_data\\2q_refresh_20261010\\before",
+      "source_hashes": {
+        "cache\\cache.h": "3408c748bd61399986368f45e2ee1f4ce6a4474299d48949b58120a69fcf5027",
+        "cache\\cache2Q.h": "e6c5500ee2ee5db399a72a3034bf14cf854f09dce719c5fdbbada7ff59efa95a",
+        "cache\\cacheARC.h": "aeece7c2560577e7bcd7f39e28f8e874400dc1c70e08007d035718639cde3b2a",
+        "cache\\cacheFactory.h": "ee2629f6cce427e1824ceb104fdac53f26ff3b3e232d6a6fd58c8f0417fd172a",
+        "cache\\cacheLFU.h": "2995ff69674e719ad6d08e26f57e261b5b24429fc7a2942d967c31e5fbc8b169",
+        "cache\\cacheLIRS.h": "03f31cbcf882c7e281cf3fb4bc8263407a3492a1e282cb24550b79af4e217d3a",
+        "cache\\cacheLRU.h": "111e19d4207d18449dbb7af52cb3d2cab30c99ae0db829912da32e204a2ffdd9",
+        "cache\\cacheREF.h": "4ef8b4e077111d4ba1c74d4ec5d448d825204b784c388ec3e0a2f99fd5504dbe"
+      }
+    }
   },
   {
     "total": 36,
@@ -1760,6 +1811,40 @@
     "pattern": "popular",
     "execution_platform": "Windows",
     "runner_sha256": "a4ab0cc9f2ddebebd47004e2f360e9c865339e1e2ad4a8b16719274fd46275cc"
+  },
+  {
+    "total": 290,
+    "reference_misses": 1021,
+    "evaluated": 3498065,
+    "pruned": 314321,
+    "single": {
+      "misses": 1479,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        1479
+      ]
+    },
+    "best": {
+      "misses": 1479,
+      "capacities": [
+        290
+      ],
+      "policies": [
+        "LIRS"
+      ],
+      "misses_by_run": [
+        1479
+      ]
+    },
+    "pattern": "popular",
+    "runner_sha256": "94600da5eead0b76f63bee28bcbe5e15a23c9e39e809a1b38fb501270daecc04",
+    "execution_platform": "Windows",
+    "input_sha256": "abf372e384a524033456a452a2cf83acb0de8796e4b989d9e20067a352e44475"
   },
   {
     "total": 8,
