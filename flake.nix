@@ -3,7 +3,7 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
   inputs.general-functions = {
-    url = "github:timoko3/generalFunctions/dc31aef3c60cb88428c6aa7b150edbc36028508e";
+    url = "github:timoko3/generalFunctions";
     flake = false;
   };
 

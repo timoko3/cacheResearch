@@ -80,16 +80,13 @@ if(CACHE_RESEARCH_BUILD_APP OR CACHE_RESEARCH_BUILD_BENCHMARKS)
         set(cache_research_general_default "$ENV{GENERAL_FUNCTIONS_SOURCE_DIR}")
     endif()
     set(CACHE_RESEARCH_GENERAL_FUNCTIONS_SOURCE_DIR "${cache_research_general_default}"
-        CACHE PATH "Path to generalFunctions sources (empty downloads the pinned archive)")
+        CACHE PATH "Path to generalFunctions sources (empty fetches the default Git branch)")
     set(cache_research_general_dir "${CACHE_RESEARCH_GENERAL_FUNCTIONS_SOURCE_DIR}")
     if(NOT cache_research_general_dir)
         include(FetchContent)
         FetchContent_Declare(generalfunctions
-            URL https://codeload.github.com/timoko3/generalFunctions/tar.gz/dc31aef3c60cb88428c6aa7b150edbc36028508e
-            URL_HASH SHA256=96c500d80057f398875894dd79226001e857e9e0b291c4c29ca1bd0ae47156c1
-            DOWNLOAD_EXTRACT_TIMESTAMP TRUE
-            TIMEOUT 60
-            INACTIVITY_TIMEOUT 30
+            GIT_REPOSITORY https://github.com/timoko3/generalFunctions.git
+            GIT_TAG origin/HEAD
         )
         FetchContent_MakeAvailable(generalfunctions)
         set(cache_research_general_dir "${generalfunctions_SOURCE_DIR}")
@@ -110,7 +107,7 @@ if(CACHE_RESEARCH_BUILD_APP OR CACHE_RESEARCH_BUILD_BENCHMARKS)
             message(FATAL_ERROR
                 "Missing ${source}. Tools require generalFunctions sources. "
                 "Set CACHE_RESEARCH_GENERAL_FUNCTIONS_SOURCE_DIR, enter nix develop, "
-                "allow FetchContent to download it, or disable "
+                "allow FetchContent to fetch it, or disable "
                 "CACHE_RESEARCH_BUILD_APP and CACHE_RESEARCH_BUILD_BENCHMARKS."
             )
         endif()
