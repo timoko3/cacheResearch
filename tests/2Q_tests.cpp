@@ -258,7 +258,7 @@ TEST(Cache2Q, VectorPage) {
     std::vector<int> loadedPage;
     auto slow = [&](int key) -> std::vector<int>& {
         ++loads;
-        loadedPage = {key, key + 1};
+        loadedPage = std::vector<int>{key, key + 1};
         return loadedPage;
     };
 
