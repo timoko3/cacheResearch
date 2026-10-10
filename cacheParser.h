@@ -23,7 +23,7 @@ class CacheParser {
     bool configParsed_ = false;
 
 public:
-    CacheParser() {};
+    CacheParser(){};
 
     void parseConfig(lexer::TokenStream& ts) {
         configParsed_ = false;
