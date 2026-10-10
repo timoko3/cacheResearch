@@ -10,55 +10,56 @@
 
 namespace cache {
 
-template <typename T, typename keyT = int>
-class CacheREF : public Cache<T, keyT> {
+template <typename T, typename KeyT = int>
+class CacheREF : public Cache<T, KeyT> {
 private:
-    struct Entry_t {
-        keyT key;
+    struct Entry {
+        KeyT key;
         T page;
     };
 
-    using Base_t = Cache<T, keyT>;
-    using CacheList_t = std::list<Entry_t>;
-    using ReqList_t = std::list<keyT>;
-    using CacheIt_t = typename CacheList_t::iterator;
-    using ReqIt_t = typename ReqList_t::iterator;
-    using HashTable_t = std::unordered_map<keyT, CacheIt_t>;
-    using Dist_t = typename ReqList_t::difference_type;
+    using Base = Cache<T, KeyT>;
+    using typename Base::PageResult;
+    using CacheList = std::list<Entry>;
+    using RequestList = std::list<KeyT>;
+    using CacheIterator = typename CacheList::iterator;
+    using RequestIterator = typename RequestList::iterator;
+    using HashTable = std::unordered_map<KeyT, CacheIterator>;
+    using Distance = typename RequestList::difference_type;
 
-    HashTable_t hash_;
-    CacheList_t cache_;
-    ReqList_t requests_;
-    ReqIt_t pos_;
+    HashTable hash_;
+    CacheList cache_;
+    RequestList requests_;
+    RequestIterator curRec_;
 
-    bool isFull() { return cache_.size() >= this->getSize(); };
+    bool isFull() const { return cache_.size() >= this->getSize(); };
 
-    CacheIt_t findVictim() {
-        CacheIt_t victim_it = cache_.begin();
-        Dist_t max_dist = 0;
+    CacheIterator findVictim() {
+        CacheIterator victimIt = cache_.begin();
+        Distance maxDist = 0;
 
-        for (auto cache_it = cache_.begin(); cache_it != cache_.end(); ++cache_it) {
-            Dist_t dist_to_next = requests_.size();
+        for (auto cacheIt = cache_.begin(); cacheIt != cache_.end(); ++cacheIt) {
+            Distance distToNext = requests_.size();
 
-            for (auto req_it = pos_; req_it != requests_.end(); ++req_it) {
-                if (*req_it == cache_it->key) {
-                    dist_to_next = std::distance(pos_, req_it);
+            for (auto reqIt = curRec_; reqIt != requests_.end(); ++reqIt) {
+                if (*reqIt == cacheIt->key) {
+                    distToNext = std::distance(curRec_, reqIt);
                     break;
                 }
             }
 
-            if (dist_to_next >= max_dist) {
-                max_dist = dist_to_next;
-                victim_it = cache_it;
+            if (distToNext >= maxDist) {
+                maxDist = distToNext;
+                victimIt = cacheIt;
             }
         }
 
-        return victim_it;
+        return victimIt;
     };
 
 public:
-    explicit CacheREF(size_t size, ReqList_t reqs, cacheLevel level = L1)
-        : Base_t(size, level), requests_(reqs), pos_(requests_.begin()) {
+    CacheREF(std::size_t size, RequestList reqs, CacheLevel level = CacheLevel::L1)
+        : Base(size, level), requests_(reqs), curRec_(requests_.begin()) {
         if (requests_.empty()) {
             throw std::invalid_argument("Array with requests are empty");
         }
@@ -67,30 +68,36 @@ public:
     ~CacheREF() = default;
 
 protected:
-    virtual const T* findAndTouch(const keyT& key) override {
-        if (pos_ == requests_.end()) {
+    virtual PageResult getPage(const KeyT& key) override {
+        if (curRec_ == requests_.end()) {
             throw std::out_of_range("Request sequence exhausted");
         }
-        ++pos_;
+
+        if (*curRec_ != key) {
+            throw std::invalid_argument("Request does not match the supplied sequence");
+        }
+
+        ++curRec_;
 
         auto hit = hash_.find(key);
 
         if (hit == hash_.end()) {
-            return nullptr;
+            return std::nullopt;
         }
 
-        return std::addressof(hit->second->page);
+        return std::cref(hit->second->page);
     }
 
-    void insert(const keyT& key, T page) override {
+    const T& insert(const KeyT& key, const T& page) override {
         if (isFull()) {
-            auto victim_it = findVictim();
-            hash_.erase(victim_it->key);
-            cache_.erase(victim_it);
+            auto victimIt = findVictim();
+            hash_.erase(victimIt->key);
+            cache_.erase(victimIt);
         }
 
         cache_.push_front({key, page});
         hash_.emplace(key, cache_.begin());
+        return cache_.front().page;
     }
 };
 

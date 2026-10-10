@@ -5,9 +5,9 @@
 
 #include <gtest/gtest.h>
 
-#include "generalFunctions/lexer/lexer.h"
-#include "generalFunctions/lexer/token.h"
-#include "generalFunctions/lexer/token_stream.h"
+#include "lexer/lexer.h"
+#include "lexer/token.h"
+#include "lexer/token_stream.h"
 
 namespace tests {
 

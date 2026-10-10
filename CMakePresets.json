@@ -1,57 +1,119 @@
 {
   "version": 5,
-  "cmakeMinimumRequired": { "major": 3, "minor": 24, "patch": 0 },
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 24,
+    "patch": 0
+  },
   "configurePresets": [
     {
       "name": "base",
       "hidden": true,
       "generator": "Ninja",
-      "binaryDir": "${sourceDir}/build/${hostSystemName}/${presetName}",
-      "cacheVariables": { "CMAKE_EXPORT_COMPILE_COMMANDS": true }
-    },
-    {
-      "name": "debug",
-      "displayName": "Debug (Ninja)",
-      "description": "Debug symbols for development and debugging",
-      "inherits": "base",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
-    },
-    {
-      "name": "release",
-      "displayName": "Release (Ninja)",
-      "description": "Optimized build for performance measurements",
-      "inherits": "base",
-      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
-    },
-    {
-      "name": "debug-make",
-      "displayName": "Linux Debug (Make)",
-      "description": "Linux debug build using GNU Make; Ninja is not required",
-      "inherits": "debug",
-      "generator": "Unix Makefiles",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true
       }
     },
     {
-      "name": "release-make",
-      "displayName": "Linux Release (Make)",
-      "description": "Linux optimized build using GNU Make; Ninja is not required",
-      "inherits": "release",
-      "generator": "Unix Makefiles",
-      "condition": {
-        "type": "equals",
-        "lhs": "${hostSystemName}",
-        "rhs": "Linux"
+      "name": "debug",
+      "displayName": "Debug",
+      "description": "Full project with debug symbols",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CACHE_RESEARCH_BUILD_APP": true,
+        "CACHE_RESEARCH_BUILD_BENCHMARKS": true,
+        "CACHE_RESEARCH_BUILD_TESTS": true
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release",
+      "description": "Full project with optimizations",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CACHE_RESEARCH_BUILD_APP": true,
+        "CACHE_RESEARCH_BUILD_BENCHMARKS": true,
+        "CACHE_RESEARCH_BUILD_TESTS": true
+      }
+    },
+    {
+      "name": "library",
+      "displayName": "Library",
+      "description": "Library package without tools or tests",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": null,
+        "CMAKE_BUILD_TYPE": "Release",
+        "CACHE_RESEARCH_BUILD_APP": false,
+        "CACHE_RESEARCH_BUILD_BENCHMARKS": false,
+        "CACHE_RESEARCH_BUILD_TESTS": false,
+        "CACHE_RESEARCH_INSTALL": true,
+        "CMAKE_INSTALL_PREFIX": "${sourceDir}/build/cache-install"
+      }
+    },
+    {
+      "name": "library-tests",
+      "displayName": "Library tests",
+      "description": "Library tests without research tools",
+      "inherits": "library",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true,
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CACHE_RESEARCH_BUILD_TESTS": true
       }
     }
   ],
   "buildPresets": [
-    { "name": "debug", "configurePreset": "debug" },
-    { "name": "release", "configurePreset": "release" },
-    { "name": "debug-make", "configurePreset": "debug-make" },
-    { "name": "release-make", "configurePreset": "release-make" }
+    {
+      "name": "debug",
+      "configurePreset": "debug"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
+    },
+    {
+      "name": "library",
+      "configurePreset": "library"
+    },
+    {
+      "name": "library-tests",
+      "configurePreset": "library-tests"
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    },
+    {
+      "name": "library-tests",
+      "configurePreset": "library-tests",
+      "output": {
+        "outputOnFailure": true
+      },
+      "execution": {
+        "noTestsAction": "error"
+      }
+    }
   ]
 }

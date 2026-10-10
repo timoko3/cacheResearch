@@ -47,16 +47,18 @@ void testOneLookup(CacheT& cache, std::unordered_set<int>& loadedKeys, const int
     bool slowGetPageWasCalled = false;
     const bool wasLoadedBefore = loadedKeys.find(key) != loadedKeys.end();
 
-    auto slowGetPage = [&](int requestedKey) {
+    uint32_t loadedPage = 0;
+    auto slowGetPage = [&](int requestedKey) -> uint32_t& {
         EXPECT_EQ(requestedKey, key);
 
         slowGetPageWasCalled = true;
         loadedKeys.insert(requestedKey);
 
-        return hashInt(requestedKey);
+        loadedPage = hashInt(requestedKey);
+        return loadedPage;
     };
 
-    const int actualValue = cache.lookupUpdate(key, slowGetPage);
+    const uint32_t actualValue = cache.lookupUpdate(key, slowGetPage);
 
     ASSERT_TRUE(expectedResult == 'H' || expectedResult == 'M');
     if (expectedResult == 'M') {
