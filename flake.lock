@@ -3,17 +3,16 @@
     "general-functions": {
       "flake": false,
       "locked": {
-        "lastModified": 1791499036,
-        "narHash": "sha256-qaan8WsWD+TmQP4Ze2iCFlPTSWzriMDG0ZclhrSzUTU=",
+        "lastModified": 1791565078,
+        "narHash": "sha256-8/xTSx/50TMP1pSfEc2VW11jD6DIjeesrFmlrqQTeZs=",
         "owner": "timoko3",
         "repo": "generalFunctions",
-        "rev": "dc31aef3c60cb88428c6aa7b150edbc36028508e",
+        "rev": "a46b47412a4996a2668a0bd525507702040052f2",
         "type": "github"
       },
       "original": {
         "owner": "timoko3",
         "repo": "generalFunctions",
-        "rev": "dc31aef3c60cb88428c6aa7b150edbc36028508e",
         "type": "github"
       }
     },
