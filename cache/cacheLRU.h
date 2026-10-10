@@ -83,7 +83,7 @@ protected:
             throw;
         }
 
-        cache_.splice(cache_.begin(), stagedPage, stagedPage.begin());        
+        cache_.splice(cache_.begin(), stagedPage, stagedPage.begin());
         return cache_.front().page;
     }
 };

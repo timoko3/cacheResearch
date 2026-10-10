@@ -38,7 +38,7 @@ public:
         if (creator == creators.end()) {
             throw std::invalid_argument("Unsupported cache strategy");
         }
-        
+
         return creator->second(description);
     }
 };
