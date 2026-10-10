@@ -12,7 +12,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE_SUFFIXES = {".c", ".cc", ".cpp", ".cxx"}
 HEADER_SUFFIXES = {".h", ".hh", ".hpp", ".hxx"}
-FORMAT_VERSION = "18.1.3"
+FORMAT_MAJOR_VERSION = 18
 
 
 def check_format_version():
@@ -20,10 +20,10 @@ def check_format_version():
         ["clang-format-18", "--version"], text=True, cwd=ROOT
     )
     match = re.search(r"\bversion\s+(\d+\.\d+\.\d+)\b", output)
-    if match is None or match.group(1) != FORMAT_VERSION:
+    if match is None or int(match.group(1).split(".")[0]) != FORMAT_MAJOR_VERSION:
         raise SystemExit(
-            f"Expected clang-format {FORMAT_VERSION}; got: {output.strip()}. "
-            "Use the project's formatter version before checking or applying style."
+            f"Expected clang-format {FORMAT_MAJOR_VERSION}.x; got: {output.strip()}. "
+            "Use the project's LLVM major version before checking or applying style."
         )
 
 

@@ -9,3 +9,5 @@
 *.hxx text eol=lf
 .clang-format text eol=lf
 .clang-tidy text eol=lf
+*.nix text eol=lf
+flake.lock text eol=lf

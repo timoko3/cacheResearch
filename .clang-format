@@ -1,6 +1,6 @@
 # Complete effective style for clang-format 18.1.3.
 # All options are explicit: do not replace this with BasedOnStyle defaults.
-# CI/local checks reject a different formatter version.
+# CI/local checks require LLVM 18; patch versions may differ.
 ---
 Language:        Cpp
 AccessModifierOffset: -4

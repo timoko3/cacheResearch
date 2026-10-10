@@ -9,7 +9,7 @@
 
 #include "cache/cacheREF.h"
 #include "cacheParser.h"
-#include "generalFunctions/file.h"
+#include "file.h"
 
 void checkReadableFile(const std::string& filePath) {
     std::ifstream inputFile(filePath);
