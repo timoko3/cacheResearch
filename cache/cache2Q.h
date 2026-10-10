@@ -163,8 +163,8 @@ private:
 public:
     // Johnson/Shasha defaults: A1_IN target 25%, ghost history limit 50%.
     // https://www.vldb.org/conf/1994/P439.PDF
-    explicit Cache2Q(std::size_t capacity, CacheLevel level = CacheLevel::L1)
-        : Base(capacity, level),
+    explicit Cache2Q(std::size_t capacity)
+        : Base(capacity),
           a1inTargetSize_(std::max<std::size_t>(1, capacity / a1inTargetSizeDivisor)),
           ghostLimit_(std::max<std::size_t>(1, capacity / ghostLimitDivisor)) {
         if (capacity < 2) {

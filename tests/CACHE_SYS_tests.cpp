@@ -10,6 +10,18 @@ TEST(CacheSystemFocused, EmptyHierarchyIsRejected) {
     EXPECT_THROW((cache::CacheSystem<int, int>(params)), std::invalid_argument);
 }
 
+TEST(CacheSystemFocused, OwnsLevelDescriptionsForStatistics) {
+    cache::CacheSystemParams params{{{1, cache::CacheLevel::L2, cache::CacheEviction::C_LRU},
+                                     {2, cache::CacheLevel::L5, cache::CacheEviction::C_LFU}}};
+    cache::CacheSystem<int> system(params);
+    params.levels.clear();
+
+    const auto stats = system.getSystemStats();
+    ASSERT_EQ(stats.levels.size(), 2u);
+    EXPECT_EQ(stats.levels[0].level, cache::CacheLevel::L2);
+    EXPECT_EQ(stats.levels[1].level, cache::CacheLevel::L5);
+}
+
 TEST(CacheSystemFocused, LowerLevelHitDoesNotCallSlowLoader) {
     cache::CacheSystemParams params;
     params.levels.resize(2);

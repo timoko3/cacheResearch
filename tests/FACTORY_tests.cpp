@@ -11,8 +11,7 @@ TEST(CacheFactory, PreservesDescriptionAndSupportsStringKeys) {
                           cache::CacheEviction::C_LIRS}) {
         auto c = cache::CacheFactory<int, std::string>::make({4, cache::CacheLevel::L4, strategy});
         EXPECT_EQ(c->getSize(), 4u);
-        EXPECT_EQ(c->getLevel(), cache::CacheLevel::L4);
-        int loadedPage = 70;
+            int loadedPage = 70;
         auto slow = [&](const std::string&) -> int& { return loadedPage; };
         EXPECT_NE(&c->lookupUpdate("page", slow), &loadedPage);
         EXPECT_EQ(c->lookupUpdate("page", slow), 70);

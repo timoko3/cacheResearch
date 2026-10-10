@@ -58,8 +58,8 @@ private:
     };
 
 public:
-    CacheREF(std::size_t size, RequestList reqs, CacheLevel level = CacheLevel::L1)
-        : Base(size, level), requests_(reqs), curRec_(requests_.begin()) {
+    CacheREF(std::size_t size, RequestList reqs)
+        : Base(size), requests_(reqs), curRec_(requests_.begin()) {
         if (requests_.empty()) {
             throw std::invalid_argument("Array with requests are empty");
         }

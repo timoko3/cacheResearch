@@ -64,9 +64,8 @@ TEST(CacheLFUTrace, HotTwoLong) {
 }
 
 TEST(CacheLFUFocused, MetadataIsPreserved) {
-    cache::CacheLFU<int, int> c(5, cache::CacheLevel::L2);
+    cache::CacheLFU<int, int> c(5);
     EXPECT_EQ(c.getSize(), 5u);
-    EXPECT_EQ(c.getLevel(), cache::CacheLevel::L2);
 }
 
 TEST(CacheLFUFocused, FirstMissThenHitUpdatesStats) {

@@ -160,8 +160,7 @@ private:
     }
 
 public:
-    CacheARC(std::size_t capacity, CacheLevel level = CacheLevel::L1)
-        : Base(capacity, level), capacity_(capacity) {}
+    explicit CacheARC(std::size_t capacity) : Base(capacity), capacity_(capacity) {}
 
 protected:
     PageResult getPage(const KeyT& key) override {

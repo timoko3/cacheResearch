@@ -39,7 +39,7 @@ private:
     }
 
 public:
-    CacheLFU(std::size_t size, CacheLevel level = CacheLevel::L1) : Base(size, level){};
+    explicit CacheLFU(std::size_t size) : Base(size){};
 
     ~CacheLFU() = default;
 

@@ -22,6 +22,7 @@ endif()
 
 add_library(cache_header_checks OBJECT
     cache_headers/base.cpp
+    cache_headers/description.cpp
     cache_headers/factory.cpp
     cache_headers/2Q.cpp
     cache_headers/ARC.cpp

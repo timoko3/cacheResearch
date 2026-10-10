@@ -230,8 +230,8 @@ private:
 public:
     // Jiang/Zhang: resident HIR = 1%, LIR gets the remaining capacity.
     // https://xiaodongzhang1911.github.io/Zhang-papers/TR-05-11.pdf
-    explicit CacheLIRS(std::size_t capacity, CacheLevel level = CacheLevel::L1)
-        : Base(capacity, level),
+    explicit CacheLIRS(std::size_t capacity)
+        : Base(capacity),
           hirTargetSize_(std::max<std::size_t>(1, capacity / hirTargetSizeDivisor)),
           lirTargetSize_(capacity >= 2 ? capacity - hirTargetSize_ : 0) {
         if (capacity < 2) {

@@ -48,6 +48,7 @@ set_target_properties(cache_consumer PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/bin/$<CONFIG>")
 
 add_library(consumer_header_checks OBJECT
+    cache_headers/description.cpp
     cache_headers/base.cpp cache_headers/factory.cpp cache_headers/2Q.cpp
     cache_headers/ARC.cpp cache_headers/LFU.cpp cache_headers/LIRS.cpp
     cache_headers/LRU.cpp cache_headers/REF.cpp cache_headers/umbrella.cpp

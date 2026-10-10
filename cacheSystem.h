@@ -28,7 +28,12 @@ struct CacheSystemStats {
 
 template <typename T, typename KeyT = int>
 class CacheSystem {
-    std::vector<std::unique_ptr<Cache<T, KeyT>>> cacheSys_;
+    struct CacheSystemLevel {
+        CacheLevel level;
+        std::unique_ptr<Cache<T, KeyT>> cache;
+    };
+
+    std::vector<CacheSystemLevel> cacheSys_;
     CacheStats stats_;
 
     template <typename F>
@@ -37,7 +42,7 @@ class CacheSystem {
             return slowGetPage(key);
         }
 
-        return cacheSys_[index]->lookupUpdate(
+        return cacheSys_[index].cache->lookupUpdate(
             key, [this, index, &slowGetPage](KeyT requestedKey) -> const T& {
                 return lookupUpdate(index + 1, requestedKey, slowGetPage);
             });
@@ -46,10 +51,10 @@ class CacheSystem {
     void updateStats() noexcept {
         stats_ = {};
         for (const auto& level : cacheSys_) {
-            stats_.amountHits += level->getStats().amountHits;
+            stats_.amountHits += level.cache->getStats().amountHits;
         }
-        stats_.amountRequests = cacheSys_.front()->getStats().amountRequests;
-        stats_.amountMisses = cacheSys_.back()->getStats().amountMisses;
+        stats_.amountRequests = cacheSys_.front().cache->getStats().amountRequests;
+        stats_.amountMisses = cacheSys_.back().cache->getStats().amountMisses;
     }
 
 public:
@@ -61,7 +66,7 @@ public:
         cacheSys_.reserve(params.levels.size());
 
         for (const auto& description : params.levels) {
-            cacheSys_.push_back(CacheFactory<T, KeyT>::make(description));
+            cacheSys_.push_back({description.level, CacheFactory<T, KeyT>::make(description)});
         }
     }
 
@@ -86,8 +91,8 @@ public:
         result.levels.reserve(cacheSys_.size());
 
         for (const auto& level : cacheSys_) {
-            const auto& stats = level->getStats();
-            result.levels.push_back({level->getLevel(), stats});
+            const auto& stats = level.cache->getStats();
+            result.levels.push_back({level.level, stats});
         }
 
         result.total = stats_;

@@ -25,6 +25,7 @@ target_sources(cache_research_cache INTERFACE
         cache/cache.h
         cache/cache2Q.h
         cache/cacheARC.h
+        cache/cacheDescription.h
         cache/cacheFactory.h
         cache/cacheLFU.h
         cache/cacheLIRS.h

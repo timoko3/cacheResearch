@@ -46,8 +46,7 @@ private:
     }
 
 public:
-    explicit CacheLRU(std::size_t capacity, CacheLevel level = CacheLevel::L1)
-        : Base(capacity, level) {}
+    explicit CacheLRU(std::size_t capacity) : Base(capacity) {}
 
     std::size_t getResidentCount() const noexcept { return cache_.size(); }
     std::size_t getIndexedCount() const noexcept { return pageIndex_.size(); }
