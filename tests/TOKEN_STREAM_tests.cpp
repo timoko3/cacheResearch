@@ -71,8 +71,7 @@ TEST(TokenStreamConstructor, EmptyTokenListIsRejected) {
 }
 
 TEST(TokenStreamConstructor, ErrorAtLastTokenIsRejected) {
-    std::vector<lexer::Token> tokenArr{createIntToken(1, 1, 1), 
-                                       createErrorToken("error", 1, 3)};
+    std::vector<lexer::Token> tokenArr{createIntToken(1, 1, 1), createErrorToken("error", 1, 3)};
 
     EXPECT_THROW(lexer::TokenStream ts(tokenArr), std::runtime_error);
     EXPECT_EQ(errorText([&] { lexer::TokenStream ts(tokenArr, "test.txt"); }),
@@ -80,8 +79,7 @@ TEST(TokenStreamConstructor, ErrorAtLastTokenIsRejected) {
 }
 
 TEST(TokenStreamConstructor, MissingEndIsRejected) {
-    std::vector<lexer::Token> tokenArr{createIntToken(1, 1, 1), 
-                                       createIdentToken("LRU", 1, 3)};
+    std::vector<lexer::Token> tokenArr{createIntToken(1, 1, 1), createIdentToken("LRU", 1, 3)};
 
     EXPECT_THROW(lexer::TokenStream ts(tokenArr), std::runtime_error);
     EXPECT_EQ(errorText([&] { lexer::TokenStream ts(tokenArr, "test.txt"); }),
@@ -89,11 +87,10 @@ TEST(TokenStreamConstructor, MissingEndIsRejected) {
 }
 
 TEST(TokenStreamValid, PeekDoesNotAdvance) {
-    std::vector<lexer::Token> tokenArr{createIntToken(5, 1, 1), 
-                                       createEndToken(1, 2)};
+    std::vector<lexer::Token> tokenArr{createIntToken(5, 1, 1), createEndToken(1, 2)};
     lexer::TokenStream ts(tokenArr);
 
-    const lexer::Token& first  = ts.peekToken();
+    const lexer::Token& first = ts.peekToken();
     const lexer::Token& second = ts.peekToken();
 
     ASSERT_EQ(&first, &second);
@@ -102,7 +99,8 @@ TEST(TokenStreamValid, PeekDoesNotAdvance) {
 }
 
 TEST(TokenStreamValid, MovePosReturnsCurrentAndAdvances) {
-    std::vector<lexer::Token> tokenArr{createIntToken(1, 1, 1), createIdentToken("a", 1, 3), createEndToken(1, 4)};
+    std::vector<lexer::Token> tokenArr{
+        createIntToken(1, 1, 1), createIdentToken("a", 1, 3), createEndToken(1, 4)};
     lexer::TokenStream ts(tokenArr);
 
     ts.movePos();
@@ -119,8 +117,7 @@ TEST(TokenStreamValid, MovePosStaysOnEnd) {
 
     const int numOfIter = 5;
 
-    for (int i = 0; i < numOfIter; ++i)
-    {
+    for (int i = 0; i < numOfIter; ++i) {
         ts.movePos();
         EXPECT_EQ(ts.peekToken().type, lexer::TokenType::END);
         EXPECT_TRUE(ts.atEnd());
@@ -128,8 +125,7 @@ TEST(TokenStreamValid, MovePosStaysOnEnd) {
 }
 
 TEST(TokenStreamValid, NextIsEndToken) {
-    std::vector<lexer::Token> tokenArr{createIntToken(1, 1, 1), 
-                                       createEndToken(1, 2)};
+    std::vector<lexer::Token> tokenArr{createIntToken(1, 1, 1), createEndToken(1, 2)};
     lexer::TokenStream ts(tokenArr);
 
     EXPECT_FALSE(ts.atEnd());
@@ -140,117 +136,103 @@ TEST(TokenStreamValid, NextIsEndToken) {
 }
 
 TEST(TokenStreamValid, IsMatchTypeChecksCurrentToken) {
-    std::vector<lexer::Token> tokenArr{createIntToken(1, 1, 1), 
-                                       createEndToken(1, 2)};
+    std::vector<lexer::Token> tokenArr{createIntToken(1, 1, 1), createEndToken(1, 2)};
     lexer::TokenStream ts(tokenArr);
 
-    ASSERT_TRUE  (ts.isMatchType(lexer::TokenType::INT));
-    EXPECT_FALSE (ts.isMatchType(lexer::TokenType::IDENTIFIER));
-    EXPECT_FALSE (ts.isMatchType(lexer::TokenType::END));
-    EXPECT_FALSE (ts.isMatchType(lexer::TokenType::ERROR));
-    EXPECT_EQ    (ts.peekToken().type, lexer::TokenType::INT);
+    ASSERT_TRUE(ts.isMatchType(lexer::TokenType::INT));
+    EXPECT_FALSE(ts.isMatchType(lexer::TokenType::IDENTIFIER));
+    EXPECT_FALSE(ts.isMatchType(lexer::TokenType::END));
+    EXPECT_FALSE(ts.isMatchType(lexer::TokenType::ERROR));
+    EXPECT_EQ(ts.peekToken().type, lexer::TokenType::INT);
 }
 
 TEST(TokenStreamValid, ExpectReturnIntValue) {
     const int intValue = 67;
-    std::vector<lexer::Token> tokenArr{createIntToken(intValue, 1, 1), 
-                                       createEndToken(1, 3)};
+    std::vector<lexer::Token> tokenArr{createIntToken(intValue, 1, 1), createEndToken(1, 3)};
     lexer::TokenStream ts(tokenArr);
 
-    EXPECT_EQ   (ts.expectInt("need int"), intValue);
-    EXPECT_TRUE (ts.atEnd());
+    EXPECT_EQ(ts.expectInt("need int"), intValue);
+    EXPECT_TRUE(ts.atEnd());
 }
 
 TEST(TokenStreamValid, ExpectReturnIdentValue) {
-    std::vector<lexer::Token> tokenArr{createIdentToken("LRU", 1, 1), 
-                                       createEndToken(1, 4)};
+    std::vector<lexer::Token> tokenArr{createIdentToken("LRU", 1, 1), createEndToken(1, 4)};
     lexer::TokenStream ts(tokenArr);
 
-    EXPECT_EQ   (ts.expectIdent("need ident"), "LRU");
-    EXPECT_TRUE (ts.atEnd());
+    EXPECT_EQ(ts.expectIdent("need ident"), "LRU");
+    EXPECT_TRUE(ts.atEnd());
 }
 
 TEST(TokenStreamValid, ExpectTokenReturnsConsumedToken) {
-    std::vector<lexer::Token> tokenArr{createIdentToken("LRU", 2, 5), 
-                                       createEndToken(2, 6)};
+    std::vector<lexer::Token> tokenArr{createIdentToken("LRU", 2, 5), createEndToken(2, 6)};
     lexer::TokenStream ts(tokenArr);
 
-    const lexer::Token& Token = 
-        ts.expectToken(lexer::TokenType::IDENTIFIER, "need ident");
+    const lexer::Token& Token = ts.expectToken(lexer::TokenType::IDENTIFIER, "need ident");
 
-    EXPECT_EQ   (Token.type, lexer::TokenType::IDENTIFIER);
-    EXPECT_EQ   (std::get<std::string>(Token.data), "LRU");
-    EXPECT_TRUE (ts.atEnd());
+    EXPECT_EQ(Token.type, lexer::TokenType::IDENTIFIER);
+    EXPECT_EQ(std::get<std::string>(Token.data), "LRU");
+    EXPECT_TRUE(ts.atEnd());
 }
 
 TEST(TokenStreamValid, ReadsFullSequence) {
-    std::vector<lexer::Token> tokenArr{ createIntToken(2, 1, 1), 
-                                        createIdentToken("LRU", 2, 1), 
-                                        createIdentToken("LFU", 3, 1), 
-                                        createEndToken(3, 4)};
+    std::vector<lexer::Token> tokenArr{createIntToken(2, 1, 1),
+                                       createIdentToken("LRU", 2, 1),
+                                       createIdentToken("LFU", 3, 1),
+                                       createEndToken(3, 4)};
     lexer::TokenStream ts(tokenArr);
 
-    EXPECT_EQ   (ts.expectInt("levels"), 2);
-    EXPECT_EQ   (ts.expectIdent("strategy"), "LRU");
-    EXPECT_EQ   (ts.expectIdent("strategy"), "LFU");
-    EXPECT_TRUE (ts.atEnd());
+    EXPECT_EQ(ts.expectInt("levels"), 2);
+    EXPECT_EQ(ts.expectIdent("strategy"), "LRU");
+    EXPECT_EQ(ts.expectIdent("strategy"), "LFU");
+    EXPECT_TRUE(ts.atEnd());
 }
 
 TEST(TokenStreamErrors, ExpectIntOnIdentifierThrows) {
-    std::vector<lexer::Token> tokenArr{createIdentToken("LRU", 1, 1), 
-                                       createEndToken(1, 2)};
+    std::vector<lexer::Token> tokenArr{createIdentToken("LRU", 1, 1), createEndToken(1, 2)};
     lexer::TokenStream ts(tokenArr, "test.txt");
 
-    EXPECT_EQ(errorText([&] { ts.expectInt("need int"); }), 
-        "test.txt:1:1: need int");
+    EXPECT_EQ(errorText([&] { ts.expectInt("need int"); }), "test.txt:1:1: need int");
 }
 
 TEST(TokenStreamErrors, ExpectThrowAtIdentOnInts) {
-    std::vector<lexer::Token> tokenArr{createIntToken(7, 4, 2), 
-                                       createEndToken(4, 3)};
+    std::vector<lexer::Token> tokenArr{createIntToken(7, 4, 2), createEndToken(4, 3)};
 
     lexer::TokenStream ts(tokenArr, "test.txt");
 
-    EXPECT_EQ(errorText([&] { ts.expectIdent("need ident"); }), 
-        "test.txt:4:2: need ident");
+    EXPECT_EQ(errorText([&] { ts.expectIdent("need ident"); }), "test.txt:4:2: need ident");
 }
 
 TEST(TokenStreamErrors, ExpectThrowAtTokenWrongType) {
-    std::vector<lexer::Token> tokenArr{createIntToken(7, 1, 1), 
-                                       createEndToken(1, 2)};
+    std::vector<lexer::Token> tokenArr{createIntToken(7, 1, 1), createEndToken(1, 2)};
     lexer::TokenStream ts(tokenArr);
 
-    EXPECT_THROW(ts.expectToken(lexer::TokenType::IDENTIFIER, "need ident"), 
-        std::runtime_error);
+    EXPECT_THROW(ts.expectToken(lexer::TokenType::IDENTIFIER, "need ident"), std::runtime_error);
 }
 
 TEST(TokenStreamErrors, ExpectThrowAtEnd) {
     std::vector<lexer::Token> tokenArr{createEndToken(3, 4)};
     lexer::TokenStream ts(tokenArr, "test.txt");
 
-    EXPECT_EQ(errorText([&] { ts.expectInt("need int"); }),
-        "test.txt:3:4: need int");
+    EXPECT_EQ(errorText([&] { ts.expectInt("need int"); }), "test.txt:3:4: need int");
 }
 
 TEST(TokenStreamErrors, ExpecThrowtAtEndToken) {
     const int intValue = 52;
-    std::vector<lexer::Token> tokenArr{createIntToken(intValue, 1, 1), 
-                                       createEndToken(1, 2)};
+    std::vector<lexer::Token> tokenArr{createIntToken(intValue, 1, 1), createEndToken(1, 2)};
     lexer::TokenStream ts(tokenArr);
 
-    EXPECT_EQ    (ts.expectInt("need int"), intValue);
-    EXPECT_THROW (ts.expectInt("need int"), std::runtime_error);
+    EXPECT_EQ(ts.expectInt("need int"), intValue);
+    EXPECT_THROW(ts.expectInt("need int"), std::runtime_error);
 }
 
 TEST(TokenStreamErrors, FailedExpectDoesNotAdvance) {
-    std::vector<lexer::Token> tokenArr{createIdentToken("LFU", 1, 1), 
-                                       createEndToken(1, 2)};
+    std::vector<lexer::Token> tokenArr{createIdentToken("LFU", 1, 1), createEndToken(1, 2)};
     lexer::TokenStream ts(tokenArr);
 
     EXPECT_THROW(ts.expectInt("need int"), std::runtime_error);
 
-    EXPECT_EQ (ts.peekToken().type, lexer::TokenType::IDENTIFIER);
-    EXPECT_EQ (ts.expectIdent("need ident"), "LFU");
+    EXPECT_EQ(ts.peekToken().type, lexer::TokenType::IDENTIFIER);
+    EXPECT_EQ(ts.expectIdent("need ident"), "LFU");
 }
 
 TEST(TokenStreamErrors, FailAtTokenFormatsMessage) {
@@ -258,7 +240,7 @@ TEST(TokenStreamErrors, FailAtTokenFormatsMessage) {
     lexer::TokenStream ts(tokenArr, "test.txt");
 
     EXPECT_EQ(errorText([&] { ts.failAtToken(createIntToken(1, 4, 9), "ERROR"); }),
-        "test.txt:4:9: ERROR");
+              "test.txt:4:9: ERROR");
 }
 
 TEST(TokenStreamErrors, FailAtTokenUsesDefaultFileName) {
