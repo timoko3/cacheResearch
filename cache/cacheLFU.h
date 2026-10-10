@@ -70,8 +70,7 @@ protected:
 
         try {
             if (isFull()) {
-                auto victim = std::min_element(cache_.begin(), cache_.end(),
-                                               compareEntriesByFreq);
+                auto victim = std::min_element(cache_.begin(), cache_.end(), compareEntriesByFreq);
 
                 hash_.erase(victim->key);
                 cache_.erase(victim);

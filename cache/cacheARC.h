@@ -45,9 +45,8 @@ private:
     std::size_t targetT1size_ = 0;
 
     IndexIterator findReplacement(bool requestedFromB2) {
-        const bool evictFromT1 =
-            !t1_.empty() &&
-            (t1_.size() > targetT1size_ || (requestedFromB2 && t1_.size() == targetT1size_));
+        const bool evictFromT1 = !t1_.empty() && (t1_.size() > targetT1size_ ||
+                                                  (requestedFromB2 && t1_.size() == targetT1size_));
 
         auto& source = (evictFromT1 || t2_.empty()) ? t1_ : t2_;
         if (source.empty()) {
@@ -188,15 +187,15 @@ protected:
         auto hit = hash_.find(key);
 
         if (hit != hash_.end() &&
-            (hit->second.listName == ListName::B1 ||
-             hit->second.listName == ListName::B2)) {
+            (hit->second.listName == ListName::B1 || hit->second.listName == ListName::B2)) {
             return moveGhostPageToT2(hit, page);
         }
 
         PageList stagedPage;
         stagedPage.push_front(Entry{key, std::optional<T>{page}});
 
-        auto [indexedPage, wasIndexed] = hash_.emplace(key, PageLocation{stagedPage.begin(), ListName::T1});
+        auto [indexedPage, wasIndexed] =
+            hash_.emplace(key, PageLocation{stagedPage.begin(), ListName::T1});
         if (!wasIndexed) {
             throw std::logic_error("insert requires an unknown key");
         }
