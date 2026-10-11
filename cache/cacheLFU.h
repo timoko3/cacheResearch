@@ -13,7 +13,7 @@ namespace cache {
 template <typename T, typename KeyT = int>
 class CacheLFU : public Cache<T, KeyT> {
 private:
-    struct Entry {
+    struct PageRecord {
         KeyT key;
         T page;
         std::size_t frequency = 0;
@@ -21,62 +21,64 @@ private:
 
     using Base = Cache<T, KeyT>;
     using typename Base::PageResult;
-    using PageList = std::list<Entry>;
+    using PageList = std::list<PageRecord>;
     using PageIterator = typename PageList::iterator;
+    using PageIndex = std::unordered_map<KeyT, PageIterator>;
 
-    std::unordered_map<KeyT, PageIterator> hash_;
+    PageIndex pageIndex_;
     PageList cache_;
 
-    static bool compareEntriesByFreq(const Entry& src1, const Entry& src2) {
-        return src1.frequency < src2.frequency;
+    static bool comparePageRecordsByFrequency(const PageRecord& first, const PageRecord& second) {
+        return first.frequency < second.frequency;
     }
 
     bool isFull() const { return cache_.size() >= this->getSize(); }
 
-    void recordHit(PageIterator hitIt) {
-        hitIt->frequency++;
-        cache_.splice(cache_.end(), cache_, hitIt);
+    void recordHit(PageIterator resident) {
+        resident->frequency++;
+        cache_.splice(cache_.end(), cache_, resident);
     }
 
 public:
-    CacheLFU(std::size_t size, CacheLevel level = CacheLevel::L1) : Base(size, level){};
+    explicit CacheLFU(std::size_t capacity) : Base(capacity){};
 
     ~CacheLFU() = default;
 
 protected:
     PageResult getPage(const KeyT& key) override {
-        auto hit = hash_.find(key);
+        auto indexedRecord = pageIndex_.find(key);
 
-        if (hit == hash_.end()) {
+        if (indexedRecord == pageIndex_.end()) {
             return std::nullopt;
         }
 
-        auto hitIt = hit->second;
-        recordHit(hitIt);
+        auto resident = indexedRecord->second;
+        recordHit(resident);
 
-        return std::cref(hitIt->page);
+        return std::cref(resident->page);
     }
 
     const T& insert(const KeyT& key, const T& page) override {
         PageList stagedPage;
 
         constexpr std::size_t initialFrequency = 1;
-        stagedPage.push_back(Entry{key, page, initialFrequency});
+        stagedPage.push_back(PageRecord{key, page, initialFrequency});
 
-        auto [indexedPage, wasInserted] = hash_.emplace(key, stagedPage.begin());
+        auto [indexedPage, wasInserted] = pageIndex_.emplace(key, stagedPage.begin());
         if (!wasInserted) {
             throw std::logic_error("insert requires an unknown key");
         }
 
         try {
             if (isFull()) {
-                auto victim = std::min_element(cache_.begin(), cache_.end(), compareEntriesByFreq);
+                auto residentToEvict =
+                    std::min_element(cache_.begin(), cache_.end(), comparePageRecordsByFrequency);
 
-                hash_.erase(victim->key);
-                cache_.erase(victim);
+                pageIndex_.erase(residentToEvict->key);
+                cache_.erase(residentToEvict);
             }
         } catch (...) {
-            hash_.erase(indexedPage);
+            pageIndex_.erase(indexedPage);
             throw;
         }
 

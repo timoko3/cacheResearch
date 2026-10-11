@@ -13,6 +13,22 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  cpp17:
+    name: Verify C++17 compatibility
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Configure library tests with C++17
+        run: >-
+          cmake --preset library-tests
+          -DCMAKE_CXX_STANDARD=17
+          -DCMAKE_CXX_STANDARD_REQUIRED=ON
+          -DCMAKE_CXX_EXTENSIONS=OFF
+      - name: Build library headers and tests
+        run: cmake --build --preset library-tests --parallel 2
+      - name: Run library tests
+        run: ctest --preset library-tests
+
   library-package:
     name: Verify standalone cache package
     runs-on: ubuntu-24.04

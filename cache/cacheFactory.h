@@ -7,6 +7,7 @@
 #include "cache.h"
 #include "cache2Q.h"
 #include "cacheARC.h"
+#include "cacheDescription.h"
 #include "cacheLFU.h"
 #include "cacheLIRS.h"
 #include "cacheLRU.h"
@@ -21,7 +22,7 @@ private:
 
     template <template <typename, typename> class Strategy>
     static std::unique_ptr<Base> create(const CacheDescription& description) {
-        return std::make_unique<Strategy<T, KeyT>>(description.size, description.level);
+        return std::make_unique<Strategy<T, KeyT>>(description.size);
     }
 
 public:

@@ -6,15 +6,13 @@
 #include <variant>
 #include <vector>
 
-#include "cache/cache.h"
+#include "cache/cacheDescription.h"
 #include "cacheSystem.h"
 #include "lexer/lexer.h"
 #include "lexer/token.h"
 #include "lexer/token_stream.h"
 
 namespace parser {
-
-const int maxCacheLevel = 5;
 
 template <typename KeyT = int>
 class CacheParser {
@@ -34,7 +32,7 @@ public:
         const std::size_t count =
             static_cast<std::size_t>(ts.expectInt("Incorrect num of cache strategies"));
 
-        if (count > maxCacheLevel) {
+        if (count > cache::maxCacheLevel) {
             ts.failAtToken(levelToken, "Too many cache levels");
         }
 

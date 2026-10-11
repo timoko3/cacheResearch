@@ -18,61 +18,61 @@ class CacheARC : public Cache<T, KeyT> {
 private:
     enum class ListName { NO_LIST, T1, T2, B1, B2 };
 
-    struct Entry {
+    struct PageRecord {
         KeyT key;
         std::optional<T> page;
     };
 
     using Base = Cache<T, KeyT>;
     using typename Base::PageResult;
-    using PageList = std::list<Entry>;
+    using PageList = std::list<PageRecord>;
     using PageIterator = typename PageList::iterator;
 
-    struct PageLocation {
-        PageIterator listIt;
+    struct PagePosition {
+        PageIterator iterator;
         ListName listName;
     };
 
-    using PageIndex = std::unordered_map<KeyT, PageLocation>;
+    using PageIndex = std::unordered_map<KeyT, PagePosition>;
     using IndexIterator = typename PageIndex::iterator;
 
     PageList t1_, t2_;
     PageList b1_, b2_;
 
-    PageIndex hash_;
+    PageIndex pageIndex_;
 
     std::size_t capacity_;
-    std::size_t targetT1size_ = 0;
+    std::size_t t1TargetSize_ = 0;
 
-    IndexIterator findReplacement(bool requestedFromB2) {
-        const bool evictFromT1 = !t1_.empty() && (t1_.size() > targetT1size_ ||
-                                                  (requestedFromB2 && t1_.size() == targetT1size_));
+    IndexIterator findResidentToEvict(bool requestedFromB2) {
+        const bool evictFromT1 = !t1_.empty() && (t1_.size() > t1TargetSize_ ||
+                                                  (requestedFromB2 && t1_.size() == t1TargetSize_));
 
         auto& source = (evictFromT1 || t2_.empty()) ? t1_ : t2_;
         if (source.empty()) {
-            return hash_.end();
+            return pageIndex_.end();
         }
 
-        return hash_.find(source.back().key);
+        return pageIndex_.find(source.back().key);
     }
 
-    void replacePage(IndexIterator indexedVictim) noexcept {
-        if (indexedVictim == hash_.end()) {
+    void evictPage(IndexIterator residentToEvict) noexcept {
+        if (residentToEvict == pageIndex_.end()) {
             return;
         }
 
-        auto& location = indexedVictim->second;
-        const bool fromT1 = location.listName == ListName::T1;
+        auto& position = residentToEvict->second;
+        const bool fromT1 = position.listName == ListName::T1;
 
         auto& source = fromT1 ? t1_ : t2_;
         auto& ghost = fromT1 ? b1_ : b2_;
 
-        location.listIt->page.reset();
-        ghost.splice(ghost.begin(), source, location.listIt);
-        location.listName = fromT1 ? ListName::B1 : ListName::B2;
+        position.iterator->page.reset();
+        ghost.splice(ghost.begin(), source, position.iterator);
+        position.listName = fromT1 ? ListName::B1 : ListName::B2;
     }
 
-    void eraseVictim() {
+    void evictForNewPage() {
         PageList* listToErase = nullptr;
         bool needsReplacement = false;
 
@@ -95,62 +95,62 @@ private:
             }
         }
 
-        auto indexedReplacement = needsReplacement ? findReplacement(false) : hash_.end();
+        auto residentToEvict = needsReplacement ? findResidentToEvict(false) : pageIndex_.end();
 
         if (listToErase && !listToErase->empty()) {
-            hash_.erase(listToErase->back().key);
+            pageIndex_.erase(listToErase->back().key);
             listToErase->pop_back();
         }
 
-        replacePage(indexedReplacement);
+        evictPage(residentToEvict);
     }
 
-    const T& moveGhostPageToT2(IndexIterator hit, const T& page) {
-        const bool wasInB2 = hit->second.listName == ListName::B2;
+    const T& promoteGhostPage(IndexIterator indexedRecord, const T& page) {
+        const bool wasInB2 = indexedRecord->second.listName == ListName::B2;
 
-        auto pageIt = hit->second.listIt;
+        auto pageIterator = indexedRecord->second.iterator;
 
-        pageIt->page.emplace(page);
+        pageIterator->page.emplace(page);
         try {
-            replacePage(findReplacement(wasInB2));
+            evictPage(findResidentToEvict(wasInB2));
         } catch (...) {
-            pageIt->page.reset();
+            pageIterator->page.reset();
             throw;
         }
 
         if (wasInB2) {
-            t2_.splice(t2_.begin(), b2_, pageIt);
+            t2_.splice(t2_.begin(), b2_, pageIterator);
         } else {
-            t2_.splice(t2_.begin(), b1_, pageIt);
+            t2_.splice(t2_.begin(), b1_, pageIterator);
         }
 
-        hit->second.listIt = pageIt;
-        hit->second.listName = ListName::T2;
-        return *pageIt->page;
+        indexedRecord->second.iterator = pageIterator;
+        indexedRecord->second.listName = ListName::T2;
+        return *pageIterator->page;
     }
 
-    void recordHit(PageLocation& pageLoc) {
-        PageIterator listIt = pageLoc.listIt;
+    void recordHit(PagePosition& position) {
+        PageIterator iterator = position.iterator;
 
-        switch (pageLoc.listName) {
+        switch (position.listName) {
             case ListName::T1:
-                assert(listIt->page.has_value());
-                t2_.splice(t2_.begin(), t1_, listIt);
-                pageLoc.listName = ListName::T2;
+                assert(iterator->page.has_value());
+                t2_.splice(t2_.begin(), t1_, iterator);
+                position.listName = ListName::T2;
                 return;
             case ListName::T2:
-                assert(listIt->page.has_value());
-                t2_.splice(t2_.begin(), t2_, listIt);
+                assert(iterator->page.has_value());
+                t2_.splice(t2_.begin(), t2_, iterator);
                 return;
             case ListName::B1: {
                 const std::size_t addition = std::max<std::size_t>(1, b2_.size() / b1_.size());
-                targetT1size_ = std::min(capacity_, targetT1size_ + addition);
+                t1TargetSize_ = std::min(capacity_, t1TargetSize_ + addition);
                 return;
             }
             case ListName::B2: {
                 const std::size_t subtrahend = std::max<std::size_t>(1, b1_.size() / b2_.size());
 
-                targetT1size_ = (subtrahend >= targetT1size_) ? 0 : targetT1size_ - subtrahend;
+                t1TargetSize_ = (subtrahend >= t1TargetSize_) ? 0 : t1TargetSize_ - subtrahend;
                 return;
             }
             default:
@@ -160,21 +160,20 @@ private:
     }
 
 public:
-    CacheARC(std::size_t capacity, CacheLevel level = CacheLevel::L1)
-        : Base(capacity, level), capacity_(capacity) {}
+    explicit CacheARC(std::size_t capacity) : Base(capacity), capacity_(capacity) {}
 
 protected:
     PageResult getPage(const KeyT& key) override {
-        auto hit = hash_.find(key);
+        auto indexedRecord = pageIndex_.find(key);
 
-        if (hit == hash_.end()) {
+        if (indexedRecord == pageIndex_.end()) {
             return std::nullopt;
         }
 
-        auto& pageLoc = hit->second;
-        recordHit(pageLoc);
+        auto& position = indexedRecord->second;
+        recordHit(position);
 
-        const auto& storedPage = pageLoc.listIt->page;
+        const auto& storedPage = position.iterator->page;
 
         if (!storedPage.has_value()) {
             return std::nullopt;
@@ -184,26 +183,26 @@ protected:
     }
 
     const T& insert(const KeyT& key, const T& page) override {
-        auto hit = hash_.find(key);
+        auto indexedRecord = pageIndex_.find(key);
 
-        if (hit != hash_.end() &&
-            (hit->second.listName == ListName::B1 || hit->second.listName == ListName::B2)) {
-            return moveGhostPageToT2(hit, page);
+        if (indexedRecord != pageIndex_.end() && (indexedRecord->second.listName == ListName::B1 ||
+                                                  indexedRecord->second.listName == ListName::B2)) {
+            return promoteGhostPage(indexedRecord, page);
         }
 
         PageList stagedPage;
-        stagedPage.push_front(Entry{key, std::optional<T>{page}});
+        stagedPage.push_front(PageRecord{key, std::optional<T>{page}});
 
-        auto [indexedPage, wasIndexed] =
-            hash_.emplace(key, PageLocation{stagedPage.begin(), ListName::T1});
-        if (!wasIndexed) {
+        auto [indexedPage, wasInserted] =
+            pageIndex_.emplace(key, PagePosition{stagedPage.begin(), ListName::T1});
+        if (!wasInserted) {
             throw std::logic_error("insert requires an unknown key");
         }
 
         try {
-            eraseVictim();
+            evictForNewPage();
         } catch (...) {
-            hash_.erase(indexedPage);
+            pageIndex_.erase(indexedPage);
             throw;
         }
 
