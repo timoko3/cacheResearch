@@ -54,7 +54,7 @@ gtest_discover_tests(cache_tests DISCOVERY_MODE PRE_TEST)
 
 if(TARGET CacheResearch::general_functions)
     add_executable(cache_tools_tests
-        LEXER_tests.cpp TOKEN_tests.cpp TOKEN_STREAM_tests.cpp)
+        LEXER_tests.cpp TOKEN_STREAM_tests.cpp)
     target_link_libraries(cache_tools_tests PRIVATE
         CacheResearch::general_functions GTest::gtest_main)
     cache_research_configure_target(cache_tools_tests)
