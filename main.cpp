@@ -33,11 +33,11 @@ int main(const int argc, const char** argv) {
         // printTokenArr(configLexer.tokenize());
         // printTokenArr(inputLexer.tokenize());
 
-        lexer::TokenStream tsConfig(configLexer.tokenize(), configFile.string());
-        lexer::TokenStream tsInput(inputLexer.tokenize(), inputFile.string());
+        auto configTokens = configLexer.tokenize();
+        auto inputTokens = inputLexer.tokenize();
 
         parser::CacheParser<int> cacheParser;
-        cacheParser.parseAll(tsConfig, tsInput);
+        cacheParser.parseAll(configTokens, inputTokens);
 
         cache::CacheSystemParams cacheSysParams = cacheParser.getCacheSysParams();
 

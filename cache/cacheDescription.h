@@ -6,7 +6,7 @@ namespace cache {
 
 // Keep levels consecutive from zero and add new levels before COUNT.
 // COUNT is a sentinel, not a usable cache level.
-enum class CacheLevel { L1, L2, L3, L4, L5, COUNT };
+enum class CacheLevel { L1 = 0, L2, L3, L4, L5, COUNT };
 
 inline constexpr std::size_t maxCacheLevel = static_cast<std::size_t>(CacheLevel::COUNT);
 
