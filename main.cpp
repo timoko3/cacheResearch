@@ -34,7 +34,7 @@ int main(const int argc, const char** argv) {
         // printTokenArr(inputLexer.tokenize());
 
         auto configTokens = configLexer.tokenize();
-        auto inputTokens  = inputLexer.tokenize();
+        auto inputTokens = inputLexer.tokenize();
 
         parser::CacheParser<int> cacheParser;
         cacheParser.parseAll(configTokens, inputTokens);
