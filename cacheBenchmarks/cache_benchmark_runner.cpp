@@ -145,7 +145,7 @@ cache::CacheSystemStats runCacheExperimentFromFiles(const std::string& configPat
     lexer::Lexer inputLexer(generalFunctions::readFile(inputPath), inputPath);
 
     auto configTokens = configLexer.tokenize();
-    auto inputTokens  = inputLexer.tokenize();
+    auto inputTokens = inputLexer.tokenize();
 
     parser::CacheParser<int> cacheParser;
     cacheParser.parseAll(configTokens, inputTokens);
