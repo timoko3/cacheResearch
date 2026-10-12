@@ -144,13 +144,13 @@ cache::CacheSystemStats runCacheExperimentFromFiles(const std::string& configPat
     lexer::Lexer configLexer(generalFunctions::readFile(configPath), configPath);
     lexer::Lexer inputLexer(generalFunctions::readFile(inputPath), inputPath);
 
-    lexer::TokenStream tsConfig(configLexer.tokenize(), configPath);
-    lexer::TokenStream tsInput(inputLexer.tokenize(), inputPath);
+    auto configTokens = configLexer.tokenize();
+    auto inputTokens  = inputLexer.tokenize();
 
-    parser::CacheParser<int> parser;
-    parser.parseAll(tsConfig, tsInput);
+    parser::CacheParser<int> cacheParser;
+    cacheParser.parseAll(configTokens, inputTokens);
 
-    return runCacheExperiment(parser.getCacheSysParams(), parser.getReqList());
+    return runCacheExperiment(cacheParser.getCacheSysParams(), cacheParser.getReqList());
 }
 
 int main(int argc, char** argv) {
