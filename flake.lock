@@ -3,11 +3,11 @@
     "general-functions": {
       "flake": false,
       "locked": {
-        "lastModified": 1791565078,
-        "narHash": "sha256-8/xTSx/50TMP1pSfEc2VW11jD6DIjeesrFmlrqQTeZs=",
+        "lastModified": 1791907991,
+        "narHash": "sha256-UG7Um1NFUDXYSpnnrQIMssdwcYoXNEKOyujBz/DhVM4=",
         "owner": "timoko3",
         "repo": "generalFunctions",
-        "rev": "a46b47412a4996a2668a0bd525507702040052f2",
+        "rev": "61bfa8aafa25d0dc9154efd91a7c0687c58af5b3",
         "type": "github"
       },
       "original": {

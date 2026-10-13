@@ -11,8 +11,9 @@ TEST(CacheSystemFocused, EmptyHierarchyIsRejected) {
 }
 
 TEST(CacheSystemFocused, OwnsLevelDescriptionsForStatistics) {
-    cache::CacheSystemParams params{{{1, cache::CacheLevel::L2, cache::CacheEviction::C_LRU},
-                                     {2, cache::CacheLevel::L5, cache::CacheEviction::C_LFU}}};
+    cache::CacheSystemParams params{
+        {{1, cache::CacheLevel::L2, cache::CacheEviction::C_LRU},
+         {2, cache::CacheLevel::L5, cache::CacheEviction::C_LFU}}};
     cache::CacheSystem<int> system(params);
     params.levels.clear();
 
@@ -279,8 +280,9 @@ struct CopyCountedPage {
 };
 
 TEST(CacheSystemInterface, ReferencesPassThroughLevelsWithoutTemporaryCopies) {
-    cache::CacheSystemParams params{{{1, cache::CacheLevel::L1, cache::CacheEviction::C_LRU},
-                                     {2, cache::CacheLevel::L2, cache::CacheEviction::C_LRU}}};
+    cache::CacheSystemParams params{
+        {{1, cache::CacheLevel::L1, cache::CacheEviction::C_LRU},
+         {2, cache::CacheLevel::L2, cache::CacheEviction::C_LRU}}};
     cache::CacheSystem<CopyCountedPage> system(params);
     CopyCountedPage loadedPage(0);
     int loads = 0;
@@ -289,8 +291,10 @@ TEST(CacheSystemInterface, ReferencesPassThroughLevelsWithoutTemporaryCopies) {
         loadedPage.value = key;
         return loadedPage;
     };
-    static_assert(std::is_same_v<decltype(system.lookupUpdate(1, slow)), const CopyCountedPage&>);
-    static_assert(std::is_same_v<decltype(system.getStats()), const cache::CacheStats&>);
+    static_assert(std::is_same_v<decltype(system.lookupUpdate(1, slow)),
+                                 const CopyCountedPage&>);
+    static_assert(
+        std::is_same_v<decltype(system.getStats()), const cache::CacheStats&>);
     const auto& stats = system.getStats();
 
     CopyCountedPage::copies = 0;
@@ -317,18 +321,21 @@ TEST(CacheSystemInterface, ReferencesPassThroughLevelsWithoutTemporaryCopies) {
 }
 
 TEST(CacheSystemInterface, ZeroCapacityLevelsAreRejected) {
-    cache::CacheSystemParams params{{{0, cache::CacheLevel::L1, cache::CacheEviction::C_LRU},
-                                     {0, cache::CacheLevel::L2, cache::CacheEviction::C_LFU}}};
+    cache::CacheSystemParams params{
+        {{0, cache::CacheLevel::L1, cache::CacheEviction::C_LRU},
+         {0, cache::CacheLevel::L2, cache::CacheEviction::C_LFU}}};
     EXPECT_THROW((cache::CacheSystem<int>(params)), std::invalid_argument);
     params.levels.front().size = 1;
     EXPECT_THROW((cache::CacheSystem<int>(params)), std::invalid_argument);
 }
 
 TEST(CacheSystemInterface, FailedLoadUpdatesStatsAndCanBeRetried) {
-    cache::CacheSystemParams params{{{1, cache::CacheLevel::L1, cache::CacheEviction::C_LRU}}};
+    cache::CacheSystemParams params{
+        {{1, cache::CacheLevel::L1, cache::CacheEviction::C_LRU}}};
     cache::CacheSystem<int> system(params);
     EXPECT_THROW(
-        system.lookupUpdate(1, [](int) -> int& { throw std::runtime_error("load failed"); }),
+        system.lookupUpdate(
+            1, [](int) -> int& { throw std::runtime_error("load failed"); }),
         std::runtime_error);
     EXPECT_EQ(system.getStats().amountRequests, 1u);
     EXPECT_EQ(system.getStats().amountMisses, 1u);

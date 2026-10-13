@@ -253,7 +253,8 @@ TEST(LexerErrors, DigitsThenSymbolIsError) {
 }
 
 TEST(LexerErrors, LexingStopsAtFirstError) {
-    EXPECT_EQ(errorText([] { lexAll("ab ; cd 5"); }), "unknown_file:1:4: Unknown sym");
+    EXPECT_EQ(errorText([] { lexAll("ab ; cd 5"); }),
+              "unknown_file:1:4: Unknown sym");
 }
 
 TEST(LexerErrors, IntOverflowIsNotInt) {

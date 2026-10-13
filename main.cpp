@@ -85,7 +85,8 @@ void printTokenArr(std::vector<lexer::Token> tokenArr) {
         }
 
         else {
-            std::cout << "DATA:    " << std::get<std::string>(tokenArr[i].data) << '\n';
+            std::cout << "DATA:    " << std::get<std::string>(tokenArr[i].data)
+                      << '\n';
         }
 
         std::cout << "LINE:    " << tokenArr[i].line << '\n';

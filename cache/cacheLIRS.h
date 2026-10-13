@@ -25,7 +25,8 @@ private:
         KeyT key;
         T page;
 
-        PageRecord(const KeyT& pageKey, const T& pageValue) : key(pageKey), page(pageValue) {}
+        PageRecord(const KeyT& pageKey, const T& pageValue)
+            : key(pageKey), page(pageValue) {}
     };
 
     using PageList = std::list<PageRecord>;
@@ -45,7 +46,8 @@ private:
     using PageIndex = std::unordered_map<KeyT, PagePosition>;
     using IndexIterator = typename PageIndex::iterator;
 
-    static_assert(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<KeyT>,
+    static_assert(std::is_nothrow_destructible_v<T> &&
+                      std::is_nothrow_destructible_v<KeyT>,
                   "Pages and keys must have non-throwing destructors");
 
     static constexpr std::size_t hirTargetSizeDivisor = 100;
@@ -74,7 +76,8 @@ private:
             return AccessAction::REFRESH_LIR;
         }
         // HIR in S is promoted on reuse. During warm-up, fill vacant LIR slots.
-        if (position.stackIterator || (!position.resident && lirCount_ < lirTargetSize_)) {
+        if (position.stackIterator ||
+            (!position.resident && lirCount_ < lirTargetSize_)) {
             return AccessAction::PROMOTE_HIR;
         }
         return AccessAction::REFRESH_HIR;
@@ -91,7 +94,8 @@ private:
             }
 
             auto indexedRecord = pageIndex_.find(*iterator);
-            const bool willBeDemoted = plan.lirToDemote && indexedRecord == *plan.lirToDemote;
+            const bool willBeDemoted =
+                plan.lirToDemote && indexedRecord == *plan.lirToDemote;
             if (indexedRecord->second.status == PageStatus::LIR && !willBeDemoted) {
                 break;
             }
@@ -106,10 +110,12 @@ private:
             plan.stagedStack.emplace_front(key);
         }
 
-        if (plan.action == AccessAction::PROMOTE_HIR && lirCount_ >= lirTargetSize_) {
+        if (plan.action == AccessAction::PROMOTE_HIR &&
+            lirCount_ >= lirTargetSize_) {
             plan.lirToDemote = pageIndex_.find(stackS_.back());
             plan.stagedQueue.emplace_front((*plan.lirToDemote)->first);
-        } else if (plan.action == AccessAction::REFRESH_HIR && !position.queueIterator) {
+        } else if (plan.action == AccessAction::REFRESH_HIR &&
+                   !position.queueIterator) {
             plan.stagedQueue.emplace_front(key);
         }
 
@@ -231,7 +237,8 @@ public:
     // Jiang/Zhang: resident HIR = 1%, LIR gets the remaining capacity.
     // https://xiaodongzhang1911.github.io/Zhang-papers/TR-05-11.pdf
     explicit CacheLIRS(std::size_t capacity)
-        : Base(capacity), hirTargetSize_(std::max<std::size_t>(1, capacity / hirTargetSizeDivisor)),
+        : Base(capacity),
+          hirTargetSize_(std::max<std::size_t>(1, capacity / hirTargetSizeDivisor)),
           lirTargetSize_(capacity >= 2 ? capacity - hirTargetSize_ : 0) {
         if (capacity < 2) {
             throw std::invalid_argument("LIRS requires at least 2 cache slots");
@@ -260,7 +267,9 @@ protected:
         return std::cref((*position.resident)->page);
     }
 
-    const T& insert(const KeyT& key, const T& page) override { return insertPage(key, page); }
+    const T& insert(const KeyT& key, const T& page) override {
+        return insertPage(key, page);
+    }
 };
 
 } // namespace cache

@@ -65,7 +65,8 @@ public:
         cacheSys_.reserve(params.levels.size());
 
         for (const auto& description : params.levels) {
-            cacheSys_.push_back({description.level, CacheFactory<T, KeyT>::make(description)});
+            cacheSys_.push_back(
+                {description.level, CacheFactory<T, KeyT>::make(description)});
         }
     }
 

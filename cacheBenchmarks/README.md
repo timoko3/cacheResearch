@@ -14,7 +14,7 @@ Python-пакетов. Команды ниже выполняются из ко�
 | `search` | Точный подбор системы из исследования №3 |
 | `doctor` | Проверяет Python и наличие runner, ничего не устанавливает |
 
-У каждой команды есть `--help`. Runner ищется сначала в `build/benchmarks`, затем в Release и Debug
+У каждой команды есть `--help`. Runner ищется сначала в Release, затем в Debug
 в стандартных CMake-каталогах текущей ОС. Можно указать `--runner PATH` для
 любого другого расположения. Относительные пути `--output` и `CASE` считаются
 от текущей рабочей папки; сама команда работает и из другой папки.
@@ -66,7 +66,7 @@ python3 cacheBenchmarks/benchmark.py generate --pattern hot_scan --seed 1 --capa
 ```sh
 cmake --preset benchmarks
 cmake --build --preset benchmarks --parallel
-python3 cacheBenchmarks/benchmark.py run cacheBenchmarks/local_data/my_case
+python3 cacheBenchmarks/benchmark.py run cacheBenchmarks/local_data/my_case --runner build/benchmarks/cache_benchmark_runner
 ```
 
 На Windows с Ninja путь к runner:
