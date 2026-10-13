@@ -45,8 +45,9 @@ private:
     std::size_t t1TargetSize_ = 0;
 
     IndexIterator findResidentToEvict(bool requestedFromB2) {
-        const bool evictFromT1 = !t1_.empty() && (t1_.size() > t1TargetSize_ ||
-                                                  (requestedFromB2 && t1_.size() == t1TargetSize_));
+        const bool evictFromT1 =
+            !t1_.empty() && (t1_.size() > t1TargetSize_ ||
+                             (requestedFromB2 && t1_.size() == t1TargetSize_));
 
         auto& source = (evictFromT1 || t2_.empty()) ? t1_ : t2_;
         if (source.empty()) {
@@ -85,7 +86,8 @@ private:
                 listToErase = &t1_;
             }
         } else if (recentTotal < capacity_) {
-            const std::size_t total = t1_.size() + t2_.size() + b1_.size() + b2_.size();
+            const std::size_t total =
+                t1_.size() + t2_.size() + b1_.size() + b2_.size();
 
             if (total >= capacity_) {
                 if (total >= 2 * capacity_) {
@@ -95,7 +97,8 @@ private:
             }
         }
 
-        auto residentToEvict = needsReplacement ? findResidentToEvict(false) : pageIndex_.end();
+        auto residentToEvict =
+            needsReplacement ? findResidentToEvict(false) : pageIndex_.end();
 
         if (listToErase && !listToErase->empty()) {
             pageIndex_.erase(listToErase->back().key);
@@ -143,14 +146,17 @@ private:
                 t2_.splice(t2_.begin(), t2_, iterator);
                 return;
             case ListName::B1: {
-                const std::size_t addition = std::max<std::size_t>(1, b2_.size() / b1_.size());
+                const std::size_t addition =
+                    std::max<std::size_t>(1, b2_.size() / b1_.size());
                 t1TargetSize_ = std::min(capacity_, t1TargetSize_ + addition);
                 return;
             }
             case ListName::B2: {
-                const std::size_t subtrahend = std::max<std::size_t>(1, b1_.size() / b2_.size());
+                const std::size_t subtrahend =
+                    std::max<std::size_t>(1, b1_.size() / b2_.size());
 
-                t1TargetSize_ = (subtrahend >= t1TargetSize_) ? 0 : t1TargetSize_ - subtrahend;
+                t1TargetSize_ =
+                    (subtrahend >= t1TargetSize_) ? 0 : t1TargetSize_ - subtrahend;
                 return;
             }
             default:
@@ -185,8 +191,9 @@ protected:
     const T& insert(const KeyT& key, const T& page) override {
         auto indexedRecord = pageIndex_.find(key);
 
-        if (indexedRecord != pageIndex_.end() && (indexedRecord->second.listName == ListName::B1 ||
-                                                  indexedRecord->second.listName == ListName::B2)) {
+        if (indexedRecord != pageIndex_.end() &&
+            (indexedRecord->second.listName == ListName::B1 ||
+             indexedRecord->second.listName == ListName::B2)) {
             return promoteGhostPage(indexedRecord, page);
         }
 

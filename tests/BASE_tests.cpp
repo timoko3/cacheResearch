@@ -11,9 +11,11 @@ class CacheInterface : public testing::TestWithParam<cache::CacheEviction> {
 protected:
     std::unique_ptr<cache::Cache<int>> makeCache(std::size_t capacity) {
         if (GetParam() == cache::CacheEviction::C_REF) {
-            return std::make_unique<cache::CacheREF<int>>(capacity, std::list<int>{7, 7});
+            return std::make_unique<cache::CacheREF<int>>(capacity,
+                                                          std::list<int>{7, 7});
         }
-        return cache::CacheFactory<int>::make({capacity, cache::CacheLevel::L1, GetParam()});
+        return cache::CacheFactory<int>::make(
+            {capacity, cache::CacheLevel::L1, GetParam()});
     }
 };
 
@@ -42,11 +44,11 @@ TEST_P(CacheInterface, MissAndHitReturnSameStoredCopy) {
     EXPECT_EQ(c->getStats().amountHits, 1u);
 }
 
-INSTANTIATE_TEST_SUITE_P(AllStrategies, CacheInterface,
-                         testing::Values(cache::CacheEviction::C_LRU, cache::CacheEviction::C_LFU,
-                                         cache::CacheEviction::C_ARC, cache::CacheEviction::C_2Q,
-                                         cache::CacheEviction::C_LIRS,
-                                         cache::CacheEviction::C_REF));
+INSTANTIATE_TEST_SUITE_P(
+    AllStrategies, CacheInterface,
+    testing::Values(cache::CacheEviction::C_LRU, cache::CacheEviction::C_LFU,
+                    cache::CacheEviction::C_ARC, cache::CacheEviction::C_2Q,
+                    cache::CacheEviction::C_LIRS, cache::CacheEviction::C_REF));
 
 TEST_P(CacheInterface, AcceptsLoaderReturningConstReference) {
     auto c = makeCache(3);
@@ -82,7 +84,9 @@ TEST_P(CacheInterface, StoredReferenceSurvivesLoaderBufferReuseAndDestruction) {
         EXPECT_EQ(*first, 10);
     }
 
-    auto unexpectedLoad = [](int) -> int& { throw std::runtime_error("Unexpected load"); };
+    auto unexpectedLoad = [](int) -> int& {
+        throw std::runtime_error("Unexpected load");
+    };
     EXPECT_EQ(*first, 10);
     EXPECT_EQ(&c->lookupUpdate(1, unexpectedLoad), first);
     EXPECT_EQ(c->getStats().amountRequests, 3u);

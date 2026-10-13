@@ -31,7 +31,8 @@ void checkCacheConfiguration(const cache::CacheSystemParams& configuration) {
 
         if (description.strategy == cache::CacheEviction::C_REF &&
             configuration.levels.size() != 1) {
-            throw std::invalid_argument("REF is supported only as a single-level reference");
+            throw std::invalid_argument(
+                "REF is supported only as a single-level reference");
         }
     }
 }
@@ -41,7 +42,8 @@ uint32_t generatePageValue(int pageKey) {
 }
 
 template <typename CacheType>
-std::size_t processRequests(CacheType& cacheInstance, const std::vector<int>& requests) {
+std::size_t processRequests(CacheType& cacheInstance,
+                            const std::vector<int>& requests) {
     std::size_t memoryLoadCount = 0;
 
     uint32_t loadedPage = 0;
@@ -61,8 +63,9 @@ std::size_t processRequests(CacheType& cacheInstance, const std::vector<int>& re
     return memoryLoadCount;
 }
 
-void checkCacheStatistics(const cache::CacheSystemStats& statistics, std::size_t requestCount,
-                          std::size_t memoryLoadCount, std::size_t levelCount) {
+void checkCacheStatistics(const cache::CacheSystemStats& statistics,
+                          std::size_t requestCount, std::size_t memoryLoadCount,
+                          std::size_t levelCount) {
     if (statistics.levels.size() != levelCount) {
         throw std::runtime_error("Incorrect number of cache levels");
     }
@@ -82,14 +85,16 @@ void checkCacheStatistics(const cache::CacheSystemStats& statistics, std::size_t
 
     if (statistics.total.amountRequests != requestCount ||
         statistics.total.amountHits != totalHits ||
-        statistics.total.amountMisses != memoryLoadCount || expectedRequests != memoryLoadCount ||
+        statistics.total.amountMisses != memoryLoadCount ||
+        expectedRequests != memoryLoadCount ||
         totalHits + memoryLoadCount != requestCount) {
         throw std::runtime_error("Incorrect total statistics");
     }
 }
 
-cache::CacheSystemStats runCacheExperiment(const cache::CacheSystemParams& configuration,
-                                           const std::vector<int>& requests) {
+cache::CacheSystemStats
+runCacheExperiment(const cache::CacheSystemParams& configuration,
+                   const std::vector<int>& requests) {
     checkCacheConfiguration(configuration);
 
     if (requests.empty()) {
@@ -106,7 +111,8 @@ cache::CacheSystemStats runCacheExperiment(const cache::CacheSystemParams& confi
 
         memoryLoadCount = processRequests(idealCache, requests);
         statistics.total = idealCache.getStats();
-        statistics.levels.push_back({configuration.levels.front().level, statistics.total});
+        statistics.levels.push_back(
+            {configuration.levels.front().level, statistics.total});
     } else {
         cache::CacheSystem<uint32_t, int> cacheSystem(configuration);
 
@@ -114,20 +120,21 @@ cache::CacheSystemStats runCacheExperiment(const cache::CacheSystemParams& confi
         statistics = cacheSystem.getSystemStats();
     }
 
-    checkCacheStatistics(statistics, requests.size(), memoryLoadCount, configuration.levels.size());
+    checkCacheStatistics(
+        statistics, requests.size(), memoryLoadCount, configuration.levels.size());
 
     return statistics;
 }
 
 void printCacheStatistics(const cache::CacheSystemStats& statistics) {
-    std::cout << statistics.total.amountRequests << ' ' << statistics.total.amountHits << ' '
-              << statistics.total.amountMisses;
+    std::cout << statistics.total.amountRequests << ' '
+              << statistics.total.amountHits << ' ' << statistics.total.amountMisses;
 
     for (std::size_t levelIndex = 0; levelIndex < 3; ++levelIndex) {
         if (levelIndex < statistics.levels.size()) {
             const auto& levelStats = statistics.levels[levelIndex].stats;
-            std::cout << ' ' << levelStats.amountRequests << ' ' << levelStats.amountHits << ' '
-                      << levelStats.amountMisses;
+            std::cout << ' ' << levelStats.amountRequests << ' '
+                      << levelStats.amountHits << ' ' << levelStats.amountMisses;
         } else {
             std::cout << " 0 0 0";
         }
@@ -150,7 +157,8 @@ cache::CacheSystemStats runCacheExperimentFromFiles(const std::string& configPat
     parser::CacheParser<int> cacheParser;
     cacheParser.parseAll(configTokens, inputTokens);
 
-    return runCacheExperiment(cacheParser.getCacheSysParams(), cacheParser.getReqList());
+    return runCacheExperiment(cacheParser.getCacheSysParams(),
+                              cacheParser.getReqList());
 }
 
 int main(int argc, char** argv) {
@@ -164,14 +172,16 @@ int main(int argc, char** argv) {
                 if (!std::getline(std::cin, inputPath)) {
                     throw std::invalid_argument("Missing input path in batch");
                 }
-                printCacheStatistics(runCacheExperimentFromFiles(configPath, inputPath));
+                printCacheStatistics(
+                    runCacheExperimentFromFiles(configPath, inputPath));
                 std::cout.flush();
             }
             return 0;
         }
 
         if (argc != 3) {
-            throw std::invalid_argument("Usage: cache_benchmark_runner config.txt input.txt");
+            throw std::invalid_argument(
+                "Usage: cache_benchmark_runner config.txt input.txt");
         }
 
         printCacheStatistics(runCacheExperimentFromFiles(argv[1], argv[2]));

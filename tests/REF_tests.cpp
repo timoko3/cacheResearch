@@ -153,8 +153,10 @@ TEST(CacheREF, ReloadedPageHasNewValue) {
 
 TEST(CacheREF, RetryFailedLoad) {
     cache::CacheREF<int, int> c(3, std::list<int>{42, 42, 42});
-    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int& { throw std::runtime_error("load failed"); }),
-                 std::runtime_error);
+    EXPECT_THROW(
+        c.lookupUpdate(42,
+                       [](int) -> int& { throw std::runtime_error("load failed"); }),
+        std::runtime_error);
 
     int loads = 0;
     int loadedPage = 420;
@@ -187,7 +189,8 @@ TEST(CacheREF, VectorPage) {
 }
 
 TEST(CacheREF, StringKeys) {
-    cache::CacheREF<int, std::string> c(3, std::list<std::string>{"alpha", "alpha", "beta"});
+    cache::CacheREF<int, std::string> c(
+        3, std::list<std::string>{"alpha", "alpha", "beta"});
     int loads = 0;
     int loadedPage = 0;
     auto slow = [&](const std::string& key) -> int& {

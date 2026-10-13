@@ -6,7 +6,9 @@
 struct LIRSHashCheckedKey {
     int value;
     inline static int failingValue = -1;
-    bool operator==(const LIRSHashCheckedKey& other) const noexcept { return value == other.value; }
+    bool operator==(const LIRSHashCheckedKey& other) const noexcept {
+        return value == other.value;
+    }
 };
 
 namespace std {
@@ -75,7 +77,8 @@ TEST(CacheLIRSTrace, ReuseAfterScan) {
 
 TEST(CacheLIRSTrace, TwoHotThenScan) {
     cache::CacheLIRS<uint32_t, int> c(4);
-    lookupUpdateTest(c, {1, 2, 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5}, "MMHHMMHHMHHHMM");
+    lookupUpdateTest(
+        c, {1, 2, 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5}, "MMHHMMHHMHHHMM");
 }
 
 TEST(CacheLIRSTrace, HotTwoLong) {
@@ -138,8 +141,10 @@ TEST(CacheLIRS, ReloadedPageHasNewValue) {
 
 TEST(CacheLIRS, RetryFailedLoad) {
     cache::CacheLIRS<int, int> c(3);
-    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int& { throw std::runtime_error("load failed"); }),
-                 std::runtime_error);
+    EXPECT_THROW(
+        c.lookupUpdate(42,
+                       [](int) -> int& { throw std::runtime_error("load failed"); }),
+        std::runtime_error);
 
     int loads = 0;
     int loadedPage = 420;

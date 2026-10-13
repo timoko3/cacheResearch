@@ -39,7 +39,8 @@ public:
     template <typename F>
     const T& lookupUpdate(KeyT key, F slowGetPage) {
         using LoaderResult = decltype(slowGetPage(key));
-        static_assert(std::is_same_v<LoaderResult, T&> || std::is_same_v<LoaderResult, const T&>,
+        static_assert(std::is_same_v<LoaderResult, T&> ||
+                          std::is_same_v<LoaderResult, const T&>,
                       "The loader must return T& or const T&");
 
         ++stats_.amountRequests;

@@ -26,7 +26,8 @@ inline uint32_t hashInt(int key) {
 }
 
 template <typename CacheT>
-void checkCacheStats(CacheT& cache, const std::vector<int>& requests, std::string_view expected) {
+void checkCacheStats(CacheT& cache, const std::vector<int>& requests,
+                     std::string_view expected) {
     const auto expectedMisses =
         static_cast<std::size_t>(std::count(expected.begin(), expected.end(), 'M'));
     const auto expectedHits =
@@ -64,14 +65,16 @@ void testOneLookup(CacheT& cache, std::unordered_set<int>& loadedKeys, const int
         EXPECT_TRUE(slowGetPageWasCalled) << ", key = " << key;
     } else {
         EXPECT_FALSE(slowGetPageWasCalled) << ", key = " << key;
-        ASSERT_TRUE(wasLoadedBefore) << "expected a hit for a key that was never loaded";
+        ASSERT_TRUE(wasLoadedBefore)
+            << "expected a hit for a key that was never loaded";
     }
 
     EXPECT_EQ(actualValue, hashInt(key));
 }
 
 template <typename CacheT>
-void lookupUpdateTest(CacheT& cache, const std::vector<int>& requests, std::string_view expected) {
+void lookupUpdateTest(CacheT& cache, const std::vector<int>& requests,
+                      std::string_view expected) {
     ASSERT_EQ(requests.size(), expected.size());
 
     std::unordered_set<int> loadedKeys;

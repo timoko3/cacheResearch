@@ -38,13 +38,16 @@ private:
         PageIterator residentToEvict = cache_.begin();
         Distance maxDistance = 0;
 
-        for (auto pageIterator = cache_.begin(); pageIterator != cache_.end(); ++pageIterator) {
+        for (auto pageIterator = cache_.begin(); pageIterator != cache_.end();
+             ++pageIterator) {
             Distance distanceToNextRequest = requests_.size();
 
-            for (auto requestIterator = currentRequest_; requestIterator != requests_.end();
+            for (auto requestIterator = currentRequest_;
+                 requestIterator != requests_.end();
                  ++requestIterator) {
                 if (*requestIterator == pageIterator->key) {
-                    distanceToNextRequest = std::distance(currentRequest_, requestIterator);
+                    distanceToNextRequest =
+                        std::distance(currentRequest_, requestIterator);
                     break;
                 }
             }
@@ -75,7 +78,8 @@ protected:
         }
 
         if (*currentRequest_ != key) {
-            throw std::invalid_argument("Request does not match the supplied sequence");
+            throw std::invalid_argument(
+                "Request does not match the supplied sequence");
         }
 
         ++currentRequest_;
@@ -93,7 +97,8 @@ protected:
         PageList stagedPage;
         stagedPage.push_front({key, page});
 
-        auto [indexedPage, wasInserted] = pageIndex_.emplace(key, stagedPage.begin());
+        auto [indexedPage, wasInserted] =
+            pageIndex_.emplace(key, stagedPage.begin());
         if (!wasInserted) {
             throw std::logic_error("insert requires an unknown key");
         }

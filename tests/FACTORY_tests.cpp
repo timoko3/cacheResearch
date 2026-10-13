@@ -9,7 +9,8 @@ TEST(CacheFactory, PreservesDescriptionAndSupportsStringKeys) {
                           cache::CacheEviction::C_ARC,
                           cache::CacheEviction::C_2Q,
                           cache::CacheEviction::C_LIRS}) {
-        auto c = cache::CacheFactory<int, std::string>::make({4, cache::CacheLevel::L4, strategy});
+        auto c = cache::CacheFactory<int, std::string>::make(
+            {4, cache::CacheLevel::L4, strategy});
         EXPECT_EQ(c->getSize(), 4u);
         int loadedPage = 70;
         auto slow = [&](const std::string&) -> int& { return loadedPage; };
@@ -20,20 +21,24 @@ TEST(CacheFactory, PreservesDescriptionAndSupportsStringKeys) {
 }
 
 TEST(CacheFactory, RejectsUnsupportedStrategies) {
-    // This scoped enum has an int underlying type; deliberately test an unnamed value.
-    // NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
+    // This scoped enum has an int underlying type; deliberately test an unnamed
+    // value. NOLINTNEXTLINE(clang-analyzer-optin.core.EnumCastOutOfRange)
     const auto unnamedStrategy = static_cast<cache::CacheEviction>(-1);
-    for (auto strategy :
-         {cache::CacheEviction::C_REF, cache::CacheEviction::C_UNKNOWN, unnamedStrategy}) {
-        EXPECT_THROW(cache::CacheFactory<int>::make({4, cache::CacheLevel::L1, strategy}),
-                     std::invalid_argument);
+    for (auto strategy : {cache::CacheEviction::C_REF,
+                          cache::CacheEviction::C_UNKNOWN,
+                          unnamedStrategy}) {
+        EXPECT_THROW(
+            cache::CacheFactory<int>::make({4, cache::CacheLevel::L1, strategy}),
+            std::invalid_argument);
     }
 }
 
 TEST(CacheFactory, PropagatesStrategyCapacityConstraints) {
-    for (auto strategy : {cache::CacheEviction::C_2Q, cache::CacheEviction::C_LIRS}) {
-        EXPECT_THROW(cache::CacheFactory<int>::make({1, cache::CacheLevel::L1, strategy}),
-                     std::invalid_argument);
+    for (auto strategy :
+         {cache::CacheEviction::C_2Q, cache::CacheEviction::C_LIRS}) {
+        EXPECT_THROW(
+            cache::CacheFactory<int>::make({1, cache::CacheLevel::L1, strategy}),
+            std::invalid_argument);
     }
 }
 

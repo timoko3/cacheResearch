@@ -14,7 +14,8 @@ namespace tests {
 
 namespace {
 
-lexer::TokenStream lexStream(const std::string& src, const std::string& fileName = "unknown_file") {
+lexer::TokenStream lexStream(const std::string& src,
+                             const std::string& fileName = "unknown_file") {
     lexer::Lexer lx(src, fileName);
     return lx.tokenize();
 }
@@ -133,7 +134,8 @@ TEST(TokenStreamValid, ExpectReturnIdentValue) {
 TEST(TokenStreamValid, ExpectTokenReturnsConsumedToken) {
     lexer::TokenStream ts = lexStream("\n    LRU");
 
-    const lexer::Token& token = ts.expectToken(lexer::TokenType::IDENTIFIER, "need ident");
+    const lexer::Token& token =
+        ts.expectToken(lexer::TokenType::IDENTIFIER, "need ident");
 
     EXPECT_EQ(token.type, lexer::TokenType::IDENTIFIER);
     EXPECT_EQ(std::get<std::string>(token.data), "LRU");
@@ -154,25 +156,29 @@ TEST(TokenStreamValid, ReadsFullSequence) {
 TEST(TokenStreamErrors, ExpectIntOnIdentifierThrows) {
     lexer::TokenStream ts = lexStream("LRU", "test.txt");
 
-    EXPECT_EQ(errorText([&] { ts.expectInt("need int"); }), "test.txt:1:1: need int");
+    EXPECT_EQ(errorText([&] { ts.expectInt("need int"); }),
+              "test.txt:1:1: need int");
 }
 
 TEST(TokenStreamErrors, ExpectThrowAtIdentOnInts) {
     lexer::TokenStream ts = lexStream("\n\n\n 7", "test.txt");
 
-    EXPECT_EQ(errorText([&] { ts.expectIdent("need ident"); }), "test.txt:4:2: need ident");
+    EXPECT_EQ(errorText([&] { ts.expectIdent("need ident"); }),
+              "test.txt:4:2: need ident");
 }
 
 TEST(TokenStreamErrors, ExpectThrowAtTokenWrongType) {
     lexer::TokenStream ts = lexStream("7");
 
-    EXPECT_THROW(ts.expectToken(lexer::TokenType::IDENTIFIER, "need ident"), std::runtime_error);
+    EXPECT_THROW(ts.expectToken(lexer::TokenType::IDENTIFIER, "need ident"),
+                 std::runtime_error);
 }
 
 TEST(TokenStreamErrors, ExpectThrowAtEnd) {
     lexer::TokenStream ts = lexStream("\n\n   ", "test.txt");
 
-    EXPECT_EQ(errorText([&] { ts.expectInt("need int"); }), "test.txt:3:4: need int");
+    EXPECT_EQ(errorText([&] { ts.expectInt("need int"); }),
+              "test.txt:3:4: need int");
 }
 
 TEST(TokenStreamErrors, ExpectIntThrowsAfterLastToken) {
@@ -249,7 +255,8 @@ TEST(LexerWithTokenStream, WrongTokenTypeIsReportedWithPosition) {
 
     EXPECT_EQ(ts.expectInt("levels"), 2);
     EXPECT_EQ(ts.expectIdent("strategy"), "LRU");
-    EXPECT_EQ(errorText([&] { ts.expectIdent("strategy"); }), "config.txt:2:5: strategy");
+    EXPECT_EQ(errorText([&] { ts.expectIdent("strategy"); }),
+              "config.txt:2:5: strategy");
 }
 
 } // namespace tests
