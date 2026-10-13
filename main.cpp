@@ -27,8 +27,8 @@ int main(const int argc, const char** argv) {
         std::string configStr = generalFunctions::readFile(configFile);
         std::string inputStr = generalFunctions::readFile(inputFile);
 
-        lexer::Lexer configLexer(configStr);
-        lexer::Lexer inputLexer(inputStr);
+        lexer::Lexer configLexer(configStr, configFile);
+        lexer::Lexer inputLexer(inputStr, inputFile);
 
         // printTokenArr(configLexer.tokenize());
         // printTokenArr(inputLexer.tokenize());
