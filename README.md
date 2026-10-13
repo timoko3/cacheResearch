@@ -10,10 +10,13 @@
 - [Сборка и запуск](#сборка-и-запуск)
   - [1. Подготовка](#1-подготовка)
   - [2. Сборка бенчмарков](#2-сборка-бенчмарков)
-  - [3. Запуск экспериментов](#3-запуск-экспериментов)
-  - [4. Собственная последовательность запросов](#4-собственная-последовательность-запросов)
-  - [5. Сборка и запуск тестов](#5-сборка-и-запуск-тестов)
-  - [6. Запуск собственной системы](#6-запуск-собственной-системы)
+  - [3. Генерация и запуск одного случая](#3-генерация-и-запуск-одного-случая)
+  - [4. Запуск полных исследований](#4-запуск-полных-исследований)
+  - [5. Собственная последовательность запросов](#5-собственная-последовательность-запросов)
+  - [6. Сборка и запуск тестов](#6-сборка-и-запуск-тестов)
+  - [7. Запуск приложения](#7-запуск-приложения)
+  - [8. Сборка через Nix](#8-сборка-через-nix)
+  - [9. Использование кеша как библиотеки](#9-использование-кеша-как-библиотеки)
 
 ## Описание проекта
 
@@ -183,42 +186,53 @@ $$
 
 ## Сборка и запуск
 
-Для генерации одного паттерна, повтора сохранённого случая и небольших серий
-используйте [интерфейс бенчмарков](cacheBenchmarks/README.md).
-Генерация работает без сборки C++ и сторонних Python-пакетов; графики опциональны.
-Ниже описан запуск полных исследований исходными скриптами.
+Выберите нужный сценарий:
 
-Все команды выполняются **из корня репозитория**.
+| Задача | Что использовать |
+|---|---|
+| Проверить алгоритм на одной последовательности | `benchmark.py generate` и `benchmark.py run`, разделы 2–3 |
+| Повторить исследования и построить графики | Раздел 4 |
+| Запустить программу с файлами конфигурации и запросов | Раздел 7 |
+| Получить окружение или собрать пакет через Nix | Раздел 8 |
+| Подключить алгоритмы кеширования к своей C++-программе | Раздел 9 |
+
+Все команды сборки и экспериментов выполняются **из корня репозитория**.
+Для внешнего проекта в разделе 9 отдельно указаны его файлы и команды.
 
 ### 1. Подготовка
 
-Нужны компилятор C++17, CMake 3.24 или новее, Ninja и Python 3.
-В примерах Python запускается командой `python`; если в системе используется
-`python3`, замените её во всех командах.
+Для CMake-сборки нужны компилятор с поддержкой C++17, CMake 3.24 или новее
+и Ninja. На Windows запускайте команды из терминала, где доступен компилятор,
+например Developer PowerShell для Visual Studio с установленными C++ Build Tools.
 
-Установите библиотеку графиков:
+Для скриптов бенчмарков нужен Python 3.10 или новее. В примерах используется
+`python`; на Linux и в WSL при необходимости замените его на `python3`.
+Генерация запросов и запуск одного случая не требуют сторонних Python-пакетов.
+
+Для графиков установите `matplotlib` в отдельное окружение:
+
+```sh
+python -m venv .venv
+```
+
+Активируйте его командой `.venv\Scripts\Activate.ps1` в PowerShell
+или `source .venv/bin/activate` в Bash, затем выполните:
 
 ```sh
 python -m pip install matplotlib
 ```
 
-Для сборки приложения и бенчмарков CMake автоматически получает основную ветку
-`generalFunctions` через Git; нужны Git и доступ к сети. Повторная конфигурация
-проверяет обновления, если обновления `FetchContent` не отключены. Можно использовать
-готовые исходники через `CACHE_RESEARCH_GENERAL_FUNCTIONS_SOURCE_DIR`.
-
-В `nix develop` исходники зависимости предоставляет Nix. Чтобы обновить её
-версию в `flake.lock`, выполните `nix flake update general-functions`.
-
-GoogleTest 1.18.0 загружается автоматически через CMake `FetchContent`
-при конфигурации с включёнными тестами; для первой загрузки требуется сеть.
 
 ### 2. Сборка бенчмарков
 
 ```sh
-cmake --preset release
-cmake --build --preset release --target cache_benchmark_runner cache_exact_search cache_tests --parallel
+cmake --preset benchmarks
+cmake --build --preset benchmarks --parallel
 ```
+
+Preset `benchmarks` собирает два исполняемых файла в Release:
+`cache_benchmark_runner` для измерений и `cache_exact_search` для точного поиска лучших конфигураций полным перебором.
+Приложение и тесты в этом preset отключены; GoogleTest не требуется.
 
 Задайте переменные для последующих
 команд:
@@ -226,7 +240,7 @@ cmake --build --preset release --target cache_benchmark_runner cache_exact_searc
 **Windows, PowerShell:**
 
 ```powershell
-$buildDir = "build/release"
+$buildDir = "build/benchmarks"
 $runner = "$buildDir/cache_benchmark_runner.exe"
 $exact = "$buildDir/cache_exact_search.exe"
 ```
@@ -234,7 +248,7 @@ $exact = "$buildDir/cache_exact_search.exe"
 **Linux, Bash:**
 
 ```bash
-buildDir="build/release"
+buildDir="build/benchmarks"
 runner="$buildDir/cache_benchmark_runner"
 exact="$buildDir/cache_exact_search"
 ```
@@ -243,7 +257,57 @@ exact="$buildDir/cache_exact_search"
 с этими переменными. Если сборка уже находится в другом каталоге, например
 `build/research`, укажите его в переменных.
 
-### 3. Запуск экспериментов
+### 3. Генерация и запуск одного случая
+
+Пример: LIRS с вместимостью 128 страниц и 20 000 запросов паттерна `scan`:
+
+```sh
+python cacheBenchmarks/benchmark.py generate --pattern scan --seed 5 --requests 20000 --workload-scale 128 --strategies LIRS --capacities 128 --output build/cases/scan-lirs
+
+python cacheBenchmarks/benchmark.py run build/cases/scan-lirs --runner "$runner"
+```
+
+Первая команда создаёт файлы, вторая запускает C++ runner и выводит число
+запросов, попаданий, промахов и долю попаданий. Переменная `runner` задана
+в разделе 2. Для повторной генерации в ту же папку добавьте `--force`.
+
+| Параметр `generate` | Значение |
+|---|---|
+| `--strategies LIRS` | Алгоритм; доступны `LRU`, `LFU`, `ARC`, `2Q`, `LIRS`, `REF` |
+| `--capacities 128` | Вместимость кеша в страницах |
+| `--requests 20000` | Общее число обращений |
+| `--workload-scale 128` | Масштаб генерации данных; для `scan` цикл содержит `4 × 128 = 512` страниц |
+| `--seed 5` | Начальное значение генератора случайных чисел; на детерминированный `scan` не влияет |
+| `--output PATH` | Папка файлов для сгенерированных результатов |
+
+Для измерения иерархии кешей перечислите вместимости и стратегии от первого уровня к последнему:
+
+```sh
+python cacheBenchmarks/benchmark.py generate --pattern hot_cold --capacities 2 32 256 --strategies LRU 2Q LIRS --output build/cases/hierarchy
+
+python cacheBenchmarks/benchmark.py run build/cases/hierarchy --runner "$runner"
+```
+
+Поддерживаются 1–3 уровня; для каждого нужна одна стратегия. `2Q` и `LIRS`
+требуют вместимость не меньше двух страниц. `REF` допускается только для
+одного уровня и запускается через `cache_benchmark_runner`: приложение
+`cache_research` эту стратегию не поддерживает.
+
+Сравнить все стратегии, включая REF, на уже сохранённых запросах:
+
+```sh
+python cacheBenchmarks/benchmark.py compare build/cases/scan-lirs --capacity 128 --runner "$runner"
+```
+
+В папке случая `config.txt` хранит **число уровней и стратегии**, а `input.txt` —
+**вместимости, число запросов и сами запросы**.
+`requests.txt` содержит только запросы, `manifest.json` — параметры и контрольные суммы.
+
+Список паттернов: `python cacheBenchmarks/benchmark.py patterns`.
+У каждой команды есть `--help`; дополнительные примеры — в
+[инструкции бенчмарков](cacheBenchmarks/README.md).
+
+### 4. Запуск полных исследований
 
 Примеры сохраняют новые результаты в `build/bench-results/`.
 
@@ -282,7 +346,7 @@ python cacheBenchmarks/cache_research.py --mode hierarchy --runner "$runner" --r
 | `--trace PATH` | Собственная последовательность для режима `software` |
 | `--generate-only` | Сохранить план опыта без запуска симулятора |
 
-#### Запуск исследование №3: Бесплатный доступ к уровням
+#### Запуск исследования №3: Бесплатный доступ к уровням
 
 По умолчанию проверяются общие объёмы 8, 16, 36, 64, 145 и 290,
 от одного до трёх уровней, 10 видов запросов и последовательности
@@ -324,7 +388,7 @@ python cacheBenchmarks/cache_unrestricted.py --validate-with "$runner" --validat
 python cacheBenchmarks/cache_unrestricted.py --render-only --output build/bench-results/unrestricted
 ```
 
-### 4. Собственная последовательность запросов
+### 5. Собственная последовательность запросов
 
 Собственный файл запросов поддерживается **только в исследовании №1**:
 для `cache_research.py` нужно явно указать `--mode software` вместе с `--trace PATH`.
@@ -353,7 +417,7 @@ python cacheBenchmarks/cache_research.py --mode software --runner "$runner" --tr
 Последовательность используется целиком. Параметры `--requests` и `--seeds`
 не меняют запросы из файла.
 
-### 5. Сборка и запуск тестов
+### 6. Сборка и запуск тестов
 
 #### Сборка тестов
 
@@ -386,12 +450,12 @@ ctest --preset debug
 "./build/debug/tests/cache_tests" --gtest_filter="CacheREF*"
 ```
 
-### 6. Запуск собственной системы кеширования
+### 7. Запуск приложения
 
-Перед сборкой создайте в корне папки `configs/` и `inputs/`:
-CMake копирует их в каталог приложения. Сохраните в них следующие файлы.
+Приложение `cache_research` читает два файла, указанных в аргументах.
+Создайте папки `configs/` и `inputs/` и сохраните в них следующие файлы.
 
-`configs/<config_file.txt>` — число уровней и алгоритмы сверху вниз:
+`configs/example.txt` — число уровней и алгоритмы сверху вниз:
 
 ```text
 4
@@ -401,7 +465,7 @@ LIRS
 2Q
 ```
 
-`inputs/<input_file.txt>` — вместимости уровней, число запросов и идентификаторы:
+`inputs/example.txt` — вместимости уровней, число запросов и идентификаторы:
 
 ```text
 3 4 5 7
@@ -415,6 +479,7 @@ LIRS
 #### Сборка
 
 ```sh
+cmake --preset release
 cmake --build --preset release --target cache_research --parallel
 ```
 
@@ -423,12 +488,210 @@ cmake --build --preset release --target cache_research --parallel
 **Windows, PowerShell:**
 
 ```powershell
-& "$buildDir/bin/Release/cache_research.exe" configs/<config_file.txt> inputs/<input_file.txt>
+& "build/release/bin/Release/cache_research.exe" configs/example.txt inputs/example.txt
 ```
 
 **Linux, Bash:**
 
 ```bash
-"$buildDir/bin/Release/cache_research" configs/<config_file.txt> inputs/<input_file.txt>
+./build/release/bin/Release/cache_research configs/example.txt inputs/example.txt
 ```
 
+### 8. Сборка через Nix
+
+Текущий `flake.nix` поддерживает `x86_64-linux`. На Windows выполняйте эти
+команды внутри WSL с установленным Nix. Для первого получения зависимостей
+нужен доступ к сети; их версии фиксируются в `flake.lock`.
+
+#### Собрать пакет и проверить тесты
+
+```bash
+nix build
+./result/bin/cache_research configs/example.txt inputs/example.txt
+```
+
+`nix build` собирает приложение, оба runner и C++-тесты, затем запускает CTest.
+При успешной сборке создаётся ссылка `result` на установленный пакет в Nix store.
+В текущем пакете устанавливаются приложение `cache_research` и библиотечные
+заголовки с CMake-конфигурацией; runner собираются, но не устанавливаются.
+Для запуска бенчмарков используйте окружение разработки ниже.
+
+Если Nix сообщает, что экспериментальные возможности отключены, добавьте
+`experimental-features = nix-command flakes` в `~/.config/nix/nix.conf`
+или передайте опции явно:
+
+```bash
+nix --extra-experimental-features 'nix-command flakes' build
+```
+
+#### Получить окружение для разработки и бенчмарков
+
+```bash
+nix develop
+```
+
+Окружение предоставляет LLVM 18, CMake, Ninja, Git и Python, а также
+`clang-format-18` и `clang-tidy-18`. Переменная `GENERAL_FUNCTIONS_SOURCE_DIR`
+указывает на исходники зависимости, полученные Nix, поэтому CMake не требуется
+клонировать `generalFunctions`. `nix develop` открывает оболочку с инструментами;
+сам проект нужно собрать командами CMake. Для выхода выполните `exit`.
+
+Отдельный пакет библиотеки и все объявленные проверки:
+
+```bash
+nix build .#library --out-link result-library
+nix flake check
+```
+
+Первая команда устанавливает только библиотеку и проверяет её подключение
+из отдельной C++-программы. Заголовки находятся в `result-library/include`,
+CMake-пакет — в `result-library/lib/cmake/CacheResearch`.
+`nix flake check` проверяет и основной пакет, и библиотечный.
+
+ Подробнее об окружениях:
+[документация nix develop](https://nix.dev/manual/nix/2.24/command-ref/new-cli/nix3-develop).
+
+### 9. Использование кешей как библиотеки
+
+Кеши с различными алгоритмами вытеснения реализованы в виде *header-only* библиотеки.
+Отдельные `.a`, `.so` или `.dll` для кешей не создаются: нужные шаблоны
+компилируются вместе с программой пользователя.
+
+Публичный CMake-target `CacheResearch::cache` передаёт программе путь к
+заголовкам. Его можно подключить тремя способами.
+
+#### Вариант А: исходники внутри своего проекта
+
+Положите репозиторий в `external/cacheResearch`. В `CMakeLists.txt`
+своего проекта добавьте:
+
+```cmake
+cmake_minimum_required(VERSION 3.24)
+project(MyApp LANGUAGES CXX)
+
+add_subdirectory(external/cacheResearch)
+add_executable(my_app main.cpp)
+target_link_libraries(my_app PRIVATE CacheResearch::cache)
+```
+
+При таком подключении приложение, бенчмарки, тесты и установка библиотеки
+по умолчанию отключены. Собирается только пользовательская программа.
+
+#### Вариант Б: установленный CMake-пакет
+
+Из корня репозитория CacheResearch выполните:
+
+```sh
+cmake --preset library
+cmake --build --preset library
+cmake --install build/library
+```
+
+Пакет устанавливается в `build/cache-install`. Другой каталог можно указать
+командой `cmake --install build/library --prefix /absolute/path/to/cache-install`.
+
+Установленный каталог можно перенести; исходный репозиторий для подключения
+готового пакета не требуется.
+
+В `CMakeLists.txt` пользовательского проекта:
+
+```cmake
+cmake_minimum_required(VERSION 3.24)
+project(MyApp LANGUAGES CXX)
+
+find_package(CacheResearch 0.1.0 CONFIG REQUIRED)
+add_executable(my_app main.cpp)
+target_link_libraries(my_app PRIVATE CacheResearch::cache)
+```
+
+Из корня **пользовательского проекта** выполните, заменив путь на настоящий:
+
+```sh
+cmake -S . -B build -DCMAKE_PREFIX_PATH="/absolute/path/to/cache-install"
+cmake --build build --config Release
+```
+
+#### Вариант В: библиотека, собранная через Nix
+
+Этот вариант предназначен для Linux `x86_64` и WSL с установленным Nix.
+Nix собирает и устанавливает библиотеку в Nix store. Отдельно выполнять
+`cmake --install` не требуется.
+
+В корне репозитория CacheResearch выполните:
+
+```bash
+nix develop
+nix build .#library --out-link result-library
+cachePrefix=$(readlink -f result-library)
+```
+
+`nix develop` предоставляет компилятор, CMake и Ninja для последующей сборки
+вашей программы. `nix build` создаёт пакет библиотеки и ссылку `result-library`
+на него. Последняя команда сохраняет полный путь к пакету в переменную
+`cachePrefix`, например `/nix/store/...-cache-research-library-0.1.0`.
+Переменная продолжит работать после перехода в папку другого проекта.
+
+В `CMakeLists.txt` **вашего проекта** подключите пакет:
+
+```cmake
+cmake_minimum_required(VERSION 3.24)
+project(MyApp LANGUAGES CXX)
+
+find_package(CacheResearch 0.1.0 CONFIG REQUIRED)
+add_executable(my_app main.cpp)
+target_link_libraries(my_app PRIVATE CacheResearch::cache)
+```
+
+В той же оболочке перейдите в ваш проект и соберите его, заменив путь в `cd`
+на настоящий:
+
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$cachePrefix"
+cmake --build build
+```
+
+`CMAKE_PREFIX_PATH` сообщает CMake, где установлен пакет. По этому пути
+`find_package` находит `CacheResearchConfig.cmake`, а target
+`CacheResearch::cache` добавляет пути к заголовкам. Копировать заголовки
+из Nix store вручную не нужно.
+
+#### Пример использования в main.cpp
+
+```cpp
+#include <iostream>
+#include <cache/cacheLIRS.h>
+
+int main() {
+    cache::CacheLIRS<int> pages(128);
+
+    int buffer = 0;
+    auto load = [&](int key) -> int& {
+        buffer = key * 10;
+        return buffer;
+    };
+
+    std::cout << pages.lookupUpdate(7, load) << '\n'; // Промах: вызывается load.
+    std::cout << pages.lookupUpdate(7, load) << '\n'; // Попадание: значение из кеша.
+
+    const auto& stats = pages.getStats();
+    std::cout << stats.amountHits << ' ' << stats.amountMisses << '\n';
+}
+```
+
+Программа выводит два значения `70`, затем `1 1`: одно попадание и один промах.
+Вместимость `128` означает число хранимых объектов. Загрузчик вызывается при
+промахе и должен возвращать `T&` или `const T&`; кеш сохраняет собственную
+копию значения. Ссылка, возвращённая `lookupUpdate`, действует до вытеснения
+объекта или уничтожения кеша.
+
+Для одного алгоритма подключайте его заголовок, например `cache/cacheLRU.h`.
+Общий `cache.h` подключает все алгоритмы и фабрику, а `cacheSystem.h` —
+многоуровневую систему.
+
+#### Проверка библиотеки
+
+```sh
+cmake --preset library-tests
+cmake --build --preset library-tests --parallel
+ctest --preset library-tests
+```
