@@ -1,5 +1,7 @@
 /build/
 /build-tests/
+/inputs/
+/configs/
 /build-benchmark/
 *.json
 /cmake-build-*/
