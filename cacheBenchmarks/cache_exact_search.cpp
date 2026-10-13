@@ -36,7 +36,8 @@ bool isPolicySupported(int policyIndex, std::size_t capacity) {
     return capacity >= ((policyIndex == 3 || policyIndex == 4) ? 2u : 1u);
 }
 
-std::unique_ptr<cache::Cache<int, int>> makeCache(int policyIndex, std::size_t capacity) {
+std::unique_ptr<cache::Cache<int, int>> makeCache(int policyIndex,
+                                                  std::size_t capacity) {
     switch (policyIndex) {
         case 0:
             return std::make_unique<cache::CacheLRU<int, int>>(capacity);
@@ -58,35 +59,38 @@ std::unique_ptr<cache::Cache<int, int>> makeCache(int policyIndex, std::size_t c
     }
 }
 
-Requests collectMissRequests(const Requests& requests, int policyIndex, std::size_t capacity) {
+Requests collectMissRequests(const Requests& requests, int policyIndex,
+                             std::size_t capacity) {
     auto instance = makeCache(policyIndex, capacity);
     Requests misses;
     misses.reserve(requests.size());
     int loadedPage = 0;
 
     for (int key : requests) {
-        instance->lookupUpdate(key, [&misses, &loadedPage](int requestedKey) -> int& {
-            misses.push_back(requestedKey);
-            loadedPage = requestedKey;
-            return loadedPage;
-        });
+        instance->lookupUpdate(key,
+                               [&misses, &loadedPage](int requestedKey) -> int& {
+                                   misses.push_back(requestedKey);
+                                   loadedPage = requestedKey;
+                                   return loadedPage;
+                               });
     }
 
     return misses;
 }
 
-std::size_t countMisses(const Requests& requests, int policyIndex, std::size_t capacity,
-                        std::size_t missLimit) {
+std::size_t countMisses(const Requests& requests, int policyIndex,
+                        std::size_t capacity, std::size_t missLimit) {
     auto instance = makeCache(policyIndex, capacity);
     std::size_t misses = 0;
     int loadedPage = 0;
 
     for (int key : requests) {
-        instance->lookupUpdate(key, [&misses, &loadedPage](int requestedKey) -> int& {
-            ++misses;
-            loadedPage = requestedKey;
-            return loadedPage;
-        });
+        instance->lookupUpdate(key,
+                               [&misses, &loadedPage](int requestedKey) -> int& {
+                                   ++misses;
+                                   loadedPage = requestedKey;
+                                   return loadedPage;
+                               });
 
         if (misses >= missLimit) {
             break; // A non-improving candidate cannot recover later.
@@ -128,7 +132,8 @@ std::size_t countIdealMisses(const Requests& requests, std::size_t capacity) {
 
                     auto found = residentNextUse.find(candidate.second);
 
-                    if (found != residentNextUse.end() && found->second == candidate.first) {
+                    if (found != residentNextUse.end() &&
+                        found->second == candidate.first) {
                         residentNextUse.erase(found);
                         break;
                     }
@@ -167,7 +172,8 @@ private:
         std::size_t result = 0;
 
         for (const auto& trace : traces) {
-            result += trace.repetitionCount * countIdealMisses(trace.requests, capacity);
+            result +=
+                trace.repetitionCount * countIdealMisses(trace.requests, capacity);
         }
 
         return result;
@@ -187,11 +193,12 @@ private:
 
             for (const auto& trace : traces) {
                 const auto remaining = best_.misses - totalMisses;
-                const auto missLimit =
-                    remaining / trace.repetitionCount + (remaining % trace.repetitionCount != 0);
+                const auto missLimit = remaining / trace.repetitionCount +
+                                       (remaining % trace.repetitionCount != 0);
 
-                totalMisses += trace.repetitionCount *
-                               countMisses(trace.requests, policyIndex, capacity, missLimit);
+                totalMisses +=
+                    trace.repetitionCount *
+                    countMisses(trace.requests, policyIndex, capacity, missLimit);
 
                 if (totalMisses >= best_.misses) {
                     break;
@@ -207,7 +214,8 @@ private:
     }
 
     void searchAdditionalLevels(const Traces& traces, std::size_t remainingCapacity,
-                                int remainingLevels, std::vector<std::size_t>& selectedCapacities,
+                                int remainingLevels,
+                                std::vector<std::size_t>& selectedCapacities,
                                 std::vector<int>& policyIndices) {
         if (remainingLevels <= 1 || best_.misses == theoreticalMinimum_) {
             return;
@@ -216,7 +224,8 @@ private:
         for (std::size_t capacity = 1; capacity < remainingCapacity; ++capacity) {
             std::vector<Traces> distinctMissTraces;
 
-            for (int policyIndex = 0; policyIndex < static_cast<int>(policyNames.size());
+            for (int policyIndex = 0;
+                 policyIndex < static_cast<int>(policyNames.size());
                  ++policyIndex) {
                 if (!isPolicySupported(policyIndex, capacity)) {
                     continue;
@@ -244,8 +253,9 @@ private:
                     return true;
                 };
 
-                const bool isDuplicate = std::any_of(
-                    distinctMissTraces.begin(), distinctMissTraces.end(), hasSameRequests);
+                const bool isDuplicate = std::any_of(distinctMissTraces.begin(),
+                                                     distinctMissTraces.end(),
+                                                     hasSameRequests);
 
                 if (isDuplicate) {
                     ++prunedBranches_;
@@ -254,8 +264,10 @@ private:
 
                 distinctMissTraces.push_back(missTraces);
 
-                // All lower levels combined cannot beat MIN with their total capacity.
-                if (lowerBound(missTraces, remainingCapacity - capacity) >= best_.misses) {
+                // All lower levels combined cannot beat MIN with their total
+                // capacity.
+                if (lowerBound(missTraces, remainingCapacity - capacity) >=
+                    best_.misses) {
                     ++prunedBranches_;
                     continue;
                 }
@@ -263,8 +275,10 @@ private:
                 selectedCapacities.push_back(capacity);
                 policyIndices.push_back(policyIndex);
 
-                evaluateLastLevel(
-                    missTraces, remainingCapacity - capacity, selectedCapacities, policyIndices);
+                evaluateLastLevel(missTraces,
+                                  remainingCapacity - capacity,
+                                  selectedCapacities,
+                                  policyIndices);
                 searchAdditionalLevels(missTraces,
                                        remainingCapacity - capacity,
                                        remainingLevels - 1,
@@ -288,11 +302,15 @@ public:
         std::vector<std::size_t> selectedCapacities;
         std::vector<int> policyIndices;
 
-        evaluateLastLevel(inputTraces_, totalCapacity_, selectedCapacities, policyIndices);
+        evaluateLastLevel(
+            inputTraces_, totalCapacity_, selectedCapacities, policyIndices);
         bestSingleLevel = best_;
 
-        searchAdditionalLevels(
-            inputTraces_, totalCapacity_, maxLevels_, selectedCapacities, policyIndices);
+        searchAdditionalLevels(inputTraces_,
+                               totalCapacity_,
+                               maxLevels_,
+                               selectedCapacities,
+                               policyIndices);
 
         return best_;
     }
@@ -304,18 +322,21 @@ public:
     std::size_t prunedBranches() const { return prunedBranches_; }
 };
 
-std::size_t replayConfiguration(const Requests& requests, const Configuration& configuration) {
+std::size_t replayConfiguration(const Requests& requests,
+                                const Configuration& configuration) {
     Requests remainingRequests = requests;
 
     for (std::size_t level = 0; level < configuration.capacities.size(); ++level) {
-        remainingRequests = collectMissRequests(
-            remainingRequests, configuration.policyIndices[level], configuration.capacities[level]);
+        remainingRequests = collectMissRequests(remainingRequests,
+                                                configuration.policyIndices[level],
+                                                configuration.capacities[level]);
     }
 
     return remainingRequests.size();
 }
 
-void printConfiguration(const Configuration& configuration, const std::vector<Requests>& runs) {
+void printConfiguration(const Configuration& configuration,
+                        const std::vector<Requests>& runs) {
     std::cout << "{\"misses\":" << configuration.misses << ",\"capacities\":[";
 
     for (std::size_t index = 0; index < configuration.capacities.size(); ++index) {
@@ -328,7 +349,8 @@ void printConfiguration(const Configuration& configuration, const std::vector<Re
 
     std::cout << "],\"policies\":[";
 
-    for (std::size_t index = 0; index < configuration.policyIndices.size(); ++index) {
+    for (std::size_t index = 0; index < configuration.policyIndices.size();
+         ++index) {
         if (index != 0) {
             std::cout << ',';
         }
@@ -362,7 +384,8 @@ void printConfiguration(const Configuration& configuration, const std::vector<Re
 int main(int argc, char** argv) {
     try {
         if (argc < 4) {
-            throw std::invalid_argument("Usage: cache_exact_search traces.txt max_levels total...");
+            throw std::invalid_argument(
+                "Usage: cache_exact_search traces.txt max_levels total...");
         }
 
         const int maxLevels = std::stoi(argv[2]);
@@ -402,10 +425,11 @@ int main(int argc, char** argv) {
 
             runs.push_back(requests);
 
-            auto found = std::find_if(
-                uniqueTraces.begin(), uniqueTraces.end(), [&requests](const Trace& trace) {
-                    return trace.requests == requests;
-                });
+            auto found = std::find_if(uniqueTraces.begin(),
+                                      uniqueTraces.end(),
+                                      [&requests](const Trace& trace) {
+                                          return trace.requests == requests;
+                                      });
 
             if (found == uniqueTraces.end()) {
                 uniqueTraces.push_back({std::move(requests), 1});
@@ -427,7 +451,8 @@ int main(int argc, char** argv) {
                 throw std::invalid_argument("Total capacity must be positive");
             }
 
-            ExactSearch search(uniqueTraces, static_cast<std::size_t>(totalCapacity), maxLevels);
+            ExactSearch search(
+                uniqueTraces, static_cast<std::size_t>(totalCapacity), maxLevels);
             const auto best = search.run();
 
             std::cout << "{\"total\":" << totalCapacity

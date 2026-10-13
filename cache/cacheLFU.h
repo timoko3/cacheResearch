@@ -28,7 +28,8 @@ private:
     PageIndex pageIndex_;
     PageList cache_;
 
-    static bool comparePageRecordsByFrequency(const PageRecord& first, const PageRecord& second) {
+    static bool comparePageRecordsByFrequency(const PageRecord& first,
+                                              const PageRecord& second) {
         return first.frequency < second.frequency;
     }
 
@@ -64,15 +65,16 @@ protected:
         constexpr std::size_t initialFrequency = 1;
         stagedPage.push_back(PageRecord{key, page, initialFrequency});
 
-        auto [indexedPage, wasInserted] = pageIndex_.emplace(key, stagedPage.begin());
+        auto [indexedPage, wasInserted] =
+            pageIndex_.emplace(key, stagedPage.begin());
         if (!wasInserted) {
             throw std::logic_error("insert requires an unknown key");
         }
 
         try {
             if (isFull()) {
-                auto residentToEvict =
-                    std::min_element(cache_.begin(), cache_.end(), comparePageRecordsByFrequency);
+                auto residentToEvict = std::min_element(
+                    cache_.begin(), cache_.end(), comparePageRecordsByFrequency);
 
                 pageIndex_.erase(residentToEvict->key);
                 cache_.erase(residentToEvict);

@@ -55,7 +55,8 @@ TEST(CacheARCTrace, ReuseAfterScan) {
 
 TEST(CacheARCTrace, TwoHotThenScan) {
     cache::CacheARC<uint32_t, int> c(3);
-    lookupUpdateTest(c, {1, 2, 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5}, "MMHHMMHHMHHMMH");
+    lookupUpdateTest(
+        c, {1, 2, 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5}, "MMHHMMHHMHHMMH");
 }
 
 TEST(CacheARCTrace, HotTwoLong) {
@@ -144,8 +145,10 @@ TEST(CacheARC, ReloadedPageHasNewValue) {
 
 TEST(CacheARC, RetryFailedLoad) {
     cache::CacheARC<int, int> c(3);
-    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int& { throw std::runtime_error("load failed"); }),
-                 std::runtime_error);
+    EXPECT_THROW(
+        c.lookupUpdate(42,
+                       [](int) -> int& { throw std::runtime_error("load failed"); }),
+        std::runtime_error);
 
     int loads = 0;
     int loadedPage = 420;
