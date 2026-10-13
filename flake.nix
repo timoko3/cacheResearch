@@ -41,10 +41,14 @@
       '') [ "clang-format" "clang-tidy" ];
     in
     {
-      packages.${system}.default = package;
-      packages.${system}.library = library;
-      checks.${system}.default = package;
-      checks.${system}.library = library;
+      packages.${system} = {
+        default = package;
+        inherit library;
+      };
+      checks.${system} = {
+        default = package;
+        inherit library;
+      };
       overlays.default = final: prev: {
         cache-research-library = final.callPackage ./nix/library.nix { src = self; };
       };
