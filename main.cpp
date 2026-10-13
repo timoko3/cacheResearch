@@ -25,16 +25,16 @@ int main(const int argc, const char** argv) {
         const std::filesystem::path inputFile = argv[2];
 
         std::string configStr = generalFunctions::readFile(configFile);
-        std::string inputStr = generalFunctions::readFile(inputFile);
+        std::string inputStr  = generalFunctions::readFile(inputFile);
 
-        lexer::Lexer configLexer(configStr);
-        lexer::Lexer inputLexer(inputStr);
+        lexer::Lexer configLexer(configStr, configFile);
+        lexer::Lexer inputLexer(inputStr, inputFile);
 
         // printTokenArr(configLexer.tokenize());
         // printTokenArr(inputLexer.tokenize());
 
         auto configTokens = configLexer.tokenize();
-        auto inputTokens = inputLexer.tokenize();
+        auto inputTokens  = inputLexer.tokenize();
 
         parser::CacheParser<int> cacheParser;
         cacheParser.parseAll(configTokens, inputTokens);
