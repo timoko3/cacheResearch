@@ -165,6 +165,7 @@ jobs:
         preset:
           - debug
           - release
+          - benchmarks
 
     steps:
       - name: Checkout repository
@@ -189,4 +190,5 @@ jobs:
         run: python3 -m unittest discover -s tests -p test_benchmark_cli.py -v
 
       - name: Run tests
+        if: matrix.preset != 'benchmarks'
         run: ctest --preset ${{ matrix.preset }}

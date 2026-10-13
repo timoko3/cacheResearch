@@ -40,6 +40,19 @@
       }
     },
     {
+      "name": "benchmarks",
+      "displayName": "Benchmarks",
+      "description": "Optimized benchmark runners only",
+      "inherits": "base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CACHE_RESEARCH_BUILD_APP": false,
+        "CACHE_RESEARCH_BUILD_BENCHMARKS": true,
+        "CACHE_RESEARCH_BUILD_TESTS": false,
+        "CACHE_RESEARCH_INSTALL": false
+      }
+    },
+    {
       "name": "library",
       "displayName": "Library",
       "description": "Library package without tools or tests",
@@ -67,6 +80,11 @@
     }
   ],
   "buildPresets": [
+    {
+      "name": "benchmarks",
+      "configurePreset": "benchmarks",
+      "targets": ["cache_benchmark_runner", "cache_exact_search"]
+    },
     {
       "name": "debug",
       "configurePreset": "debug"

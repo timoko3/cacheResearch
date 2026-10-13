@@ -14,7 +14,7 @@ Python-пакетов. Команды ниже выполняются из ко�
 | `search` | Точный подбор системы из исследования №3 |
 | `doctor` | Проверяет Python и наличие runner, ничего не устанавливает |
 
-У каждой команды есть `--help`. Runner ищется сначала в Release, затем в Debug
+У каждой команды есть `--help`. Runner ищется сначала в `build/benchmarks`, затем в Release и Debug
 в стандартных CMake-каталогах текущей ОС. Можно указать `--runner PATH` для
 любого другого расположения. Относительные пути `--output` и `CASE` считаются
 от текущей рабочей папки; сама команда работает и из другой папки.
@@ -64,13 +64,13 @@ python3 cacheBenchmarks/benchmark.py generate --pattern hot_scan --seed 1 --capa
 Собрать runner и запустить сохранённый случай на Linux:
 
 ```sh
-cmake --preset release
-cmake --build --preset release --target cache_benchmark_runner --parallel
-python3 cacheBenchmarks/benchmark.py run cacheBenchmarks/local_data/my_case --runner build/release/cache_benchmark_runner
+cmake --preset benchmarks
+cmake --build --preset benchmarks --parallel
+python3 cacheBenchmarks/benchmark.py run cacheBenchmarks/local_data/my_case
 ```
 
 На Windows с Ninja путь к runner:
-`build/release/cache_benchmark_runner.exe`. Для другого генератора
+`build/benchmarks/cache_benchmark_runner.exe`. Для другого генератора
 укажите фактический путь через `--runner`.
 
 Результат — читаемая сводка с запросами, попаданиями, промахами и статистикой
@@ -78,7 +78,7 @@ python3 cacheBenchmarks/benchmark.py run cacheBenchmarks/local_data/my_case --ru
 Можно запустить C++ runner напрямую:
 
 ```sh
-./build/release/cache_benchmark_runner cacheBenchmarks/local_data/my_case/config.txt cacheBenchmarks/local_data/my_case/input.txt
+./build/benchmarks/cache_benchmark_runner cacheBenchmarks/local_data/my_case/config.txt cacheBenchmarks/local_data/my_case/input.txt
 ```
 
 Старые команды `cache_benchmark.py`, `cache_research.py` и
@@ -133,8 +133,8 @@ python3 cacheBenchmarks/benchmark.py research --patterns uniform --sizes 16 64 -
 Точный подбор подключён к обычной CMake-сборке:
 
 ```sh
-cmake --preset release
-cmake --build --preset release --target cache_exact_search --parallel
+cmake --preset benchmarks
+cmake --build --preset benchmarks --parallel
 python3 cacheBenchmarks/benchmark.py search --patterns hot_cold --totals 8 --requests 1000 --output cacheBenchmarks/local_data/exact
 ```
 

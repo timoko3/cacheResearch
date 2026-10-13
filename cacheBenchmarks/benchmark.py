@@ -129,6 +129,10 @@ def find_runner(path=None, exact=False):
     system = platform.system()
     target = "cache_exact_search" if exact else "cache_benchmark_runner"
     executable = target + (".exe" if system == "Windows" else "")
+    for suffix in (Path(executable), Path("Release") / executable):
+        candidate = PROJECT_ROOT / "build" / "benchmarks" / suffix
+        if candidate.is_file():
+            return candidate.resolve()
     for preset in ("release", "debug", "release-make", "debug-make"):
         for suffix in (Path(executable), Path(preset.title()) / executable):
             candidate = PROJECT_ROOT / "build" / system / preset / suffix
@@ -138,8 +142,8 @@ def find_runner(path=None, exact=False):
     if candidate.is_file():
         return candidate.resolve()
     raise ValueError(
-        f"No {target} found. Run: cmake --preset release; "
-        f"cmake --build --preset release --target {target} --parallel. "
+        f"No {target} found. Run: cmake --preset benchmarks; "
+        f"cmake --build --preset benchmarks --parallel. "
         "For a custom build, provide --runner PATH."
     )
 
