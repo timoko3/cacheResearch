@@ -67,7 +67,8 @@ TEST(CacheLRUTrace, ReuseAfterScan) {
 
 TEST(CacheLRUTrace, TwoHotThenScan) {
     cache::CacheLRU<uint32_t, int> c(3);
-    lookupUpdateTest(c, {1, 2, 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5}, "MMHHMMMMMHHMMM");
+    lookupUpdateTest(
+        c, {1, 2, 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5}, "MMHHMMMMMHHMMM");
 }
 
 TEST(CacheLRUTrace, HotTwoLong) {
@@ -169,8 +170,10 @@ TEST(CacheLRU, ReloadedPageHasNewValue) {
 
 TEST(CacheLRU, RetryFailedLoad) {
     cache::CacheLRU<int, int> c(3);
-    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int& { throw std::runtime_error("load failed"); }),
-                 std::runtime_error);
+    EXPECT_THROW(
+        c.lookupUpdate(42,
+                       [](int) -> int& { throw std::runtime_error("load failed"); }),
+        std::runtime_error);
 
     int loads = 0;
     int loadedPage = 420;

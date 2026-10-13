@@ -10,7 +10,8 @@ int main() {
                           cache::CacheEviction::C_ARC,
                           cache::CacheEviction::C_2Q,
                           cache::CacheEviction::C_LIRS}) {
-        auto pages = cache::CacheFactory<int>::make({3, cache::CacheLevel::L1, strategy});
+        auto pages =
+            cache::CacheFactory<int>::make({3, cache::CacheLevel::L1, strategy});
         int buffer = 0;
         auto load = [&](int key) -> int& {
             buffer = key * 10;
@@ -30,8 +31,9 @@ int main() {
     if (&first == &buffer || &reference.lookupUpdate(1, load) != &first) {
         throw std::runtime_error("The reference cache did not store its page");
     }
-    cache::CacheSystem<int> system({{{2, cache::CacheLevel::L1, cache::CacheEviction::C_LRU},
-                                     {3, cache::CacheLevel::L2, cache::CacheEviction::C_ARC}}});
+    cache::CacheSystem<int> system(
+        {{{2, cache::CacheLevel::L1, cache::CacheEviction::C_LRU},
+          {3, cache::CacheLevel::L2, cache::CacheEviction::C_ARC}}});
     const int& resident = system.lookupUpdate(1, load);
     if (&resident == &buffer || &system.lookupUpdate(1, load) != &resident) {
         throw std::runtime_error("The cache system did not return its stored page");

@@ -7,7 +7,9 @@
 struct HashCheckedKey {
     int value;
     inline static int failingValue = -1;
-    bool operator==(const HashCheckedKey& other) const noexcept { return value == other.value; }
+    bool operator==(const HashCheckedKey& other) const noexcept {
+        return value == other.value;
+    }
 };
 
 namespace std {
@@ -77,7 +79,8 @@ TEST(Cache2QTrace, ReuseAfterScan) {
 
 TEST(Cache2QTrace, TwoHotThenScan) {
     cache::Cache2Q<uint32_t, int> c(4);
-    lookupUpdateTest(c, {1, 2, 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5}, "MMHHMMHHMMMMMH");
+    lookupUpdateTest(
+        c, {1, 2, 1, 2, 3, 4, 1, 2, 5, 1, 2, 3, 4, 5}, "MMHHMMHHMMMMMH");
 }
 
 TEST(Cache2QTrace, HotTwoLong) {
@@ -213,8 +216,10 @@ TEST(Cache2Q, ReloadedPageHasNewValue) {
 
 TEST(Cache2Q, RetryFailedLoad) {
     cache::Cache2Q<int, int> c(3);
-    EXPECT_THROW(c.lookupUpdate(42, [](int) -> int& { throw std::runtime_error("load failed"); }),
-                 std::runtime_error);
+    EXPECT_THROW(
+        c.lookupUpdate(42,
+                       [](int) -> int& { throw std::runtime_error("load failed"); }),
+        std::runtime_error);
 
     int loads = 0;
     int loadedPage = 420;
@@ -237,7 +242,8 @@ TEST(Cache2Q, FailedGhostLoadDoesNotAffectNextRequest) {
     for (int key : {1, 2, 3, 4, 5})
         c.lookupUpdate(key, slow);
     EXPECT_THROW(
-        c.lookupUpdate(1, [](int) -> int& { throw std::runtime_error("ghost load failed"); }),
+        c.lookupUpdate(
+            1, [](int) -> int& { throw std::runtime_error("ghost load failed"); }),
         std::runtime_error);
 
     ASSERT_EQ(c.getA1out().size(), 1u);
@@ -378,7 +384,8 @@ TEST(Cache2Q, FailedEvictionLookupRollsBackNewIndexEntry) {
 
 TEST(Cache2Q, GhostHistoryStoresOnlyKeys) {
     cache::Cache2Q<std::vector<int>> c(2);
-    using History = std::remove_cv_t<std::remove_reference_t<decltype(c.getA1out())>>;
+    using History =
+        std::remove_cv_t<std::remove_reference_t<decltype(c.getA1out())>>;
     static_assert(std::is_same_v<typename History::value_type, int>);
     std::vector<int> loadedPage;
     auto slow = [&](int key) -> std::vector<int>& {
@@ -404,7 +411,8 @@ public:
     std::vector<int> history;
 
     explicit Reference2Q(std::size_t capacity)
-        : capacity_(capacity), a1inTargetSize_(std::max<std::size_t>(1, capacity / 4)),
+        : capacity_(capacity),
+          a1inTargetSize_(std::max<std::size_t>(1, capacity / 4)),
           ghostLimit_(std::max<std::size_t>(1, capacity / 2)) {}
 
     bool access(int key) {
@@ -472,7 +480,8 @@ TEST(Cache2Q, RandomRequestsMatchReferenceModel) {
                       reference.history);
             EXPECT_LE(c.getResidentCount(), capacity);
             EXPECT_LE(c.getA1out().size(), c.getGhostLimit());
-            EXPECT_EQ(c.getIndexedCount(), c.getResidentCount() + c.getA1out().size());
+            EXPECT_EQ(c.getIndexedCount(),
+                      c.getResidentCount() + c.getA1out().size());
         }
     }
 }

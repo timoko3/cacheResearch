@@ -25,7 +25,8 @@ private:
         KeyT key;
         T page;
 
-        PageRecord(const KeyT& pageKey, const T& pageValue) : key(pageKey), page(pageValue) {}
+        PageRecord(const KeyT& pageKey, const T& pageValue)
+            : key(pageKey), page(pageValue) {}
     };
 
     using PageList = std::list<PageRecord>;
@@ -46,7 +47,8 @@ private:
     static_assert(std::is_nothrow_assignable_v<QueuePosition&, ResidentPosition> &&
                       std::is_nothrow_assignable_v<QueuePosition&, GhostIterator>,
                   "Queue transitions must not throw");
-    static_assert(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<KeyT>,
+    static_assert(std::is_nothrow_destructible_v<T> &&
+                      std::is_nothrow_destructible_v<KeyT>,
                   "Pages and keys must have non-throwing destructors");
 
     static constexpr std::size_t a1inTargetSizeDivisor = 4;
@@ -95,7 +97,8 @@ private:
         a1out_.erase(ghostIterator);
     }
 
-    void commitEviction(const EvictionPlan& plan, GhostHistory& stagedHistory) noexcept {
+    void commitEviction(const EvictionPlan& plan,
+                        GhostHistory& stagedHistory) noexcept {
         if (plan.ghostToForget != pageIndex_.end()) {
             forgetGhost(plan.ghostToForget);
         }
@@ -117,8 +120,8 @@ private:
     const T& insertNewPage(const KeyT& key, const T& page) {
         PageList stagedPage;
         stagedPage.emplace_front(key, page);
-        auto [indexedPage, wasInserted] =
-            pageIndex_.emplace(key, ResidentPosition{stagedPage.begin(), ResidentQueue::A1_IN});
+        auto [indexedPage, wasInserted] = pageIndex_.emplace(
+            key, ResidentPosition{stagedPage.begin(), ResidentQueue::A1_IN});
         if (!wasInserted) {
             throw std::logic_error("insertNewPage requires an unknown key");
         }
@@ -164,15 +167,17 @@ public:
     // Johnson/Shasha defaults: A1_IN target 25%, ghost history limit 50%.
     // https://www.vldb.org/conf/1994/P439.PDF
     explicit Cache2Q(std::size_t capacity)
-        : Base(capacity),
-          a1inTargetSize_(std::max<std::size_t>(1, capacity / a1inTargetSizeDivisor)),
+        : Base(capacity), a1inTargetSize_(std::max<std::size_t>(
+                              1, capacity / a1inTargetSizeDivisor)),
           ghostLimit_(std::max<std::size_t>(1, capacity / ghostLimitDivisor)) {
         if (capacity < 2) {
             throw std::invalid_argument("2Q requires at least 2 cache slots");
         }
     }
 
-    std::size_t getResidentCount() const noexcept { return a1in_.size() + am_.size(); }
+    std::size_t getResidentCount() const noexcept {
+        return a1in_.size() + am_.size();
+    }
     std::size_t getIndexedCount() const noexcept { return pageIndex_.size(); }
     std::size_t getA1inTargetSize() const noexcept { return a1inTargetSize_; }
     std::size_t getGhostLimit() const noexcept { return ghostLimit_; }

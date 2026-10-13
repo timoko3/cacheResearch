@@ -21,7 +21,8 @@ private:
         KeyT key;
         T page;
 
-        PageRecord(const KeyT& pageKey, const T& pageValue) : key(pageKey), page(pageValue) {}
+        PageRecord(const KeyT& pageKey, const T& pageValue)
+            : key(pageKey), page(pageValue) {}
     };
 
     using PageList = std::list<PageRecord>;
@@ -29,7 +30,8 @@ private:
     using PageIndex = std::unordered_map<KeyT, PageIterator>;
     using IndexIterator = typename PageIndex::iterator;
 
-    static_assert(std::is_nothrow_destructible_v<T> && std::is_nothrow_destructible_v<KeyT>,
+    static_assert(std::is_nothrow_destructible_v<T> &&
+                      std::is_nothrow_destructible_v<KeyT>,
                   "Pages and keys must have non-throwing destructors");
 
     PageList cache_;
@@ -67,7 +69,8 @@ protected:
     const T& insert(const KeyT& key, const T& page) override {
         PageList stagedPage;
         stagedPage.emplace_front(key, page);
-        auto [indexedPage, wasInserted] = pageIndex_.emplace(key, stagedPage.begin());
+        auto [indexedPage, wasInserted] =
+            pageIndex_.emplace(key, stagedPage.begin());
         if (!wasInserted) {
             throw std::logic_error("insertNewPage requires an unknown key");
         }
