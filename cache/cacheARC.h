@@ -186,23 +186,23 @@ protected:
         }
 
         auto& position = indexedRecord->second;
-        recordHit(position);
-
         const auto& storedPage = position.iterator->page;
 
         if (!storedPage.has_value()) {
             return std::nullopt;
         }
 
+        recordHit(position);
         return std::cref(*storedPage);
     }
 
-    const T& insert(const KeyT& key, const T& page) override {
+    const T& doInsert(const KeyT& key, const T& page) override {
         auto indexedRecord = pageIndex_.find(key);
 
         if (indexedRecord != pageIndex_.end() &&
             (indexedRecord->second.listName == ListName::B1 ||
              indexedRecord->second.listName == ListName::B2)) {
+            recordHit(indexedRecord->second);
             return promoteGhostPage(indexedRecord, page);
         }
 

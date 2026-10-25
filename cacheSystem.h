@@ -82,6 +82,17 @@ public:
         return std::nullopt;
     }
 
+    // Fills every level without updating statistics; returns the L1 copy.
+    const T& insert(const KeyT& key, const T& page) {
+        const T* stored = std::addressof(page);
+        // Pass each stored copy upwards: page may itself be evicted during
+        // insertion.
+        for (auto level = cacheSys_.rbegin(); level != cacheSys_.rend(); ++level) {
+            stored = std::addressof(level->cache->insert(key, *stored));
+        }
+        return *stored;
+    }
+
     template <typename F>
     const T& lookupUpdate(KeyT key, F slowGetPage) {
         static_assert(std::is_lvalue_reference_v<decltype(slowGetPage(key))>,

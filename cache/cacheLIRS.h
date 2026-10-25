@@ -275,7 +275,7 @@ protected:
         return std::cref((*position.resident)->page);
     }
 
-    const T& insert(const KeyT& key, const T& page) override {
+    const T& doInsert(const KeyT& key, const T& page) override {
         return insertPage(key, page);
     }
 };

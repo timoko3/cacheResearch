@@ -12,6 +12,12 @@ int main() {
                           cache::CacheEviction::C_LIRS}) {
         auto pages =
             cache::CacheFactory<int>::make({3, cache::CacheLevel::L1, strategy});
+        const int& preloaded = pages->insert(1, 10);
+        if (&pages->insert(1, 99) != &preloaded || preloaded != 10 ||
+            pages->getStats().amountRequests != 0) {
+            throw std::runtime_error(
+                "Manual insertion changed the page or statistics");
+        }
         int buffer = 0;
         auto load = [&](int key) -> int& {
             buffer = key * 10;
@@ -34,6 +40,7 @@ int main() {
     cache::CacheSystem<int> system(
         {{{2, cache::CacheLevel::L1, cache::CacheEviction::C_LRU},
           {3, cache::CacheLevel::L2, cache::CacheEviction::C_ARC}}});
+    system.insert(1, buffer);
     const int& resident = system.lookupUpdate(1, load);
     if (&resident == &buffer || &system.lookupUpdate(1, load) != &resident) {
         throw std::runtime_error("The cache system did not return its stored page");

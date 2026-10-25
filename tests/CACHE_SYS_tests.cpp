@@ -369,6 +369,50 @@ TEST(CacheSystemInterface, LookupReadsLowerLevelWithoutCopiesOrPromotion) {
     EXPECT_EQ(CopyCountedPage::copies, 1);
 }
 
+TEST(CacheSystemInterface, InsertFillsEveryLevelWithoutCountingRequests) {
+    cache::CacheSystemParams params{
+        {{1, cache::CacheLevel::L1, cache::CacheEviction::C_LRU},
+         {2, cache::CacheLevel::L2, cache::CacheEviction::C_LRU}}};
+    cache::CacheSystem<CopyCountedPage> system(params);
+    CopyCountedPage page(10);
+    CopyCountedPage::copies = 0;
+    const auto& stored = system.insert(1, page);
+    EXPECT_EQ(stored.value, 10);
+    EXPECT_NE(&stored, &page);
+    EXPECT_EQ(CopyCountedPage::copies, 2);
+    page.value = 99;
+    EXPECT_EQ(&system.insert(1, page), &stored);
+    EXPECT_EQ(stored.value, 10);
+    EXPECT_EQ(CopyCountedPage::copies, 2);
+    const auto stats = system.getSystemStats();
+    EXPECT_EQ(stats.total.amountRequests, 0u);
+    for (const auto& level : stats.levels) {
+        EXPECT_EQ(level.stats.amountRequests, 0u);
+        EXPECT_EQ(level.stats.amountHits, 0u);
+        EXPECT_EQ(level.stats.amountMisses, 0u);
+    }
+
+    system.insert(2, page); // Evicts key 1 from L1 only.
+    auto unexpectedLoad = [](int) -> const CopyCountedPage& {
+        throw std::runtime_error("The inserted page must be present in L2");
+    };
+    EXPECT_EQ(system.lookupUpdate(1, unexpectedLoad).value, 10);
+    EXPECT_EQ(system.getSystemStats().levels[1].stats.amountHits, 1u);
+}
+
+TEST(CacheSystemInterface, InsertAcceptsPageThatItEvictsFromAnotherLevel) {
+    cache::CacheSystemParams params{
+        {{1, cache::CacheLevel::L1, cache::CacheEviction::C_LRU},
+         {1, cache::CacheLevel::L2, cache::CacheEviction::C_LRU}}};
+    cache::CacheSystem<std::string> system(params);
+    const auto& source = system.insert(1, std::string(256, 'x'));
+    EXPECT_EQ(system.insert(2, source), std::string(256, 'x'));
+    EXPECT_FALSE(system.lookup(1));
+    ASSERT_TRUE(system.lookup(2));
+    EXPECT_EQ(system.lookup(2)->get(), std::string(256, 'x'));
+    EXPECT_EQ(system.getStats().amountRequests, 0u);
+}
+
 TEST(CacheSystemInterface, FailedLoadUpdatesStatsAndCanBeRetried) {
     cache::CacheSystemParams params{
         {{1, cache::CacheLevel::L1, cache::CacheEviction::C_LRU}}};

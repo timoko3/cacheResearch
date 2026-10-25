@@ -42,6 +42,15 @@ public:
     // The reference is valid until eviction or cache destruction.
     virtual PageResult lookup(const KeyT& key) const = 0;
 
+    // Keeps an existing page unchanged; otherwise stores a copy with eviction.
+    // Does not update statistics. The reference is valid until eviction.
+    const T& insert(const KeyT& key, const T& page) {
+        if (auto resident = lookup(key)) {
+            return resident->get();
+        }
+        return doInsert(key, page);
+    }
+
     template <typename F>
     const T& lookupUpdate(KeyT key, F slowGetPage) {
         using LoaderResult = decltype(slowGetPage(key));
@@ -59,7 +68,7 @@ public:
         ++stats_.amountMisses;
         const T& page = slowGetPage(key);
 
-        return insert(key, page);
+        return doInsert(key, page);
     }
 
 protected:
@@ -68,7 +77,7 @@ protected:
     virtual PageResult getPage(const KeyT& key) = 0;
 
     // Returns the stored copy, valid until its eviction or cache destruction.
-    virtual const T& insert(const KeyT& key, const T& page) = 0;
+    virtual const T& doInsert(const KeyT& key, const T& page) = 0;
 };
 
 } // namespace cache

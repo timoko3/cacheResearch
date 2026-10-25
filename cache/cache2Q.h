@@ -213,7 +213,7 @@ protected:
         return std::cref(resident->iterator->page);
     }
 
-    const T& insert(const KeyT& key, const T& page) override {
+    const T& doInsert(const KeyT& key, const T& page) override {
         auto indexedRecord = pageIndex_.find(key);
         if (indexedRecord == pageIndex_.end()) {
             return insertNewPage(key, page);

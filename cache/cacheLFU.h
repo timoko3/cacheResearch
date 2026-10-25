@@ -67,7 +67,7 @@ protected:
         return std::cref(resident->page);
     }
 
-    const T& insert(const KeyT& key, const T& page) override {
+    const T& doInsert(const KeyT& key, const T& page) override {
         PageList stagedPage;
 
         constexpr std::size_t initialFrequency = 1;

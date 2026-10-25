@@ -101,7 +101,7 @@ protected:
         return std::cref(indexedRecord->second->page);
     }
 
-    const T& insert(const KeyT& key, const T& page) override {
+    const T& doInsert(const KeyT& key, const T& page) override {
         PageList stagedPage;
         stagedPage.push_front({key, page});
 
