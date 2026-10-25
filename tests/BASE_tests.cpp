@@ -30,8 +30,8 @@ TEST_P(CacheInterface, MissAndHitReturnSameStoredCopy) {
     };
     static_assert(std::is_same_v<decltype(c->lookupUpdate(7, slow)), const int&>);
     const auto& readOnly = *c;
-    static_assert(std::is_same_v<decltype(readOnly.lookup(7)),
-                                 cache::Cache<int>::PageResult>);
+    static_assert(
+        std::is_same_v<decltype(readOnly.lookup(7)), cache::Cache<int>::PageResult>);
     EXPECT_FALSE(readOnly.lookup(7));
     EXPECT_EQ(c->getStats().amountRequests, 0u);
 
