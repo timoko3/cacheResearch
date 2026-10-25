@@ -254,6 +254,14 @@ public:
     const KeyList& getQueueQ() const noexcept { return queueQ_; }
     const PageList& getResidentPages() const noexcept { return residentPages_; }
 
+    PageResult lookup(const KeyT& key) const override {
+        auto indexedRecord = pageIndex_.find(key);
+        if (indexedRecord == pageIndex_.end() || !indexedRecord->second.resident) {
+            return std::nullopt;
+        }
+        return std::cref((*indexedRecord->second.resident)->page);
+    }
+
 protected:
     PageResult getPage(const KeyT& key) override {
         auto indexedRecord = pageIndex_.find(key);

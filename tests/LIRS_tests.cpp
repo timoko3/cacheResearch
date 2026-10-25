@@ -204,6 +204,7 @@ TEST(CacheLIRSFocused, GhostReloadPromotesAndDemotesBottomLIR) {
     EXPECT_EQ(c.getResidentCount(), 3u);
     EXPECT_EQ(c.getIndexedCount(), 4u);
 
+    EXPECT_FALSE(c.lookup(3)); // Non-resident HIR remains in the stack.
     const int& restored = c.lookupUpdate(3, slow);
     EXPECT_NE(&restored, &loadedPage);
     EXPECT_EQ(&restored, &c.getResidentPages().front().page);

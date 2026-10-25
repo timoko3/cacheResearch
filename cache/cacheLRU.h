@@ -50,6 +50,14 @@ private:
 public:
     explicit CacheLRU(std::size_t capacity) : Base(capacity) {}
 
+    PageResult lookup(const KeyT& key) const override {
+        auto indexedRecord = pageIndex_.find(key);
+        if (indexedRecord == pageIndex_.end()) {
+            return std::nullopt;
+        }
+        return std::cref(indexedRecord->second->page);
+    }
+
     std::size_t getResidentCount() const noexcept { return cache_.size(); }
     std::size_t getIndexedCount() const noexcept { return pageIndex_.size(); }
     const PageList& getCache() const noexcept { return cache_; }

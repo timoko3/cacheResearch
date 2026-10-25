@@ -103,12 +103,14 @@ TEST(CacheARCFocused, BothGhostQueuesReturnStoredCopyOnReload) {
     for (int key : {1, 2, 1, 3})
         c.lookupUpdate(key, slow);
 
+    EXPECT_FALSE(c.lookup(2)); // B1 stores only the evicted key.
     const int& fromB1 = c.lookupUpdate(2, slow);
     EXPECT_NE(&fromB1, &buffer);
     buffer = 99;
     EXPECT_EQ(fromB1, 20);
     EXPECT_EQ(&c.lookupUpdate(2, slow), &fromB1);
 
+    EXPECT_FALSE(c.lookup(1)); // B2 also has no resident page.
     const int& fromB2 = c.lookupUpdate(1, slow);
     EXPECT_NE(&fromB2, &buffer);
     buffer = 99;

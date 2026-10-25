@@ -329,6 +329,46 @@ TEST(CacheSystemInterface, ZeroCapacityLevelsAreRejected) {
     EXPECT_THROW((cache::CacheSystem<int>(params)), std::invalid_argument);
 }
 
+TEST(CacheSystemInterface, LookupReadsLowerLevelWithoutCopiesOrPromotion) {
+    cache::CacheSystemParams params{
+        {{1, cache::CacheLevel::L1, cache::CacheEviction::C_LRU},
+         {2, cache::CacheLevel::L2, cache::CacheEviction::C_LRU}}};
+    cache::CacheSystem<CopyCountedPage> system(params);
+    const auto& readOnly = system;
+    EXPECT_FALSE(readOnly.lookup(1));
+    CopyCountedPage buffer(0);
+    auto slow = [&](int key) -> const CopyCountedPage& {
+        buffer.value = key;
+        return buffer;
+    };
+    const auto& topPage = system.lookupUpdate(1, slow);
+    ASSERT_TRUE(readOnly.lookup(1));
+    EXPECT_EQ(&readOnly.lookup(1)->get(), &topPage);
+    system.lookupUpdate(2, slow);
+
+    CopyCountedPage::copies = 0;
+    const auto lowerPage = readOnly.lookup(1);
+    ASSERT_TRUE(lowerPage);
+    EXPECT_EQ(lowerPage->get().value, 1);
+    EXPECT_FALSE(readOnly.lookup(99));
+    EXPECT_FALSE(readOnly.lookup(99));
+    EXPECT_EQ(CopyCountedPage::copies, 0);
+    const auto stats = system.getSystemStats();
+    EXPECT_EQ(stats.total.amountRequests, 2u);
+    EXPECT_EQ(stats.total.amountMisses, 2u);
+    for (const auto& level : stats.levels) {
+        EXPECT_EQ(level.stats.amountRequests, 2u);
+        EXPECT_EQ(level.stats.amountHits, 0u);
+        EXPECT_EQ(level.stats.amountMisses, 2u);
+    }
+
+    system.lookupUpdate(2, slow); // Reading key 1 must leave key 2 in L1.
+    EXPECT_EQ(system.getSystemStats().levels[0].stats.amountHits, 1u);
+    system.lookupUpdate(1, slow); // Key 1 still needs promotion from L2.
+    EXPECT_EQ(system.getSystemStats().levels[1].stats.amountHits, 1u);
+    EXPECT_EQ(CopyCountedPage::copies, 1);
+}
+
 TEST(CacheSystemInterface, FailedLoadUpdatesStatsAndCanBeRetried) {
     cache::CacheSystemParams params{
         {{1, cache::CacheLevel::L1, cache::CacheEviction::C_LRU}}};

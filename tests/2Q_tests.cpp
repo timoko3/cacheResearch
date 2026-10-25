@@ -133,6 +133,8 @@ TEST(Cache2QFocused, OverflowOfA1inCreatesGhostEntry) {
     EXPECT_EQ(c.getResidentCount(), 4u);
     ASSERT_EQ(c.getA1out().size(), 1u);
     EXPECT_EQ(c.getA1out().front(), 1);
+    EXPECT_FALSE(c.lookup(1));
+    EXPECT_EQ(c.getA1out(), (std::list<int>{1}));
 }
 
 TEST(Cache2QFocused, GhostHitIsMissAndPromotesPageToAm) {

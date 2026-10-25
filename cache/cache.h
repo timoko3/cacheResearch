@@ -22,6 +22,8 @@ private:
     CacheStats stats_;
 
 public:
+    using PageResult = std::optional<std::reference_wrapper<const T>>;
+
     explicit Cache(std::size_t size) : size_(size) {
         if (size == 0) {
             throw std::invalid_argument("Cache capacity must be positive");
@@ -35,6 +37,10 @@ public:
 
     std::size_t getSize() const { return size_; }
     const CacheStats& getStats() const { return stats_; }
+
+    // Does not change cache state or statistics; ghosts count as misses.
+    // The reference is valid until eviction or cache destruction.
+    virtual PageResult lookup(const KeyT& key) const = 0;
 
     template <typename F>
     const T& lookupUpdate(KeyT key, F slowGetPage) {
@@ -57,8 +63,6 @@ public:
     }
 
 protected:
-    using PageResult = std::optional<std::reference_wrapper<const T>>;
-
     // Returns a resident page reference,
     // or std::nullopt on a miss (including ghost entries).
     virtual PageResult getPage(const KeyT& key) = 0;

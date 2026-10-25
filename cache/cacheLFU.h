@@ -45,6 +45,14 @@ public:
 
     ~CacheLFU() = default;
 
+    PageResult lookup(const KeyT& key) const override {
+        auto indexedRecord = pageIndex_.find(key);
+        if (indexedRecord == pageIndex_.end()) {
+            return std::nullopt;
+        }
+        return std::cref(indexedRecord->second->page);
+    }
+
 protected:
     PageResult getPage(const KeyT& key) override {
         auto indexedRecord = pageIndex_.find(key);

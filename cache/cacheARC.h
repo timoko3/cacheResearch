@@ -168,6 +168,15 @@ private:
 public:
     explicit CacheARC(std::size_t capacity) : Base(capacity), capacity_(capacity) {}
 
+    PageResult lookup(const KeyT& key) const override {
+        auto indexedRecord = pageIndex_.find(key);
+        if (indexedRecord == pageIndex_.end() ||
+            !indexedRecord->second.iterator->page) {
+            return std::nullopt;
+        }
+        return std::cref(*indexedRecord->second.iterator->page);
+    }
+
 protected:
     PageResult getPage(const KeyT& key) override {
         auto indexedRecord = pageIndex_.find(key);

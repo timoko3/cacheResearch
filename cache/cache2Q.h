@@ -185,6 +185,18 @@ public:
     const PageList& getA1in() const noexcept { return a1in_; }
     const GhostHistory& getA1out() const noexcept { return a1out_; }
 
+    PageResult lookup(const KeyT& key) const override {
+        auto indexedRecord = pageIndex_.find(key);
+        if (indexedRecord == pageIndex_.end()) {
+            return std::nullopt;
+        }
+        auto resident = std::get_if<ResidentPosition>(&indexedRecord->second);
+        if (resident == nullptr) {
+            return std::nullopt;
+        }
+        return std::cref(resident->iterator->page);
+    }
+
 protected:
     PageResult getPage(const KeyT& key) override {
         auto indexedRecord = pageIndex_.find(key);

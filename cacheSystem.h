@@ -57,6 +57,8 @@ class CacheSystem {
     }
 
 public:
+    using PageResult = typename Cache<T, KeyT>::PageResult;
+
     explicit CacheSystem(const CacheSystemParams& params) {
         if (params.levels.empty()) {
             throw std::invalid_argument("At least one cache level is needed");
@@ -68,6 +70,16 @@ public:
             cacheSys_.push_back(
                 {description.level, CacheFactory<T, KeyT>::make(description)});
         }
+    }
+
+    // Searches levels in order without promotion or statistics updates.
+    PageResult lookup(const KeyT& key) const {
+        for (const auto& level : cacheSys_) {
+            if (auto page = level.cache->lookup(key)) {
+                return page;
+            }
+        }
+        return std::nullopt;
     }
 
     template <typename F>
